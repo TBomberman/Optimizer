@@ -6,6 +6,7 @@ from keras.callbacks import History
 from random import sample
 from utilities import minmax, remove_constant_values, all_stats
 import matplotlib.pyplot as plt
+import random
 
 # local variables
 dropout = 0.2
@@ -15,19 +16,15 @@ batch_size = 20000
 nb_classes = 2
 nb_epoch = 10000 #1000 cutoff 1 #3000 cutoff  2 and
 
-np.random.seed(1337)  # for reproducibility
-import random
-random.seed(1337)
+# for reproducibility
+# np.random.seed(1337)
+# random.seed(1337)
 
-def do_optimize(dataset):
-    # data set up
-    data = dataset[:, 0:52]
-    labels = dataset[:, -1]
-
+def do_optimize(data, labels):
     # Remove constant
-    max_X = np.amax(data[:, :-1])
-    min_X = np.amin(data[:, :-1])
-    data[:, :-1] = (data[:, :-1] - min_X) / (max_X - min_X)
+    max_X = np.amax(data)
+    min_X = np.amin(data)
+    data = (data - min_X) / (max_X - min_X)
     data[np.where(data[:, 0:-1] == np.NAN), 0:-1] = 0
 
     y = np.zeros((len(labels), 1)).astype(int)
@@ -40,9 +37,9 @@ def do_optimize(dataset):
     val_partition = test_partition[0:int(len(test_partition) * 0.5)]
     test_partition = np.setdiff1d(test_partition, val_partition)
 
-    X_train = data[train_partition, :-1]
-    X_test = data[test_partition, :-1]
-    X_val = data[val_partition, :-1]
+    X_train = data[train_partition, :]
+    X_test = data[test_partition, :]
+    X_val = data[val_partition, :]
     X_train = X_train.astype('float32')
     X_test = X_test.astype('float32')
     X_val = X_val.astype('float32')
