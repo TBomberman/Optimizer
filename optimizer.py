@@ -10,45 +10,53 @@ import random
 
 # local variables
 dropout = 0.2
-dense = 100
-cutoff = 0.5
-batch_size = 20000
-nb_classes = 2
-nb_epoch = 10000 #1000 cutoff 1 #3000 cutoff  2 and
+dense = 5
+batch_size = 10000
+nb_epoch = 20000 #1000 cutoff 1 #3000 cutoff  2 and
 
 # for reproducibility
 # np.random.seed(1337)
 # random.seed(1337)
 
-def do_optimize(data, labels):
-    # Remove constant
-    max_X = np.amax(data)
-    min_X = np.amin(data)
-    data = (data - min_X) / (max_X - min_X)
-    data[np.where(data[:, 0:-1] == np.NAN), 0:-1] = 0
+def do_optimize(nb_classes, data, labels, data_test=None, labels_test=None):
+    if data_test is None:
+        # ids
+        work_ids = range(len(labels))
+        train_ids = sample(work_ids, int(0.7 * len(work_ids)))
+        test_ids = np.setdiff1d(work_ids, train_ids)
+        val_ids = test_ids[0:int(len(test_ids) * 0.5)]
+        test_ids = np.setdiff1d(test_ids, val_ids)
 
-    y = np.zeros((len(labels), 1)).astype(int)
-    pos_id = np.where(abs(labels) > cutoff)[0]
-    y[pos_id] = 1
-    work_id = range(len(y))
+        # X data
+        X_train = data[train_ids, :]
+        X_test = data[test_ids, :]
+        X_val = data[val_ids, :]
 
-    train_partition = sample(work_id, int(0.7 * len(work_id)))
-    test_partition = np.setdiff1d(work_id, train_partition)
-    val_partition = test_partition[0:int(len(test_partition) * 0.5)]
-    test_partition = np.setdiff1d(test_partition, val_partition)
+        # Y data
+        y_train = labels[train_ids]
+        y_test = labels[test_ids]
+        y_val = labels[val_ids]
+    else:
+        # ids
+        test_ids = range(len(labels_test))
+        val_ids = test_ids[0:int(len(test_ids) * 0.5)]
+        test_ids = np.setdiff1d(test_ids, val_ids)
 
-    X_train = data[train_partition, :]
-    X_test = data[test_partition, :]
-    X_val = data[val_partition, :]
+        # X data
+        X_train = data
+        X_test = data_test[test_ids, :]
+        X_val = data_test[val_ids, :]
+
+        # Y data
+        y_train = labels
+        y_test = labels_test[test_ids]
+        y_val = labels_test[val_ids]
+
     X_train = X_train.astype('float32')
     X_test = X_test.astype('float32')
     X_val = X_val.astype('float32')
-
-    y_train = y[train_partition]
     Y_train = np_utils.to_categorical(y_train, nb_classes)
-    y_test = y[test_partition]
     Y_test = np_utils.to_categorical(y_test, nb_classes)
-    y_val = y[val_partition]
     Y_val = np_utils.to_categorical(y_val, nb_classes)
 
     for hyperparam in range(1, 10):
@@ -64,10 +72,10 @@ def do_optimize(data, labels):
 
         add_dense_dropout(layer_count, neuron_count, model)
 
-        model.add(Dense(2))
+        model.add(Dense(nb_classes))
         model.add(Activation('softmax'))
         model.summary()
-        model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['binary_accuracy'])
+        model.compile(loss='binary_crossentropy', optimizer='sgd', metrics=['binary_accuracy'])
 
         model.fit(X_train, Y_train, batch_size=batch_size, nb_epoch=nb_epoch,
                   verbose=0, validation_data=(X_test, Y_test), callbacks=[history])
@@ -78,8 +86,8 @@ def do_optimize(data, labels):
         y_score_test = model.predict_proba(X_test)
         y_score_val = model.predict_proba(X_val)
 
-        # print('Test score:', score[0])
-        # print('Test accuracy:', score[1])
+        print('Test score:', score[0])
+        print('Test accuracy:', score[1])
 
         train_stats = all_stats(Y_train[:, 1], y_score_train[:, 1])
         test_stats = all_stats(Y_test[:, 1], y_score_test[:, 1], train_stats[-1])
