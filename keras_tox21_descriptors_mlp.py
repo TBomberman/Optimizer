@@ -1,5 +1,5 @@
 import numpy as np
-from optimizer import do_optimize
+from mlp_optimizer import do_optimize
 
 # local vars
 cutoff = 0.5

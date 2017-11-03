@@ -6,7 +6,7 @@ Gets to 99.25% test accuracy after 12 epochs
 
 from keras.datasets import mnist
 from keras import backend as K
-from optimizer import do_optimize
+from mlp_optimizer import do_optimize
 
 num_classes = 10
 
