@@ -8,7 +8,7 @@ def ensure_number(data):
     data[np.where(data == np.NAN), :] = 0
 
 #load data
-dataset = np.loadtxt('/home/gwoo/Documents/Data/png_openeye/tox21_deepchem_InductiveDescriptors_qsar_label_NR-AhR.csv', skiprows=1, delimiter=",", usecols = range(1,52))
+dataset = np.loadtxt('/home/gwoo/Documents/Data/png_openeye/tox21_deepchem_InductiveDescriptors_qsar_label_NR-AR-LBD.csv', skiprows=1, delimiter=",", usecols = range(1,52))
 
 # data set up
 data = dataset[:, :-1]

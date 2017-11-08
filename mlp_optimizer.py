@@ -6,13 +6,14 @@ from keras.callbacks import History
 from random import sample
 from utilities import minmax, remove_constant_values, all_stats
 import matplotlib.pyplot as plt
+import keras_enums as enums
 import random
 
 # local variables
 dropout = 0.2
-dense = 5
+dense = 100
 batch_size = 10000
-nb_epoch = 20000 #1000 cutoff 1 #3000 cutoff  2 and
+nb_epoch =20000 #1000 cutoff 1 #3000 cutoff  2 and
 
 # for reproducibility
 # np.random.seed(1337)
@@ -59,23 +60,30 @@ def do_optimize(nb_classes, data, labels, data_test=None, labels_test=None):
     Y_test = np_utils.to_categorical(y_test, nb_classes)
     Y_val = np_utils.to_categorical(y_val, nb_classes)
 
-    for hyperparam in range(1, 10):
+    for hyperparam in range(1, 2):
         # neuron_count = dense * hyperparam
         neuron_count = dense
-        layer_count = hyperparam
+        layer_count = 5
+        optimizer = enums.optimizers[1] #rmsprop
+        activation = enums.activation_functions[0] #elu
+        activation_input = enums.activation_functions[7] # hard signmoid
+        activation_output = enums.activation_functions[2] # sigmoid
 
         model = Sequential()
         history = History()
         model.add(Dense(neuron_count, input_shape=(X_train.shape[1],)))
-        model.add(Activation('tanh'))
+        # model.add(Activation('tanh'))
+        model.add(Activation(activation_input))
         model.add(Dropout(dropout))
 
-        add_dense_dropout(layer_count, neuron_count, model)
+        add_dense_dropout(layer_count, neuron_count, model, activation)
 
         model.add(Dense(nb_classes))
-        model.add(Activation('softmax'))
+        # model.add(Activation('softmax'))
+        model.add(Activation(activation_output))
         model.summary()
-        model.compile(loss='binary_crossentropy', optimizer='sgd', metrics=['binary_accuracy'])
+
+        model.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['binary_accuracy'])
 
         model.fit(X_train, Y_train, batch_size=batch_size, nb_epoch=nb_epoch,
                   verbose=0, validation_data=(X_test, Y_test), callbacks=[history])
@@ -100,18 +108,24 @@ def do_optimize(nb_classes, data, labels, data_test=None, labels_test=None):
         # print(history.history.keys())
         # summarize history for loss
 
-
-        plt.plot(history.history['loss'])
-        plt.plot(history.history['val_loss'])
+        # plot
+        # nth = int(nb_epoch *0.05)
+        nth = 1
+        five_ploss = history.history['loss'][0::nth]
+        five_pvloss = history.history['val_loss'][0::nth]
+        plt.figure()
+        plt.plot(five_ploss)
+        plt.plot(five_pvloss)
         plt.title('model loss')
         plt.ylabel('loss')
         plt.xlabel('epoch')
         plt.legend(['train', 'test'], loc='upper left')
-        plt.show()
+        plt.draw()
 
+    plt.show()
 
-def add_dense_dropout(count, neuron_count, model):
+def add_dense_dropout(count, neuron_count, model, activation):
     for x in range(0, count):
         model.add(Dense(neuron_count))
-        model.add(Activation('tanh'))
+        model.add(Activation(activation))
         model.add(Dropout(dropout))
