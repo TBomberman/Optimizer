@@ -17,15 +17,7 @@ lr = RandomForestRegressor()
 boston = datasets.load_boston()
 y = boston.target
 
-data_3 = np.loadtxt(
-    'C:/Users/mllamosa.PROSTATECENTRE/Dropbox/2017/UBC_Prostate/pcba/pcba_deepchem_rdkit_morgan_pcba.csv', skiprows=1,
-    delimiter=",", usecols=range(1, 2109))
-df[].as_matrix()
 
-data = data_3[:, 0:2048]
-labels = data_3[:, 2048:2049]
-nb_classes = labels.shape[1]
-y = labels
 
 # cross_val_predict returns an array of the same size as `y` where each entry
 # is a prediction obtained by cross validation:
