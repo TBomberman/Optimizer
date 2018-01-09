@@ -7,7 +7,7 @@ import csv
 cutoff = 0.5
 
 def ensure_number(data):
-    data[np.where(data == np.NAN), :] = 0
+    return np.nan_to_num(data)
 
 def load_drug_single_gene_csv(file):
         #load data
@@ -18,7 +18,7 @@ def load_drug_single_gene_csv(file):
                 expression.append(row)
 
         print('gene expressions loaded. rows:  ' + str(len(expression)))
-        return np.array(expression)
+        return expression
 
 def load_descriptors(file):
         descriptors = []
@@ -27,8 +27,7 @@ def load_descriptors(file):
             descriptors = dict((rows[1],rows[2:]) for rows in reader)
 
         print('drug descriptors loaded. rows:  ' + str(len(descriptors)))
-        return np.array(descriptors)
-
+        return descriptors
 
 def join_descriptors_label(expression,descriptors):
         unique_drugs = []
@@ -46,6 +45,6 @@ def join_descriptors_label(expression,descriptors):
 
         labels = np.array(labels).astype(np.float32)
         print('data size ' + str(len(data)) + ' labels size ' + str(len(labels)))
-        return [data,labels]
+        return data,labels
 
 
