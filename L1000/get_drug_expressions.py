@@ -23,7 +23,7 @@ with open("/data/datasets/gwoo/L1000/LDS-1191/Metadata/Small_Molecule_Metadata.t
     drug_dict = dict((rows[9],rows[8]) for rows in reader)
 
 # 3 load expressions data
-lm_genes = json.load(open('landmark_genes.json'))
+lm_genes = json.load(open('one_landmark_gene.json'))
 lm_gene_entrez_ids = []
 for lm_gene in lm_genes:
     lm_gene_entrez_ids.append(lm_gene['entrez_id'])
@@ -68,7 +68,7 @@ for i in range(length):
             drug_id_expressions.append(row)
 
 # 3. save the list to csv
-with open("/home/gwoo/Data/L1000/LDS-1191/WorkingData/Y_drug_id_expression.csv", "w") as csv_file:
+with open("/home/gwoo/Data/L1000/LDS-1191/WorkingData/Y_drug_id_one_expression.csv", "w") as csv_file:
     writer = csv.writer(csv_file)
     writer.writerows(drug_id_expressions)
 
