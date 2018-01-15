@@ -1,13 +1,14 @@
-import numpy as np
-from keras.models import Sequential
-from keras.layers import Dense, Dropout, Activation, Flatten
-from keras.utils import np_utils
-from keras.callbacks import History
 from random import sample
-from utilities import minmax, remove_constant_values, all_stats
+
 import matplotlib.pyplot as plt
+import numpy as np
+from keras.callbacks import History
+from keras.layers import Dense, Dropout, Activation
+from keras.models import Sequential
+from keras.utils import np_utils
+
 import keras_enums as enums
-import random
+from helpers.utilities import all_stats
 
 # local variables
 dropout = 0.2

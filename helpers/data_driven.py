@@ -5,14 +5,15 @@ created on Nov 22, 2011
 '''
 
 from __future__ import print_function
-import numpy as np
-from scipy.stats import linregress
-#from scikits.learn.metrics import roc_curve as roc, auc
-from sklearn.metrics import roc_curve as roc, auc
-from utilities import *
-import re
+
 import pickle as cPickle
+import re
 import sys
+
+# from scikits.learn.metrics import roc_curve as roc, auc
+from helpers.utilities import *
+
+
 #import matplotlib
 
 
@@ -495,7 +496,6 @@ class Model(object):
         surface3D(X,Y,Z,varnames,file,show=None)
 
     def plot(self,file,show=None):
-        import matplotlib
         if len(np.unique(self.data[:,-1]))<3:
             scatter_plot=auc_plot
         else:

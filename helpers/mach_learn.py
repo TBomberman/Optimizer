@@ -7,10 +7,9 @@ Created on Nov 22, 2011
 
 from __future__ import print_function
 
-from sklearn.cross_validation import StratifiedKFold
-from sklearn.cross_decomposition import PLSCanonical, PLSRegression, CCA
-from scipy.stats import linregress
 from random import *
+
+from sklearn.cross_validation import StratifiedKFold
 from sklearn.linear_model import Ridge
 
 try:
@@ -19,7 +18,7 @@ except:
 	print ("Loading pyfann failed")
 
 import numpy as np
-from utilities import *
+
 try:
     from svm import *
     from svmutil import *
@@ -35,7 +34,8 @@ try:
 except:
     print("Loading svmPython failed")
 
-from sklearn.tree import DecisionTreeRegressor, DecisionTreeClassifier, export_graphviz
+from sklearn.tree import DecisionTreeRegressor, DecisionTreeClassifier
+
 try:
 	from sklearn import linear_model
 except:

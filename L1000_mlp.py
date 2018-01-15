@@ -1,9 +1,7 @@
-
 import numpy as np
-from mlp_optimizer import do_optimize
-import csv
-from data_loader import ensure_number, load_drug_single_gene_csv, load_descriptors, join_descriptors_label
 
+from L1000.data_loader import ensure_number, load_drug_single_gene_csv, load_descriptors, join_descriptors_label
+from mlp_optimizer import do_optimize
 
 # local vars
 cutoff = 0.5

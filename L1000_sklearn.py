@@ -5,17 +5,11 @@ Created on Thu Nov 23 14:37:16 2017
 @author: mllamosa
 """
 
-from sklearn import datasets
-from sklearn.model_selection import cross_val_predict
-from sklearn.ensemble import RandomForestRegressor
-#import matplotlib.pyplot as plt
-from data_loader import ensure_number, load_drug_single_gene_csv, load_descriptors, join_descriptors_label
-
-import data_driven as dd
-import mach_learn as ml
-from utilities import all_stats,remove_constant_values,reduce_corr
-
 import numpy as np
+
+# import matplotlib.pyplot as plt
+from L1000.data_loader import load_drug_single_gene_csv, load_descriptors, join_descriptors_label
+from helpers import data_driven as dd, mach_learn as ml
 
 expression = load_drug_single_gene_csv('/data/datasets/gwoo/L1000/LDS-1191/WorkingData/Y_drug_id_one_expression.csv')
 descriptors = load_descriptors('/data/datasets/gwoo/L1000/LDS-1191/WorkingData/X_all_descriptors.tab')
