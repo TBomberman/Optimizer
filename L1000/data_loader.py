@@ -1,6 +1,5 @@
-
+from cmapPy.pandasGEXpress import parse
 import numpy as np
-from mlp_optimizer import do_optimize
 import csv
 
 # local vars
@@ -9,7 +8,7 @@ cutoff = 0.5
 def ensure_number(data):
     return np.nan_to_num(data)
 
-def load_drug_single_gene_csv(file):
+def load_features_csv(file):
         #load data
         expression = []
         with open(file, "r") as csv_file:
@@ -47,4 +46,13 @@ def join_descriptors_label(expression,descriptors):
         print('data size ' + str(len(data)) + ' labels size ' + str(len(labels)))
         return data,labels
 
+def get_feature_dict(file, delimiter=',', key_index=0):
+    with open(file, "r") as csv_file:
+        reader = csv.reader(csv_file, dialect='excel', delimiter=delimiter)
+        next(reader)
+        return dict((row[key_index], row[1:]) for row in reader)
 
+def load_gene_expression_data(lm_gene_entrez_ids):
+    return parse(
+        "/home/gwoo/Data/L1000/LDS-1191/Data/GSE92742_Broad_LINCS_Level5_COMPZ.MODZ_n473647x12328.gctx",
+        col_meta_only=False, row_meta_only=False, rid=lm_gene_entrez_ids)

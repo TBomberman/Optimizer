@@ -1,15 +1,14 @@
-''
-Created on Oct 15, 2011
-
-@author: mllamosa
-'''
+# ''
+# Created on Oct 15, 2011
+#
+# @author: mllamosa
+# '''
 from __future__ import print_function
 import numpy as np
 from math import exp, sin, cos, sqrt, pi
 #from qsar import *
 from scipy.stats import linregress
 from sklearn.metrics import roc_curve as roc, auc, precision_recall_curve
-from __future__ import print_function
 
 from math import exp, sin, cos, sqrt, pi
 
@@ -473,7 +472,7 @@ def scatter2D_plot(x,y,flag,file=None,show=None,outliers=False):
     #>>>>>>> other
 
     from matplotlib.pyplot import scatter,legend,plot,xlim,ylim, xlabel,ylabel,title, savefig, figure
-from matplotlib import rc
+    from matplotlib import rc
     rc('xtick', labelsize=18)
     rc('ytick', labelsize=18)
     figure()

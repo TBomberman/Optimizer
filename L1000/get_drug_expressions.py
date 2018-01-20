@@ -31,8 +31,8 @@ for lm_gene in lm_genes:
 
 level_5_gctoo = parse(
     "/home/gwoo/Data/L1000/LDS-1191/Data/GSE92742_Broad_LINCS_Level5_COMPZ.MODZ_n473647x12328.gctx",
-    # col_meta_only=False, row_meta_only=False, rid=['3638'])
     col_meta_only=False, row_meta_only=False, rid=lm_gene_entrez_ids)
+
 # print(level_5_gctoo.col_metadata_df.index)
 # print(level_5_gctoo.row_metadata_df.index)
 
