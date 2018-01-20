@@ -44,6 +44,9 @@ for i in range(length):
     if batch_id not in batch_to_drug_id_dict:
         continue
     drug_id = batch_to_drug_id_dict[batch_id][7]
+    if drug_id not in drug_features_dict:
+        continue
+    drug_features = drug_features_dict[drug_id]
 
     start = find_nth(col_name, "_", 1)
     end = find_nth(col_name, "_", 2)
@@ -51,17 +54,16 @@ for i in range(length):
     if cell_name not in cell_name_to_id_dict:
         continue
     cell_id = cell_name_to_id_dict[cell_name][0]
+    if cell_id not in cell_features_dict:
+        continue
+    cell_features = cell_features_dict[cell_id]
 
     for gene_id in lm_gene_entrez_ids:
         gene_symbol = gene_id_dict[gene_id]
 
-        if drug_id not in drug_features_dict:
-            continue
-        if cell_id not in cell_features_dict:
-            continue
         if gene_symbol not in gene_features_dict:
             continue
-        X.append(drug_features_dict[drug_id] + cell_features_dict[cell_id] + gene_features_dict[gene_symbol])
+        X.append(drug_features + cell_features + gene_features_dict[gene_symbol])
         Y.append(column[gene_id])
 
 npX = np.asarray(X)
