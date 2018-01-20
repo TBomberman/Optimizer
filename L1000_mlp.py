@@ -1,14 +1,12 @@
-
 import numpy as np
-from mlp_optimizer import do_optimize
-import csv
-from data_loader import ensure_number, load_drug_single_gene_csv, load_descriptors, join_descriptors_label
 
+from L1000.data_loader import ensure_number, load_features_csv, load_descriptors, join_descriptors_label
+from mlp_optimizer import do_optimize
 
 # local vars
 cutoff = 0.5
 
-expression = load_drug_single_gene_csv('/data/datasets/gwoo/L1000/LDS-1191/WorkingData/Y_drug_id_one_expression.csv')
+expression = load_features_csv('/data/datasets/gwoo/L1000/LDS-1191/WorkingData/Y_drug_id_one_expression.csv')
 descriptors = load_descriptors('/data/datasets/gwoo/L1000/LDS-1191/WorkingData/X_all_descriptors.tab')
 [data,labels] = join_descriptors_label(expression,descriptors)
 

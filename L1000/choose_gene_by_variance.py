@@ -1,4 +1,4 @@
-from cmapPy.pandasGEXpress import parse
+from L1000.data_loader import load_gene_expression_data
 import json
 import numpy as np
 
@@ -14,14 +14,8 @@ def load_landmark_genes():
         ids.append(lm_gene['entrez_id'])
     return ids
 
-def load_gene_expression_data():
-    return parse(
-        "/home/gwoo/Data/L1000/LDS-1191/Data/GSE92742_Broad_LINCS_Level5_COMPZ.MODZ_n473647x12328.gctx",
-        # col_meta_only=False, row_meta_only=False, rid=['3638'])
-        col_meta_only=False, row_meta_only=False, rid=lm_gene_entrez_ids)
-
 lm_gene_entrez_ids = load_landmark_genes()
-level_5_gctoo = load_gene_expression_data()
+level_5_gctoo = load_gene_expression_data(lm_gene_entrez_ids)
 
 length = len(level_5_gctoo.col_metadata_df.index)
 

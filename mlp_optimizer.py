@@ -1,19 +1,20 @@
-import numpy as np
-from keras.models import Sequential
-from keras.layers import Dense, Dropout, Activation, Flatten
-from keras.utils import np_utils
-from keras.callbacks import History
 from random import sample
-from utilities import minmax, remove_constant_values, all_stats
+
 import matplotlib.pyplot as plt
+import numpy as np
+from keras.callbacks import History
+from keras.layers import Dense, Dropout, Activation
+from keras.models import Sequential
+from keras.utils import np_utils
+
 import keras_enums as enums
-import random
+from helpers.utilities import all_stats
 
 # local variables
 dropout = 0.2
-dense = 100
+dense = 10
 batch_size = 10000
-nb_epoch =20000 #1000 cutoff 1 #3000 cutoff  2 and
+nb_epoch =20 #1000 cutoff 1 #3000 cutoff  2 and
 
 # for reproducibility
 # np.random.seed(1337)
@@ -56,14 +57,17 @@ def do_optimize(nb_classes, data, labels, data_test=None, labels_test=None):
     X_train = X_train.astype('float32')
     X_test = X_test.astype('float32')
     X_val = X_val.astype('float32')
-    Y_train = np_utils.to_categorical(y_train, nb_classes)
-    Y_test = np_utils.to_categorical(y_test, nb_classes)
-    Y_val = np_utils.to_categorical(y_val, nb_classes)
+    Y_train = y_train
+    Y_test = y_test
+    Y_val = y_val
+    # Y_train = np_utils.to_categorical(y_train, nb_classes)
+    # Y_test = np_utils.to_categorical(y_test, nb_classes)
+    # Y_val = np_utils.to_categorical(y_val, nb_classes)
 
     for hyperparam in range(1, 2):
         # neuron_count = dense * hyperparam
         neuron_count = dense
-        layer_count = 5
+        layer_count = 2
         optimizer = enums.optimizers[1] #rmsprop
         activation = enums.activation_functions[0] #elu
         activation_input = enums.activation_functions[7] # hard signmoid
@@ -78,12 +82,12 @@ def do_optimize(nb_classes, data, labels, data_test=None, labels_test=None):
 
         add_dense_dropout(layer_count, neuron_count, model, activation)
 
-        model.add(Dense(nb_classes))
+        model.add(Dense(labels.shape[1]))
         # model.add(Activation('softmax'))
         model.add(Activation(activation_output))
         model.summary()
 
-        model.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['binary_accuracy'])
+        model.compile(loss='mse', optimizer=optimizer, metrics=['accuracy'])
 
         model.fit(X_train, Y_train, batch_size=batch_size, nb_epoch=nb_epoch,
                   verbose=0, validation_data=(X_test, Y_test), callbacks=[history])
@@ -97,9 +101,12 @@ def do_optimize(nb_classes, data, labels, data_test=None, labels_test=None):
         print('Test score:', score[0])
         print('Test accuracy:', score[1])
 
-        train_stats = all_stats(Y_train[:, 1], y_score_train[:, 1])
-        test_stats = all_stats(Y_test[:, 1], y_score_test[:, 1], train_stats[-1])
-        val_stats = all_stats(Y_val[:, 1], y_score_val[:, 1], train_stats[-1])
+        train_stats = all_stats(Y_train[:, 0], y_score_train[:, 0])
+        test_stats = all_stats(Y_test[:, 0], y_score_test[:, 0], train_stats[-1])
+        val_stats = all_stats(Y_val[:, 0], y_score_val[:, 0], train_stats[-1])
+
+        plt.scatter(Y_train[:, 0], y_score_train[:, 0])
+        plt.draw()
 
         print('Hidden layers and dropouts: %s, Neurons per layer: %s' % (layer_count, neuron_count))
         print('All stats train:', ['{:6.2f}'.format(val) for val in train_stats])
