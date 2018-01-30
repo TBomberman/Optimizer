@@ -466,7 +466,7 @@ def heatmap(data,labels=None,file=None):
 
 #local
 
-def scatter2D_plot(x,y,flag,file=None,show=None,outliers=False):
+def scatter2D_plot(x,y,flag="",file=None,show=None,outliers=False):
 #=======
 #def scatter2D_plot(x,y,flag,file=None,show=None):
     #>>>>>>> other
@@ -481,8 +481,8 @@ def scatter2D_plot(x,y,flag,file=None,show=None,outliers=False):
     if outliers:
         ids = np.where(abs(x-y)<10*np.sqrt(np.mean((x-y)**2)))
         print ("Removing",len(x)-len(x[ids]),"outliers")
-    x=x[ids]
-    y=y[ids]
+    # x=x[ids]
+    # y=y[ids]
     min=np.min(np.hstack((x,y)))
     max=np.max(np.hstack((x,y)))
     #print x.min(),y.min()

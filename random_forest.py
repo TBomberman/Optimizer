@@ -1,11 +1,7 @@
-from helpers import data_driven as dd, mach_learn as ml
 import numpy as np
-from sklearn.ensemble import RandomForestRegressor
-from keras.callbacks import History
+from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from random import sample
-from helpers.utilities import all_stats
-import matplotlib.pyplot as plt
-from sklearn.datasets import make_regression
+from helpers.utilities import scatter2D_plot
 
 def do_optimize(nb_classes, data, labels, data_test=None, labels_test=None):
     if data_test is None:
@@ -48,19 +44,26 @@ def do_optimize(nb_classes, data, labels, data_test=None, labels_test=None):
     Y_test = y_test
     Y_val = y_val
 
-    model = RandomForestRegressor(verbose=1)
+    # model = RandomForestRegressor()
+    model = RandomForestClassifier()
 
     model.fit(X_train, Y_train)
     y_pred = model.predict(X_train)
+    # tr_error = np.mean((Y_train - y_pred)**2)
     tr_error = np.mean(y_pred != Y_train)
     print("Random Forest (sklearn) train error: %.3f" % tr_error)
+    # scatter2D_plot(y_train, y_pred, "train", "rf")
 
     y_pred = model.predict(X_test)
+    # te_error = np.mean((Y_test - y_pred) ** 2)
     te_error = np.mean(y_pred != Y_test)
     print("Random Forest (sklearn) test error: %.3f" % te_error)
+    # scatter2D_plot(Y_test, y_pred, "test", "rf")
 
     y_pred = model.predict(X_val)
+    # v_error = np.mean((Y_val - y_pred) ** 2)
     v_error = np.mean(y_pred != Y_val)
     print("Random Forest (sklearn) validation error: %.3f" % v_error)
+    # scatter2D_plot(Y_val, y_pred, "val", "rf")
 
 

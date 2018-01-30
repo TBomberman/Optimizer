@@ -8,5 +8,15 @@
 ],
 "l1000_type": "landmark",
 "id": "58e2bfc2bd21ee32a4280f62"
+},
+{
+"entrez_id": "2309",
+"gene_symbol": "FOXO3",
+"gene_name": "forkhead box O3",
+"gene_family": [
+"Forkhead boxes"
+],
+"l1000_type": "landmark",
+"id": "58e2bfc2bd21ee32a42854a9"
 }
 ]

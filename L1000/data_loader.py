@@ -46,10 +46,18 @@ def join_descriptors_label(expression,descriptors):
         print('data size ' + str(len(data)) + ' labels size ' + str(len(labels)))
         return data,labels
 
-def get_feature_dict(file, delimiter=',', key_index=0):
+def get_feature_dict(file, delimiter=',', key_index=0, use_int=False):
     with open(file, "r") as csv_file:
         reader = csv.reader(csv_file, dialect='excel', delimiter=delimiter)
         next(reader)
+        if use_int:
+            my_dict = {}
+            for row in reader:
+                list = []
+                for value in row[1:]:
+                    list.append(int(value))
+                my_dict[row[key_index]] = list
+            return my_dict
         return dict((row[key_index], row[1:]) for row in reader)
 
 def load_gene_expression_data(lm_gene_entrez_ids):

@@ -11,7 +11,7 @@ def find_nth(haystack, needle, n):
     return start
 
 def get_gene_id_dict():
-    lm_genes = json.load(open('landmark_genes.json'))
+    lm_genes = json.load(open('one_landmark_gene.json'))
     dict = {}
     for lm_gene in lm_genes:
         dict[lm_gene['entrez_id']] = lm_gene['gene_symbol']
@@ -19,9 +19,9 @@ def get_gene_id_dict():
 
 # get the dictionaries
 # get the expressions
-drug_features_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/WorkingData/smiles_rdkit_maccs.csv')
-cell_features_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/WorkingData/cell_line_fingerprint.csv')
-gene_features_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/WorkingData/gene_go_fingerprint.csv')
+drug_features_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/WorkingData/smiles_rdkit_maccs.csv', use_int=True)
+cell_features_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/WorkingData/cell_line_fingerprint.csv', use_int=True)
+gene_features_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/WorkingData/gene_go_fingerprint.csv', use_int=True)
 batch_to_drug_id_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/Metadata/Small_Molecule_Metadata.txt', '\t', 9)
 cell_name_to_id_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/Metadata/Cell_Line_Metadata.txt', '\t', 0)
 gene_id_dict = get_gene_id_dict()
@@ -68,6 +68,8 @@ for i in range(length):
 
 npX = np.asarray(X)
 npY = np.asarray(Y)
-# np.savetxt("x.csv", X)
-# np.savetxt("y.csv", Y)
-do_optimize(0, npX, npY)
+npY_class = np.zeros(len(npY), dtype=int)
+npY_class[np.where(npY>0)] = 1
+# np.savetxt("x.csv", npX, fmt='%i')
+# np.savetxt("y.csv", npY_class, fmt='%i')
+do_optimize(0, npX, npY_class)
