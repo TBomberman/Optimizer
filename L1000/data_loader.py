@@ -60,7 +60,7 @@ def get_feature_dict(file, delimiter=',', key_index=0, use_int=False):
             return my_dict
         return dict((row[key_index], row[1:]) for row in reader)
 
-def load_gene_expression_data(lm_gene_entrez_ids):
+def load_gene_expression_data(file,lm_gene_entrez_ids):
     return parse(
-        "/home/gwoo/Data/L1000/LDS-1191/Data/GSE92742_Broad_LINCS_Level5_COMPZ.MODZ_n473647x12328.gctx",
+        file,
         col_meta_only=False, row_meta_only=False, rid=lm_gene_entrez_ids)

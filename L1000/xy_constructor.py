@@ -26,7 +26,7 @@ batch_to_drug_id_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/Met
 cell_name_to_id_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/Metadata/Cell_Line_Metadata.txt', '\t', 0)
 gene_id_dict = get_gene_id_dict()
 lm_gene_entrez_ids = list(gene_id_dict.keys())
-level_5_gctoo = load_gene_expression_data(lm_gene_entrez_ids)
+level_5_gctoo = load_gene_expression_data("/home/gwoo/Data/L1000/LDS-1191/Data/GSE92742_Broad_LINCS_Level5_COMPZ.MODZ_n473647x12328.gctx", lm_gene_entrez_ids)
 
 length = len(level_5_gctoo.col_metadata_df.index)
 X = []
