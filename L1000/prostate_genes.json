@@ -1,0 +1,166 @@
+[
+{
+"entrez_id": "367",
+"gene_symbol": "AR",
+"gene_name": "androgen receptor",
+"gene_family": [
+"Nuclear hormone receptors"
+],
+"l1000_type": "best inferred",
+"rna_seq_corr_fraction_self_rank": 0,
+"rna_seq_corr": 0.62,
+"rna_seq_corr_p_value": 0,
+"id": "58e2bfc2bd21ee32a42831ae"
+},
+{
+"entrez_id": "10257",
+"gene_symbol": "ABCC4",
+"gene_name": "ATP binding cassette subfamily C member 4",
+"gene_family": [
+"ATP binding cassette subfamily C"
+],
+"l1000_type": "best inferred",
+"rna_seq_corr_fraction_self_rank": 0,
+"rna_seq_corr": 0.59,
+"rna_seq_corr_p_value": 0,
+"id": "58e2bfc2bd21ee32a4280fd5"
+},
+{
+"entrez_id": "116285",
+"gene_symbol": "ACSM1",
+"gene_name": "acyl-CoA synthetase medium-chain family member 1",
+"gene_family": [
+"Acyl-CoA synthetase family"
+],
+"l1000_type": "inferred",
+"rna_seq_corr_fraction_self_rank": 0.17,
+"rna_seq_corr": 0.17,
+"rna_seq_corr_p_value": 0.24,
+"id": "58e2bfc2bd21ee32a4281100"
+},
+{
+"entrez_id": "23600",
+"gene_symbol": "AMACR",
+"gene_name": "alpha-methylacyl-CoA racemase",
+"gene_family": [
+""
+],
+"l1000_type": "inferred",
+"rna_seq_corr_fraction_self_rank": 0.04,
+"rna_seq_corr": 0.31,
+"rna_seq_corr_p_value": 0.09,
+"id": "58e2bfc2bd21ee32a42811f2"
+},
+{
+"entrez_id": "54848",
+"gene_symbol": "ARHGEF38",
+"gene_name": "Rho guanine nucleotide exchange factor 38",
+"gene_family": [
+"Rho guanine nucleotide exchange factors",
+"Classical BAR domain containing"
+],
+"l1000_type": "inferred",
+"rna_seq_corr_fraction_self_rank": 0.6,
+"rna_seq_corr": -0.02,
+"rna_seq_corr_p_value": 0.56,
+"id": "58e2bfc2bd21ee32a4284094"
+},
+{
+"entrez_id": "10321",
+"gene_symbol": "CRISP3",
+"gene_name": "cysteine rich secretory protein 3",
+"gene_family": [
+""
+],
+"l1000_type": "best inferred",
+"rna_seq_corr_fraction_self_rank": 0.02,
+"rna_seq_corr": 0.46,
+"rna_seq_corr_p_value": 0.02,
+"id": "58e2bfc2bd21ee32a42812af"
+},
+{
+"entrez_id": "4072",
+"gene_symbol": "EPCAM",
+"gene_name": "epithelial cell adhesion molecule",
+"gene_family": [
+"CD molecules"
+],
+"l1000_type": "best inferred",
+"rna_seq_corr_fraction_self_rank": 0,
+"rna_seq_corr": 0.7,
+"rna_seq_corr_p_value": 0,
+"id": "58e2bfc2bd21ee32a42843dc"
+},
+{
+"entrez_id": "2078",
+"gene_symbol": "ERG",
+"gene_name": "ERG, ETS transcription factor",
+"gene_family": [
+"ETS transcription factor family"
+],
+"l1000_type": "best inferred",
+"rna_seq_corr_fraction_self_rank": 0,
+"rna_seq_corr": 0.85,
+"rna_seq_corr_p_value": 0,
+"id": "58e2bfc2bd21ee32a428507f"
+},
+{
+"entrez_id": "2650",
+"gene_symbol": "GCNT1",
+"gene_name": "glucosaminyl (N-acetyl) transferase 1, core 2",
+"gene_family": [
+"Glucosaminyl (N-acetyl) transferases/xylosyltransferases"
+],
+"l1000_type": "best inferred",
+"rna_seq_corr_fraction_self_rank": 0,
+"rna_seq_corr": 0.48,
+"rna_seq_corr_p_value": 0.02,
+"id": "58e2bfc2bd21ee32a4280cb6"
+},
+{
+"entrez_id": "6493",
+"gene_symbol": "SIM2",
+"gene_name": "single-minded family bHLH transcription factor 2",
+"gene_family": [
+"Basic helix-loop-helix proteins"
+],
+"l1000_type": "inferred",
+"rna_seq_corr_fraction_self_rank": 0.05,
+"rna_seq_corr": 0.32,
+"rna_seq_corr_p_value": 0.09,
+"id": "58e2bfc2bd21ee32a4283dcd"
+},
+{
+"entrez_id": "445347",
+"gene_symbol": "TARP",
+"gene_name": "TCR gamma alternate reading frame protein",
+"l1000_type": "inferred",
+"rna_seq_corr_fraction_self_rank": 0.04,
+"rna_seq_corr": 0.34,
+"rna_seq_corr_p_value": 0.07,
+"id": "58e2bfc2bd21ee32a428545d"
+},
+{
+"entrez_id": "56165",
+"gene_symbol": "TDRD1",
+"gene_name": "tudor domain containing 1",
+"gene_family": [
+"Tudor domain containing"
+],
+"l1000_type": "inferred",
+"rna_seq_corr_fraction_self_rank": 0.6,
+"rna_seq_corr": -0.05,
+"rna_seq_corr_p_value": 0.61,
+"id": "58e2bfc2bd21ee32a4281ee8"
+},
+{
+"entrez_id": "10221",
+"gene_symbol": "TRIB1",
+"gene_name": "tribbles pseudokinase 1",
+"gene_family": [
+""
+],
+"l1000_type": "landmark",
+"id": "58e2bfc2bd21ee32a4281055"
+}
+]
