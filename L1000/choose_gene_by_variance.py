@@ -8,14 +8,14 @@ import numpy as np
 
 # load expressions data
 def load_landmark_genes():
-    lm_genes = json.load(open('landmark_genes.json'))
+    lm_genes = json.load(open('prostate_genes.json'))
     ids = []
     for lm_gene in lm_genes:
         ids.append(lm_gene['entrez_id'])
     return ids
 
 lm_gene_entrez_ids = load_landmark_genes()
-level_5_gctoo = load_gene_expression_data(lm_gene_entrez_ids)
+level_5_gctoo = load_gene_expression_data("/home/gwoo/Data/L1000/LDS-1191/Data/GSE92742_Broad_LINCS_Level5_COMPZ.MODZ_n473647x12328.gctx", lm_gene_entrez_ids)
 
 length = len(level_5_gctoo.col_metadata_df.index)
 
