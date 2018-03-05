@@ -3,6 +3,7 @@ import json
 from random_forest import do_optimize
 import numpy as np
 import gc
+import sys
 
 def find_nth(haystack, needle, n):
     start = haystack.find(needle)
@@ -36,8 +37,15 @@ length = len(level_5_gctoo.col_metadata_df.index)
 
 cell_X = {}
 cell_Y = {}
+cell_Y_gene_ids = {}
 cell_drugs = {}
 repeat_X = {}
+gene_perts = {}
+
+use_gene_specific_cutoffs = True
+
+for gene_id in lm_gene_entrez_ids:
+    gene_perts[gene_id] = []
 
 # For every experiment
 print("Loading experiments")
@@ -94,6 +102,7 @@ for i in range(length-1, -1, -1): # go backwards, assuming later experiments hav
             cell_X[cell_id] = []
             cell_Y[cell_id] = []
             cell_drugs[cell_id] = []
+            cell_Y_gene_ids[cell_id] = []
 
         # repeat_key = drug_id + cell_id + gene_id + dose_amt
         repeat_key = drug_id + cell_id + gene_id
@@ -104,7 +113,21 @@ for i in range(length-1, -1, -1): # go backwards, assuming later experiments hav
         cell_X[cell_id].append([dose_amt] + drug_features + gene_features_dict[gene_symbol])
         # cell_X[cell_id].append([dose_amt] + drug_features)
         cell_Y[cell_id].append(column[gene_id])
+        cell_Y_gene_ids[cell_id].append(gene_id)
+        gene_perts[gene_id].append(column[gene_id])
         cell_drugs[cell_id].append(drug_id)
+
+# below 3 lines is an attempt to save the data as an svm light file
+# for cell_name in cell_name_to_id_dict:
+#     cell_id = cell_name_to_id_dict[cell_name][0]
+#     sd.dump_svmlight_file(cell_X[cell_id], cell_Y[cell_id], cell_id + 'Data.txt')
+#
+# sys.exit("All data loaded into memory")
+
+gene_cutoffs = {}
+percentile = 95
+for gene_id in lm_gene_entrez_ids:
+    gene_cutoffs[gene_id] = np.percentile(gene_perts[gene_id], percentile)
 
 gc.collect()
 cell_line_counter = 1
@@ -118,6 +141,7 @@ for cell_name in cell_name_to_id_dict:
 
     npX = np.asarray(cell_X[cell_id])
     npY = np.asarray(cell_Y[cell_id])
+    npY_gene_ids = np.asarray(cell_Y_gene_ids[cell_id])
 
     sample_size = len(npX)
 
@@ -130,11 +154,21 @@ for cell_name in cell_name_to_id_dict:
         class_cut_off = np.percentile(npY, percentile)
 
         npY_class = np.zeros(len(npY), dtype=int)
-        npY_class[np.where(npY > class_cut_off)] = 1
+        if use_gene_specific_cutoffs:
+            for gene_id in lm_gene_entrez_ids: # this section is for gene specific class cutoffs
+                class_cut_off = gene_cutoffs[gene_id]
+                gene_locations = np.where(npY_gene_ids == gene_id)
+                cutoff_locations = np.where(npY > class_cut_off)
+                intersect = np.intersect1d(gene_locations, cutoff_locations)
+                npY_class[intersect] = 1
+            print("Evaluating cell line", cell_line_counter, cell_name, "(Percentile:", percentile, ")")
+        else:
+            npY_class[np.where(npY > class_cut_off)] = 1 # generic class cutoff
+            print("Evaluating cell line", cell_line_counter, cell_name, "class cutoff", class_cut_off, "(Percentile:", percentile, ")")
 
-        print("Evaluating cell line", cell_line_counter, cell_name, "class cutoff", class_cut_off, "(Percentile:", percentile, ")")
         num_drugs = len(set(cell_drugs[cell_id]))
         print("Sample Size:", sample_size, "Drugs tested:", num_drugs)
-        do_optimize(0, npX, npY_class)
+
+        do_optimize(2, npX, npY_class)
         cell_line_counter += 1
         print()
