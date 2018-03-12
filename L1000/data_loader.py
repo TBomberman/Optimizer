@@ -8,7 +8,7 @@ cutoff = 0.5
 def ensure_number(data):
     return np.nan_to_num(data)
 
-def load_features_csv(file):
+def load_csv(file):
         #load data
         expression = []
         with open(file, "r") as csv_file:
