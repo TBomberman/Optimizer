@@ -1,9 +1,14 @@
 from L1000.data_loader import get_feature_dict, load_gene_expression_data, printProgressBar
 import json
-from random_forest import do_optimize
+from mlp_optimizer import do_optimize
+# from random_forest import do_optimize
 import numpy as np
 import gc
 import sys
+from sklearn.utils import shuffle
+import time
+
+start_time = time.time()
 
 def find_nth(haystack, needle, n):
     start = haystack.find(needle)
@@ -13,7 +18,7 @@ def find_nth(haystack, needle, n):
     return start
 
 def get_gene_id_dict():
-    lm_genes = json.load(open('landmark_genes.json'))
+    lm_genes = json.load(open('prostate_genes.json'))
     dict = {}
     for lm_gene in lm_genes:
         dict[lm_gene['entrez_id']] = lm_gene['gene_symbol']
@@ -62,8 +67,8 @@ for i in range(length-1, -1, -1): # go backwards, assuming later experiments hav
     # parse the time
     start = col_name.rfind("_")
     end = find_nth(col_name, ":", 1)
-    time = col_name[start + 1:end]
-    if time != "24H": # column counts: 6h 95219, 24h 109287, 48h 58, 144h 1
+    exposure_time = col_name[start + 1:end]
+    if exposure_time != "24H": # column counts: 6h 95219, 24h 109287, 48h 58, 144h 1
         continue
 
     # get drug features
@@ -82,12 +87,20 @@ for i in range(length-1, -1, -1): # go backwards, assuming later experiments hav
         # column counts: -666 17071, % 2833, uL 238987, uM 205066, ng 1439, ng / uL 2633, ng / mL 5625
         continue
     dose_amt = float(experiment_data[4])
+    if dose_amt == 0:
+        if experiment_data[6] == '1 nM':
+            dose_amt = 0.001
+        else:
+            print("Omitting 0 dose.\n")
+            continue
 
     # parse the cell name
     start = find_nth(col_name, "_", 1)
     end = find_nth(col_name, "_", 2)
     cell_name = col_name[start + 1:end]
     # cell_name = "A375"  # this line will combine all cell lines into one
+    if cell_name != "PC3": # this is for mpl optimization
+        continue
     if cell_name not in cell_name_to_id_dict:
         continue
     cell_id = cell_name_to_id_dict[cell_name][0]
@@ -141,6 +154,8 @@ for cell_name in cell_name_to_id_dict:
 
     npX = np.asarray(cell_X[cell_id])
     npY = np.asarray(cell_Y[cell_id])
+    npX, npY = shuffle(npX, npY, n_samples=int(len(npX)/10))
+
     npY_gene_ids = np.asarray(cell_Y_gene_ids[cell_id])
 
     sample_size = len(npX)
@@ -169,6 +184,11 @@ for cell_name in cell_name_to_id_dict:
         num_drugs = len(set(cell_drugs[cell_id]))
         print("Sample Size:", sample_size, "Drugs tested:", num_drugs)
 
+        # np.savetxt("x.csv", npX, fmt='%i')
+        # np.savetxt("y.csv", npY_class, fmt='%i')
+
+        elapsed_time = time.time() - start_time
+        print("elapsed time:", elapsed_time)
         do_optimize(2, npX, npY_class)
         cell_line_counter += 1
         print()
