@@ -1,9 +1,14 @@
-from L1000.data_loader import get_feature_dict, load_gene_expression_data, printProgressBar
+from L1000.data_loader import get_feature_dict, load_gene_expression_data, printProgressBar, load_csv
 import json
-from random_forest import do_optimize
+from mlp_optimizer import do_optimize
+# from random_forest import do_optimize
 import numpy as np
 import gc
 import sys
+from sklearn.utils import shuffle
+import time
+
+start_time = time.time()
 
 def find_nth(haystack, needle, n):
     start = haystack.find(needle)
@@ -28,8 +33,18 @@ gene_features_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/Workin
 cell_name_to_id_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/Metadata/Cell_Line_Metadata.txt', '\t', 2)
 # info to remove any dosages that are not 'µM'. Want to standardize the dosages.
 experiments_dose_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/Metadata/GSE92742_Broad_LINCS_sig_info.txt', '\t', 0)
+cell_features_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/WorkingData/cell_line_fingerprint.csv')
+
+# getting the gene ids
 gene_id_dict = get_gene_id_dict()
-lm_gene_entrez_ids = list(gene_id_dict.keys())[:50]
+# lm_gene_entrez_ids = list(gene_id_dict.keys())[:200]
+lm_gene_entrez_ids_list = load_csv('genes_by_var.csv')[:200]
+lm_gene_entrez_ids = []
+for sublist in lm_gene_entrez_ids_list :
+    for item in sublist:
+        lm_gene_entrez_ids.append(item)
+
+
 print("Loading gene expressions from gctx")
 level_5_gctoo = load_gene_expression_data("/home/gwoo/Data/L1000/LDS-1191/Data/GSE92742_Broad_LINCS_Level5_COMPZ.MODZ_n473647x12328.gctx", lm_gene_entrez_ids)
 
@@ -62,8 +77,8 @@ for i in range(length-1, -1, -1): # go backwards, assuming later experiments hav
     # parse the time
     start = col_name.rfind("_")
     end = find_nth(col_name, ":", 1)
-    time = col_name[start + 1:end]
-    if time != "24H": # column counts: 6h 95219, 24h 109287, 48h 58, 144h 1
+    exposure_time = col_name[start + 1:end]
+    if exposure_time != "24H": # column counts: 6h 95219, 24h 109287, 48h 58, 144h 1
         continue
 
     # get drug features
@@ -82,6 +97,12 @@ for i in range(length-1, -1, -1): # go backwards, assuming later experiments hav
         # column counts: -666 17071, % 2833, uL 238987, uM 205066, ng 1439, ng / uL 2633, ng / mL 5625
         continue
     dose_amt = float(experiment_data[4])
+    if dose_amt == 0:
+        if experiment_data[6] == '1 nM':
+            dose_amt = 0.001
+        else:
+            print("Omitting 0 dose.\n")
+            continue
 
     # parse the cell name
     start = find_nth(col_name, "_", 1)
@@ -98,6 +119,9 @@ for i in range(length-1, -1, -1): # go backwards, assuming later experiments hav
         if gene_symbol not in gene_features_dict:
             continue
 
+        if cell_id not in cell_features_dict:
+            continue
+
         if cell_id not in cell_X:
             cell_X[cell_id] = []
             cell_Y[cell_id] = []
@@ -110,8 +134,7 @@ for i in range(length-1, -1, -1): # go backwards, assuming later experiments hav
             continue
         repeat_X[repeat_key] = None
 
-        cell_X[cell_id].append([dose_amt] + drug_features + gene_features_dict[gene_symbol])
-        # cell_X[cell_id].append([dose_amt] + drug_features)
+        cell_X[cell_id].append([dose_amt] + drug_features + cell_features_dict[cell_id] + gene_features_dict[gene_symbol])
         cell_Y[cell_id].append(column[gene_id])
         cell_Y_gene_ids[cell_id].append(gene_id)
         gene_perts[gene_id].append(column[gene_id])
@@ -123,6 +146,8 @@ for i in range(length-1, -1, -1): # go backwards, assuming later experiments hav
 #     sd.dump_svmlight_file(cell_X[cell_id], cell_Y[cell_id], cell_id + 'Data.txt')
 #
 # sys.exit("All data loaded into memory")
+elapsed_time = time.time() - start_time
+print("Time to load data:", elapsed_time)
 
 gene_cutoffs = {}
 percentile = 95
