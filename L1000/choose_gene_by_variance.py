@@ -1,6 +1,8 @@
 from L1000.data_loader import load_gene_expression_data
 import json
 import numpy as np
+from operator import itemgetter
+import csv
 
 # go through the data set
 # for each gene, calculate the variance
@@ -8,7 +10,7 @@ import numpy as np
 
 # load expressions data
 def load_landmark_genes():
-    lm_genes = json.load(open('prostate_genes.json'))
+    lm_genes = json.load(open('landmark_genes.json'))
     ids = []
     for lm_gene in lm_genes:
         ids.append(lm_gene['entrez_id'])
@@ -21,6 +23,7 @@ length = len(level_5_gctoo.col_metadata_df.index)
 
 highest_var = 0
 highest_gene_id = ""
+gene_var = []
 
 # For every gene
 for gene_id in lm_gene_entrez_ids:
@@ -32,6 +35,7 @@ for gene_id in lm_gene_entrez_ids:
 
     # compute the var
     variance = np.var(one_gene_expression_values)
+    gene_var.append([gene_id, variance])
     print(gene_id)
     print(variance)
     if variance > highest_var:
@@ -41,3 +45,11 @@ for gene_id in lm_gene_entrez_ids:
 print("Highest:")
 print(highest_gene_id)
 print(highest_var)
+
+gene_var.sort(key=itemgetter(1), reverse=True)
+gene_ids = [tup[0] for tup in gene_var]
+
+with open("genes_by_var.csv", "w") as output:
+    writer = csv.writer(output, lineterminator='\n')
+    for val in gene_ids:
+        writer.writerow([val])
