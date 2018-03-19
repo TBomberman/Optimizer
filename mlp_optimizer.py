@@ -6,15 +6,21 @@ from keras.callbacks import History
 from keras.layers import Dense, Dropout, Activation
 from keras.models import Sequential
 from keras.utils import np_utils
+from keras.regularizers import l1, l1_l2, l2
 
 import keras_enums as enums
 from helpers.utilities import all_stats
 
 # local variables
 dropout = 0.2
-dense = 10
-batch_size = 10000
-nb_epoch =20 #1000 cutoff 1 #3000 cutoff  2 and
+dense = 500
+batch_size = 2048
+nb_epoch =1000 #1000 cutoff 1 #3000 cutoff  2 and
+# regularizer = l1 # l1 beats the other 2
+lammy = 0
+
+def regularizer(lammy):
+    return None
 
 # for reproducibility
 # np.random.seed(1337)
@@ -64,25 +70,30 @@ def do_optimize(nb_classes, data, labels, data_test=None, labels_test=None):
     # Y_test = np_utils.to_categorical(y_test, nb_classes)
     # Y_val = np_utils.to_categorical(y_val, nb_classes)
 
-    for hyperparam in range(1, 2):
+    for hyperparam in range(1, 10):
+        # lammy = hyperparam * 0.00001
+        lammy = 0.00003 # l1
         # neuron_count = dense * hyperparam
         neuron_count = dense
-        layer_count = 2
-        optimizer = enums.optimizers[1] #rmsprop
-        activation = enums.activation_functions[0] #elu
-        activation_input = enums.activation_functions[7] # hard signmoid
-        activation_output = enums.activation_functions[2] # sigmoid
+        layer_count = 1
+        optimizer = enums.optimizers[6]  # rmsprop or adam
+        activation = enums.activation_functions[9]
+        activation_input = enums.activation_functions[8]
+        activation_output = enums.activation_functions[3]
 
         model = Sequential()
         history = History()
-        model.add(Dense(neuron_count, input_shape=(X_train.shape[1],)))
+        model.add(Dense(neuron_count, input_shape=(X_train.shape[1],), activity_regularizer=regularizer(lammy)))
         # model.add(Activation('tanh'))
         model.add(Activation(activation_input))
         model.add(Dropout(dropout))
 
         add_dense_dropout(layer_count, neuron_count, model, activation)
 
-        model.add(Dense(labels.shape[1]))
+        if nb_classes > 2:
+            model.add(Dense(labels.shape[1], activity_regularizer=regularizer(lammy)))
+        else:
+            model.add(Dense(1, activity_regularizer=regularizer(lammy)))
         # model.add(Activation('softmax'))
         model.add(Activation(activation_output))
         model.summary()
@@ -101,17 +112,27 @@ def do_optimize(nb_classes, data, labels, data_test=None, labels_test=None):
         print('Test score:', score[0])
         print('Test accuracy:', score[1])
 
-        train_stats = all_stats(Y_train[:, 0], y_score_train[:, 0])
-        test_stats = all_stats(Y_test[:, 0], y_score_test[:, 0], train_stats[-1])
-        val_stats = all_stats(Y_val[:, 0], y_score_val[:, 0], train_stats[-1])
+        if nb_classes > 2:
+            Y_train = Y_train[:, 0]
+            y_score_train = y_score_train[:, 0]
+            Y_test = Y_test[:, 0]
+            y_score_test = y_score_test[:, 0]
+            Y_val = Y_val[:, 0]
+            y_score_val = y_score_val[:, 0]
 
-        plt.scatter(Y_train[:, 0], y_score_train[:, 0])
+        train_stats = all_stats(Y_train, y_score_train)
+        test_stats = all_stats(Y_test, y_score_test, train_stats[-1])
+        val_stats = all_stats(Y_val, y_score_val, train_stats[-1])
+
+        plt.scatter(Y_train, y_score_train)
         plt.draw()
 
-        print('Hidden layers and dropouts: %s, Neurons per layer: %s' % (layer_count, neuron_count))
+        print_out = 'Hidden layers: %s, Neurons per layer: %s, Hyperparam: %s' % (layer_count, neuron_count, hyperparam)
+        print(print_out)
         print('All stats train:', ['{:6.2f}'.format(val) for val in train_stats])
         print('All stats test:', ['{:6.2f}'.format(val) for val in test_stats])
         print('All stats val:', ['{:6.2f}'.format(val) for val in val_stats])
+        print('Total:', ['{:6.2f}'.format(val) for val in [train_stats[0] + test_stats[0] + val_stats[0]]])
         # print(history.history.keys())
         # summarize history for loss
 
@@ -133,6 +154,6 @@ def do_optimize(nb_classes, data, labels, data_test=None, labels_test=None):
 
 def add_dense_dropout(count, neuron_count, model, activation):
     for x in range(0, count):
-        model.add(Dense(neuron_count))
+        model.add(Dense(neuron_count, activity_regularizer=regularizer(lammy)))
         model.add(Activation(activation))
         model.add(Dropout(dropout))
