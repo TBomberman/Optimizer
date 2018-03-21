@@ -9,6 +9,7 @@ from sklearn.utils import shuffle
 import time
 
 start_time = time.time()
+gene_count = 30
 
 def find_nth(haystack, needle, n):
     start = haystack.find(needle)
@@ -38,7 +39,7 @@ cell_features_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/Workin
 # getting the gene ids
 gene_id_dict = get_gene_id_dict()
 # lm_gene_entrez_ids = list(gene_id_dict.keys())[:200]
-lm_gene_entrez_ids_list = load_csv('genes_by_var.csv')[:200]
+lm_gene_entrez_ids_list = load_csv('genes_by_var.csv')[:gene_count]
 lm_gene_entrez_ids = []
 for sublist in lm_gene_entrez_ids_list :
     for item in sublist:
@@ -108,7 +109,7 @@ for i in range(length-1, -1, -1): # go backwards, assuming later experiments hav
     start = find_nth(col_name, "_", 1)
     end = find_nth(col_name, "_", 2)
     cell_name = col_name[start + 1:end]
-    # cell_name = "A375"  # this line will combine all cell lines into one
+    cell_name = "A375"  # this line will combine all cell lines into one
     if cell_name not in cell_name_to_id_dict:
         continue
     cell_id = cell_name_to_id_dict[cell_name][0]
@@ -156,7 +157,7 @@ for gene_id in lm_gene_entrez_ids:
 
 gc.collect()
 cell_line_counter = 1
-print("Printing cell data.\n")
+print("Printing cell data. Gene count:", gene_count, "\n")
 for cell_name in cell_name_to_id_dict:
     # print("Looking at", cell_name)
     cell_id = cell_name_to_id_dict[cell_name][0]
