@@ -2,7 +2,7 @@ from random import sample
 
 import matplotlib.pyplot as plt
 import numpy as np
-from keras.callbacks import History
+from keras.callbacks import History, EarlyStopping
 from keras.layers import Dense, Dropout, Activation
 from keras.models import Sequential
 from keras.utils import np_utils
@@ -13,9 +13,9 @@ from helpers.utilities import all_stats
 
 # local variables
 dropout = 0.2
-dense = 500
-batch_size = 2048
-nb_epoch =1000 #1000 cutoff 1 #3000 cutoff  2 and
+dense = 1000
+batch_size = 512
+nb_epoch =10000 #1000 cutoff 1 #3000 cutoff  2 and
 # regularizer = l1 # l1 beats the other 2
 lammy = 0
 
@@ -70,19 +70,20 @@ def do_optimize(nb_classes, data, labels, data_test=None, labels_test=None):
     # Y_test = np_utils.to_categorical(y_test, nb_classes)
     # Y_val = np_utils.to_categorical(y_val, nb_classes)
 
-    for hyperparam in range(1, 10):
+    for hyperparam in range(0, 10):
         # lammy = hyperparam * 0.00001
         lammy = 0.00003 # l1
-        # neuron_count = dense * hyperparam
+        # neuron_count = 1800 + 200 * hyperparam
         neuron_count = dense
         layer_count = 1
-        optimizer = enums.optimizers[6]  # rmsprop or adam
-        activation = enums.activation_functions[9]
+        optimizer = enums.optimizers[3]  # rmsprop or adam
+        activation = enums.activation_functions[hyperparam]
         activation_input = enums.activation_functions[8]
         activation_output = enums.activation_functions[3]
 
         model = Sequential()
         history = History()
+        early_stopping = EarlyStopping(monitor='val_loss', min_delta=0, patience=10, verbose=0, mode='auto')
         model.add(Dense(neuron_count, input_shape=(X_train.shape[1],), activity_regularizer=regularizer(lammy)))
         # model.add(Activation('tanh'))
         model.add(Activation(activation_input))
@@ -101,7 +102,7 @@ def do_optimize(nb_classes, data, labels, data_test=None, labels_test=None):
         model.compile(loss='mse', optimizer=optimizer, metrics=['accuracy'])
 
         model.fit(X_train, Y_train, batch_size=batch_size, nb_epoch=nb_epoch,
-                  verbose=0, validation_data=(X_test, Y_test), callbacks=[history])
+                  verbose=0, validation_data=(X_test, Y_test), callbacks=[history, early_stopping])
 
         score = model.evaluate(X_test, Y_test, verbose=0)
 
