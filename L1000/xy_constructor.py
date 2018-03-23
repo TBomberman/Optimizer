@@ -110,6 +110,8 @@ for i in range(length-1, -1, -1): # go backwards, assuming later experiments hav
     end = find_nth(col_name, "_", 2)
     cell_name = col_name[start + 1:end]
     cell_name = "A375"  # this line will combine all cell lines into one
+    # if cell_name != "VCAP":
+    #     continue
     if cell_name not in cell_name_to_id_dict:
         continue
     cell_id = cell_name_to_id_dict[cell_name][0]

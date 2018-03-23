@@ -16,11 +16,11 @@ dropout = 0.2
 dense = 1000
 batch_size = 512
 nb_epoch =10000 #1000 cutoff 1 #3000 cutoff  2 and
-# regularizer = l1 # l1 beats the other 2
+regularizer = l1 # l1 beats the other 2
 lammy = 0
 
-def regularizer(lammy):
-    return None
+# def regularizer(lammy):
+#     return None
 
 # for reproducibility
 # np.random.seed(1337)
@@ -70,20 +70,21 @@ def do_optimize(nb_classes, data, labels, data_test=None, labels_test=None):
     # Y_test = np_utils.to_categorical(y_test, nb_classes)
     # Y_val = np_utils.to_categorical(y_val, nb_classes)
 
-    for hyperparam in range(0, 10):
-        # lammy = hyperparam * 0.00001
-        lammy = 0.00003 # l1
+    for hyperparam in range(1, 2):
+        # lammy = hyperparam * 0.0000001
+        # lammy = 1 / (10**hyperparam)
+        lammy = 0.00000001 # l1
         # neuron_count = 1800 + 200 * hyperparam
         neuron_count = dense
         layer_count = 1
         optimizer = enums.optimizers[3]  # rmsprop or adam
-        activation = enums.activation_functions[hyperparam]
+        activation = enums.activation_functions[8]
         activation_input = enums.activation_functions[8]
-        activation_output = enums.activation_functions[3]
+        activation_output = enums.activation_functions[9]
 
         model = Sequential()
         history = History()
-        early_stopping = EarlyStopping(monitor='val_loss', min_delta=0, patience=10, verbose=0, mode='auto')
+        early_stopping = EarlyStopping(monitor='val_loss', min_delta=0, patience=20, verbose=0, mode='auto')
         model.add(Dense(neuron_count, input_shape=(X_train.shape[1],), activity_regularizer=regularizer(lammy)))
         # model.add(Activation('tanh'))
         model.add(Activation(activation_input))
