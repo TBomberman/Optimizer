@@ -7,9 +7,11 @@ import gc
 import sys
 from sklearn.utils import shuffle
 import time
+import helpers.email_notifier as en
+import matplotlib.pyplot as plt
 
 start_time = time.time()
-gene_count = 30
+gene_count = 100
 
 def find_nth(haystack, needle, n):
     start = haystack.find(needle)
@@ -109,7 +111,10 @@ for i in range(length-1, -1, -1): # go backwards, assuming later experiments hav
     start = find_nth(col_name, "_", 1)
     end = find_nth(col_name, "_", 2)
     cell_name = col_name[start + 1:end]
-    cell_name = "A375"  # this line will combine all cell lines into one
+    # cell_name = "A375"  # this line will combine all cell lines into one
+    # if cell_name != 'PC3':
+    #     continue
+
     if cell_name not in cell_name_to_id_dict:
         continue
     cell_id = cell_name_to_id_dict[cell_name][0]
@@ -135,7 +140,8 @@ for i in range(length-1, -1, -1): # go backwards, assuming later experiments hav
             continue
         repeat_X[repeat_key] = None
 
-        cell_X[cell_id].append([dose_amt] + drug_features + cell_features_dict[cell_id] + gene_features_dict[gene_symbol])
+        # cell_X[cell_id].append([dose_amt] + drug_features + cell_features_dict[cell_id] + gene_features_dict[gene_symbol])
+        cell_X[cell_id].append([dose_amt] + drug_features + gene_features_dict[gene_symbol])
         cell_Y[cell_id].append(column[gene_id])
         cell_Y_gene_ids[cell_id].append(gene_id)
         gene_perts[gene_id].append(column[gene_id])
@@ -158,43 +164,44 @@ for gene_id in lm_gene_entrez_ids:
 gc.collect()
 cell_line_counter = 1
 print("Printing cell data. Gene count:", gene_count, "\n")
-for cell_name in cell_name_to_id_dict:
-    # print("Looking at", cell_name)
-    cell_id = cell_name_to_id_dict[cell_name][0]
-    if cell_id not in cell_X:
-        # print("Skipping", cell_name, ". No cell line data.\n")
-        continue
+try:
+    for cell_name in cell_name_to_id_dict:
+        # print("Looking at", cell_name)
+        cell_id = cell_name_to_id_dict[cell_name][0]
+        if cell_id not in cell_X:
+            # print("Skipping", cell_name, ". No cell line data.\n")
+            continue
 
-    npX = np.asarray(cell_X[cell_id])
-    npY = np.asarray(cell_Y[cell_id])
-    npY_gene_ids = np.asarray(cell_Y_gene_ids[cell_id])
+        npX = np.asarray(cell_X[cell_id])
+        npY = np.asarray(cell_Y[cell_id])
+        npY_gene_ids = np.asarray(cell_Y_gene_ids[cell_id])
 
-    sample_size = len(npX)
+        sample_size = len(npX)
 
-    if sample_size < 300: # smaller sizes was giving y values of only one class
-        # print("Skipping", cell_name, ". Sample size", sample_size, "is too small.\n")
-        continue
+        if sample_size < 300: # smaller sizes was giving y values of only one class
+            # print("Skipping", cell_name, ". Sample size", sample_size, "is too small.\n")
+            continue
 
-    for i in range(0, 1): # to help iterate through classification thresholds
-        percentile = 95 + i
-        class_cut_off = np.percentile(npY, percentile)
+        for i in range(0, 1): # to help iterate through classification thresholds
+            percentile = 95 + i
+            class_cut_off = np.percentile(npY, percentile)
 
-        npY_class = np.zeros(len(npY), dtype=int)
-        if use_gene_specific_cutoffs:
-            for gene_id in lm_gene_entrez_ids: # this section is for gene specific class cutoffs
-                class_cut_off = gene_cutoffs[gene_id]
-                gene_locations = np.where(npY_gene_ids == gene_id)
-                cutoff_locations = np.where(npY > class_cut_off)
-                intersect = np.intersect1d(gene_locations, cutoff_locations)
-                npY_class[intersect] = 1
-            print("Evaluating cell line", cell_line_counter, cell_name, "(Percentile:", percentile, ")")
-        else:
-            npY_class[np.where(npY > class_cut_off)] = 1 # generic class cutoff
-            print("Evaluating cell line", cell_line_counter, cell_name, "class cutoff", class_cut_off, "(Percentile:", percentile, ")")
+            npY_class = np.zeros(len(npY), dtype=int)
+            if use_gene_specific_cutoffs:
+                for gene_id in lm_gene_entrez_ids: # this section is for gene specific class cutoffs
+                    class_cut_off = gene_cutoffs[gene_id]
+                    gene_locations = np.where(npY_gene_ids == gene_id)
+                    cutoff_locations = np.where(npY > class_cut_off)
+                    intersect = np.intersect1d(gene_locations, cutoff_locations)
+                    npY_class[intersect] = 1
+                print("Evaluating cell line", cell_line_counter, cell_name, "(Percentile:", percentile, ")")
+            else:
+                npY_class[np.where(npY > class_cut_off)] = 1 # generic class cutoff
+                print("Evaluating cell line", cell_line_counter, cell_name, "class cutoff", class_cut_off, "(Percentile:", percentile, ")")
 
-        num_drugs = len(set(cell_drugs[cell_id]))
-        print("Sample Size:", sample_size, "Drugs tested:", num_drugs)
-
-        do_optimize(2, npX, npY_class)
-        cell_line_counter += 1
-        print()
+            num_drugs = len(set(cell_drugs[cell_id]))
+            print("Sample Size:", sample_size, "Drugs tested:", num_drugs)
+            do_optimize(2, npX, npY_class)
+finally:
+    en.notify()
+    plt.show()
