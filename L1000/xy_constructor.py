@@ -129,30 +129,24 @@ for i in range(length-1, -1, -1): # go backwards, assuming later experiments hav
             continue
 
         if cell_id not in cell_X:
-            cell_X[cell_id] = []
-            cell_Y[cell_id] = []
+            cell_X[cell_id] = {}
+            cell_Y[cell_id] = {}
             cell_drugs[cell_id] = []
             cell_Y_gene_ids[cell_id] = []
 
-        # repeat_key = drug_id + cell_id + gene_id + dose_amt
         repeat_key = drug_id + cell_id + gene_id
-        if repeat_key in repeat_X: # duplicated experiments with different training perturbation will confuse the model
+        if repeat_key in repeat_X and dose_amt <= repeat_X[repeat_key]:
+            # print("repeat_key", repeat_key, "dose amount", dose_amt, "is less than", repeat_X[repeat_key])
             continue
-        repeat_X[repeat_key] = None
+        repeat_X[repeat_key] = dose_amt
 
         # cell_X[cell_id].append([dose_amt] + drug_features + cell_features_dict[cell_id] + gene_features_dict[gene_symbol])
-        cell_X[cell_id].append([dose_amt] + drug_features + gene_features_dict[gene_symbol])
-        cell_Y[cell_id].append(column[gene_id])
+        cell_X[cell_id][repeat_key] = drug_features + gene_features_dict[gene_symbol]
+        cell_Y[cell_id][repeat_key] = column[gene_id]
         cell_Y_gene_ids[cell_id].append(gene_id)
         gene_perts[gene_id].append(column[gene_id])
         cell_drugs[cell_id].append(drug_id)
 
-# below 3 lines is an attempt to save the data as an svm light file
-# for cell_name in cell_name_to_id_dict:
-#     cell_id = cell_name_to_id_dict[cell_name][0]
-#     sd.dump_svmlight_file(cell_X[cell_id], cell_Y[cell_id], cell_id + 'Data.txt')
-#
-# sys.exit("All data loaded into memory")
 elapsed_time = time.time() - start_time
 print("Time to load data:", elapsed_time)
 
@@ -171,9 +165,15 @@ try:
         if cell_id not in cell_X:
             # print("Skipping", cell_name, ". No cell line data.\n")
             continue
+        listX = []
+        listY = []
+        for key, value in cell_X[cell_id].items():
+            listX.append(value)
+        for key, value in cell_Y[cell_id].items():
+            listY.append(value)
 
-        npX = np.asarray(cell_X[cell_id])
-        npY = np.asarray(cell_Y[cell_id])
+        npX = np.asarray(listX)
+        npY = np.asarray(listY)
         npY_gene_ids = np.asarray(cell_Y_gene_ids[cell_id])
 
         sample_size = len(npX)
