@@ -20,7 +20,7 @@ batch_size = 2048
 nb_epoch =10000 #1000 cutoff 1 #3000 cutoff  2 and
 regularizer = l1 # l1 beats the other 2
 lammy = 0
-use_plot = True
+use_plot = False
 train_percentage = 0.7
 
 # uncomment this to disable regularizer
@@ -64,10 +64,10 @@ def do_optimize(nb_classes, data, labels):
 
         model = Sequential()
         history = History()
-        early_stopping = EarlyStopping(monitor='val_loss', min_delta=0, patience=100, verbose=1, mode='auto')
+        early_stopping = EarlyStopping(monitor='val_loss', min_delta=0, patience=20, verbose=1, mode='auto')
         out_epoch = NEpochLogger(display=10)
 
-        model.add(Dense(d, input_shape=(d,), activity_regularizer=regularizer(lammy)))
+        model.add(Dense(neuron_count, input_shape=(d,), activity_regularizer=regularizer(lammy)))
         # model.add(Activation('tanh'))
         model.add(Activation(activation_input))
         model.add(Dropout(dropout))
