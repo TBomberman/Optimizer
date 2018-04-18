@@ -9,6 +9,7 @@ from sklearn.utils import shuffle
 import time
 import helpers.email_notifier as en
 import matplotlib.pyplot as plt
+import datetime
 
 start_time = time.time()
 gene_count = 100
@@ -29,7 +30,7 @@ def get_gene_id_dict():
 
 # get the dictionaries
 # get the expressions
-print("Loading drug and gene features")
+print(datetime.datetime.now(), "Loading drug and gene features")
 drug_features_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/WorkingData/smiles_rdkit_maccs.csv', use_int=True)
 gene_features_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/WorkingData/gene_go_fingerprint.csv', use_int=True)
 # info to separate by data by cell lines, drug + gene tests may not be equally spread out across cell lines
