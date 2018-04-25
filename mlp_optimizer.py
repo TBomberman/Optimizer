@@ -5,7 +5,7 @@ import numpy as np
 from keras.callbacks import History, EarlyStopping
 from keras.layers import Dense, Dropout, Activation
 from keras.models import Sequential
-from keras.utils import multi_gpu_model
+from keras.utils import np_utils, multi_gpu_model
 from keras.regularizers import l1, l1_l2, l2
 from sklearn.model_selection import train_test_split
 
@@ -22,10 +22,11 @@ regularizer = l1 # l1 beats the other 2
 lammy = 0
 use_plot = False
 train_percentage = 0.7
+patience = 20
 
 # uncomment this to disable regularizer
-# def regularizer(lammy):
-#     return None
+def regularizer(lammy):
+    return None
 
 # for reproducibility
 # np.random.seed(1337)
@@ -37,6 +38,8 @@ def do_optimize(nb_classes, data, labels):
     train_size = int(train_percentage * n)
     print("Train size:", train_size)
     test_size = int((1-train_percentage) * n)
+    if nb_classes:
+        labels = np_utils.to_categorical(labels, nb_classes)
     X_train, X_test, y_train, y_test = train_test_split(data, labels, train_size=train_size, test_size=test_size)
     X_val, X_test, y_val, y_test = train_test_split(X_test, y_test, train_size=0.5, test_size=0.5)
 
@@ -46,26 +49,23 @@ def do_optimize(nb_classes, data, labels):
     Y_train = y_train
     Y_test = y_test
     Y_val = y_val
-    # Y_train = np_utils.to_categorical(y_train, nb_classes)
-    # Y_test = np_utils.to_categorical(y_test, nb_classes)
-    # Y_val = np_utils.to_categorical(y_val, nb_classes)
 
     # for hyperparam in range(0, 10):
     for hyperparam in [1]:
         lammy = 1 / (10**10)
         # lammy = 0.0000001 # l1
         # neuron_count = dense * hyperparam
-        neuron_count = int(d * 0.2)
+        neuron_count = int(d)# * 0.2 * hyperparam)
         layer_count = 1
         optimizer = enums.optimizers[4]
         activation = enums.activation_functions[8]
         activation_input = enums.activation_functions[6]
-        activation_output = enums.activation_functions[2]
+        activation_output = enums.activation_functions[5] # for 2 classification outputs
 
         model = Sequential()
         history = History()
-        early_stopping = EarlyStopping(monitor='val_loss', min_delta=0, patience=20, verbose=1, mode='auto')
-        out_epoch = NEpochLogger(display=10)
+        early_stopping = EarlyStopping(monitor='val_loss', min_delta=0, patience=patience, verbose=1, mode='auto')
+        out_epoch = NEpochLogger(display=5)
 
         model.add(Dense(neuron_count, input_shape=(d,), activity_regularizer=regularizer(lammy)))
         # model.add(Activation('tanh'))
@@ -74,7 +74,7 @@ def do_optimize(nb_classes, data, labels):
 
         add_dense_dropout(layer_count, neuron_count, model, activation)
 
-        if nb_classes > 2:
+        if nb_classes > 1:
             model.add(Dense(labels.shape[1], activity_regularizer=regularizer(lammy)))
         else:
             model.add(Dense(1, activity_regularizer=regularizer(lammy)))
@@ -83,7 +83,7 @@ def do_optimize(nb_classes, data, labels):
         # model.summary() # too much verbage
 
         # multi_model = multi_gpu_model(model, gpus=6)
-        model.compile(loss='mse', optimizer=optimizer, metrics=['accuracy'])
+        model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
 
         model.fit(X_train, Y_train, batch_size=batch_size, nb_epoch=nb_epoch,
                   verbose=0, validation_data=(X_test, Y_test), callbacks=[history, early_stopping, out_epoch])
@@ -97,19 +97,16 @@ def do_optimize(nb_classes, data, labels):
         print('Test score:', score[0])
         print('Test accuracy:', score[1])
 
-        if nb_classes > 2:
-            Y_train = Y_train[:, 0]
-            y_score_train = y_score_train[:, 0]
-            Y_test = Y_test[:, 0]
-            y_score_test = y_score_test[:, 0]
-            Y_val = Y_val[:, 0]
-            y_score_val = y_score_val[:, 0]
+        if nb_classes > 1:
+            train_stats = all_stats(Y_train[:, 0], y_score_train[:, 0])
+            test_stats = all_stats(Y_test[:, 0], y_score_test[:, 0], train_stats[-1])
+            val_stats = all_stats(Y_val[:, 0], y_score_val[:, 0], train_stats[-1])
+        else:
+            train_stats = all_stats(Y_train, y_score_train)
+            test_stats = all_stats(Y_test, y_score_test, train_stats[-1])
+            val_stats = all_stats(Y_val, y_score_val, train_stats[-1])
 
-        train_stats = all_stats(Y_train, y_score_train)
-        test_stats = all_stats(Y_test, y_score_test, train_stats[-1])
-        val_stats = all_stats(Y_val, y_score_val, train_stats[-1])
-
-        print_out = 'Hidden layers: %s, Neurons per layer: %s, Hyperparam: %s' % (layer_count, neuron_count, hyperparam)
+        print_out = 'Hidden layers: %s, Neurons per layer: %s, Hyperparam: %s' % (layer_count + 1, neuron_count, hyperparam)
         print(print_out)
         print('All stats train:', ['{:6.2f}'.format(val) for val in train_stats])
         print('All stats test:', ['{:6.2f}'.format(val) for val in test_stats])
