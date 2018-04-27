@@ -40,8 +40,9 @@ class Gene_Predictor():
         y_score_val = self.model.predict_proba(X_val)
 
         train_stats = all_stats(Y_train[:, 0], y_score_train[:, 0])
-        test_stats = all_stats(Y_test[:, 0], y_score_test[:, 0], train_stats[-1])
-        val_stats = all_stats(Y_val[:, 0], y_score_val[:, 0], train_stats[-1])
+        val_stats = all_stats(Y_val[:, 0], y_score_val[:, 0])
+        test_stats = all_stats(Y_test[:, 0], y_score_test[:, 0], val_stats[-1])
+
 
         print('Hidden layers: 2, Neurons per layer:', neuron_count)
         print('All stats train:', ['{:6.2f}'.format(val) for val in train_stats])
