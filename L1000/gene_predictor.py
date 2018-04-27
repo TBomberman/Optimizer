@@ -4,6 +4,7 @@ from keras.models import Sequential
 from sklearn.model_selection import train_test_split
 from helpers.utilities import all_stats
 from helpers.callbacks import NEpochLogger
+from keras.utils import np_utils
 
 class Gene_Predictor():
 
@@ -13,13 +14,14 @@ class Gene_Predictor():
 
     def train(self, data, labels):
         neuron_count = data.shape[1]
-        nb_classes = labels.shape[1]
+        nb_classes = len(set(labels))
         dropout = 0.2
         early_stopping = EarlyStopping(monitor='val_loss', min_delta=0, patience=20, verbose=1, mode='auto')
         out_epoch = NEpochLogger(display=5)
 
-        X_train, X_test, Y_train, Y_test = train_test_split(data, labels, train_size=0.7, test_size=0.3)
-        X_val, X_test, Y_val, y_test = train_test_split(X_test, Y_test, train_size=0.5, test_size=0.5)
+        cat_labels = np_utils.to_categorical(labels, nb_classes)
+        X_train, X_test, Y_train, Y_test = train_test_split(data, cat_labels, train_size=0.7, test_size=0.3)
+        X_val, X_test, Y_val, Y_test = train_test_split(X_test, Y_test, train_size=0.5, test_size=0.5)
 
         self.model.add(Dense(neuron_count, input_shape=(neuron_count,)))
         self.model.add(Activation('tanh'))
