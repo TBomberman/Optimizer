@@ -3,10 +3,13 @@ import json
 import numpy as np
 from operator import itemgetter
 import csv
+import matplotlib.pyplot as plt
 
 # go through the data set
 # for each gene, calculate the variance
 # store the top gene and print it out
+
+plot_historgram = False
 
 # load expressions data
 def load_landmark_genes():
@@ -32,6 +35,14 @@ for gene_id in lm_gene_entrez_ids:
         col_name = level_5_gctoo.col_metadata_df.index[i]
         column = level_5_gctoo.data_df[col_name]
         one_gene_expression_values.append(column[gene_id])
+
+    # plot a histogram for this gene
+    if plot_historgram:
+        plt.title('Histogram of geneid ' + gene_id)
+        plt.ylabel('Number of expressions')
+        plt.xlabel('Z-score')
+        plt.hist(one_gene_expression_values, bins=1000)
+        plt.show()
 
     # compute the var
     variance = np.var(one_gene_expression_values)
