@@ -5,6 +5,33 @@ from sklearn.model_selection import train_test_split
 from helpers.utilities import all_stats
 from helpers.callbacks import NEpochLogger
 from keras.utils import np_utils
+from keras.models import model_from_json
+
+def train_model(train_data, train_labels):
+    model = Gene_Predictor()
+    model.train(train_data, train_labels)
+    return model.model
+
+def load_model(file_prefix):
+    # load json and create model
+    json_file = open(file_prefix + '.json', 'r')
+    loaded_model_json = json_file.read()
+    json_file.close()
+    loaded_model = model_from_json(loaded_model_json)
+    # load weights into new model
+    loaded_model.load_weights(file_prefix + '.h5')
+    print("Loaded model from disk")
+    loaded_model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    return loaded_model
+
+def save_model(model, file_prefix):
+    # serialize model to JSON
+    model_json = model.to_json()
+    with open(file_prefix + ".json", "w") as json_file:
+        json_file.write(model_json)
+        # serialize weights to HDF5
+        model.save_weights(file_prefix + ".h5")
+    print("Saved model to disk")
 
 class Gene_Predictor():
 
