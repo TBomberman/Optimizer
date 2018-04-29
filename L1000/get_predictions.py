@@ -11,6 +11,25 @@ import json
 model_file_prefix = "100PC3"
 gene_count_data_limit = 100
 
+class Top10():
+    def __init__(self):
+        self.max_size = 10
+        self.current_size = 0
+        self.sorted_dict = SortedDict()
+
+    def add_item(self, key, value):
+        if self.current_size >= self.max_size:
+            self.sorted_dict.popitem(False)
+        else:
+            self.current_size += 1
+        self.sorted_dict[key] = value
+
+    def get_lowest_key(self):
+        return self.sorted_dict.keys()[0]
+
+    def get_dict(self):
+        return self.sorted_dict
+
 # load model
 model = object
 model_file = Path(model_file_prefix + ".json")
@@ -34,9 +53,7 @@ def get_gene_id_dict():
 gene_id_dict = get_gene_id_dict()
 
 file_name = '/data/datasets/gwoo/tox21/ZincCompounds_InStock_maccs.tab'
-top10 = SortedDict()
-top10_full = False
-top10_counter = 0
+top10s = {}
 
 try:
     with open(file_name, "r") as csv_file:
@@ -66,19 +83,14 @@ try:
                 down_probability = prediction[0][0]
                 if down_probability > 0.5:
                     message = "Found compound " + str(molecule_id) + " that downregulates " + gene_symbol + " " + str(down_probability)
-                    if top10_full:
-                        if down_probability > top10.keys()[0]:
-                            top10.popitem(False)
-                            top10[down_probability] = message
-                            print(message)
-                    else:
-                        top10[down_probability] = message
+                    if gene_symbol not in top10s:
+                        top10s[gene_symbol] = Top10()
+                        top10s[gene_symbol].add_item(down_probability, message)
                         print(message)
-                        top10_counter += 1
-                        if top10_counter >= 10:
-                            top10_full = True
-
+                    else:
+                        if down_probability > top10s[gene_symbol].get_lowest_key():
+                            top10s[gene_symbol].add_item(down_probability, message)
+                            print(message)
             drug_counter += 1
 finally:
-    print(top10)
     en.notify("Predicting Done")
