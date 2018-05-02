@@ -10,9 +10,12 @@ import time
 import helpers.email_notifier as en
 import matplotlib.pyplot as plt
 import datetime
+from L1000.gene_predictor import train_model, save_model
 
 start_time = time.time()
-gene_count = 100
+gene_count_data_limit = 100
+use_optimizer = False
+model_file_prefix = "100PC3test"
 
 def find_nth(haystack, needle, n):
     start = haystack.find(needle)
@@ -42,7 +45,7 @@ cell_features_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/Workin
 # getting the gene ids
 gene_id_dict = get_gene_id_dict()
 # lm_gene_entrez_ids = list(gene_id_dict.keys())[:200]
-lm_gene_entrez_ids_list = load_csv('genes_by_var.csv')[:gene_count]
+lm_gene_entrez_ids_list = load_csv('genes_by_var.csv')[:gene_count_data_limit]
 lm_gene_entrez_ids = []
 for sublist in lm_gene_entrez_ids_list :
     for item in sublist:
@@ -141,8 +144,11 @@ for i in range(length-1, -1, -1): # go backwards, assuming later experiments hav
             continue
         repeat_X[repeat_key] = dose_amt
 
-        # cell_X[cell_id].append([dose_amt] + drug_features + cell_features_dict[cell_id] + gene_features_dict[gene_symbol])
-        cell_X[cell_id][repeat_key] = drug_features + gene_features_dict[gene_symbol]
+        if gene_count_data_limit > 1:
+            # cell_X[cell_id].append([dose_amt] + drug_features + cell_features_dict[cell_id] + gene_features_dict[gene_symbol])
+            cell_X[cell_id][repeat_key] = drug_features + gene_features_dict[gene_symbol]
+        else:
+            cell_X[cell_id][repeat_key] = drug_features
         cell_Y[cell_id][repeat_key] = column[gene_id]
         cell_Y_gene_ids[cell_id].append(gene_id)
         gene_perts[gene_id].append(column[gene_id])
@@ -152,13 +158,13 @@ elapsed_time = time.time() - start_time
 print("Time to load data:", elapsed_time)
 
 gene_cutoffs = {}
-percentile = 95
+percentile = 5 # for downregulation, use 95 for upregulation
 for gene_id in lm_gene_entrez_ids:
     gene_cutoffs[gene_id] = np.percentile(gene_perts[gene_id], percentile)
 
 gc.collect()
 cell_line_counter = 1
-print("Printing cell data. Gene count:", gene_count, "\n")
+print("Printing cell data. Gene count:", gene_count_data_limit, "\n")
 try:
     for cell_name in cell_name_to_id_dict:
         # print("Looking at", cell_name)
@@ -183,26 +189,29 @@ try:
             # print("Skipping", cell_name, ". Sample size", sample_size, "is too small.\n")
             continue
 
-        for i in range(0, 1): # to help iterate through classification thresholds
-            percentile = 95 + i
-            class_cut_off = np.percentile(npY, percentile)
+        class_cut_off = np.percentile(npY, percentile)
 
-            npY_class = np.zeros(len(npY), dtype=int)
-            if use_gene_specific_cutoffs:
-                for gene_id in lm_gene_entrez_ids: # this section is for gene specific class cutoffs
-                    class_cut_off = gene_cutoffs[gene_id]
-                    gene_locations = np.where(npY_gene_ids == gene_id)
-                    cutoff_locations = np.where(npY > class_cut_off)
-                    intersect = np.intersect1d(gene_locations, cutoff_locations)
-                    npY_class[intersect] = 1
-                print("Evaluating cell line", cell_line_counter, cell_name, "(Percentile:", percentile, ")")
-            else:
-                npY_class[np.where(npY > class_cut_off)] = 1 # generic class cutoff
-                print("Evaluating cell line", cell_line_counter, cell_name, "class cutoff", class_cut_off, "(Percentile:", percentile, ")")
+        npY_class = np.zeros(len(npY), dtype=int)
+        if use_gene_specific_cutoffs:
+            for gene_id in lm_gene_entrez_ids: # this section is for gene specific class cutoffs
+                class_cut_off = gene_cutoffs[gene_id]
+                gene_locations = np.where(npY_gene_ids == gene_id)
+                cutoff_locations = np.where(npY > class_cut_off)
+                intersect = np.intersect1d(gene_locations, cutoff_locations)
+                npY_class[intersect] = 1
+            print("Evaluating cell line", cell_line_counter, cell_name, "(Percentile:", percentile, ")")
+        else:
+            npY_class[np.where(npY > class_cut_off)] = 1 # generic class cutoff
+            print("Evaluating cell line", cell_line_counter, cell_name, "class cutoff", class_cut_off, "(Percentile:", percentile, ")")
 
-            num_drugs = len(set(cell_drugs[cell_id]))
-            print("Sample Size:", sample_size, "Drugs tested:", num_drugs)
+        num_drugs = len(set(cell_drugs[cell_id]))
+        print("Sample Size:", sample_size, "Drugs tested:", num_drugs)
+
+        if use_optimizer:
             do_optimize(2, npX, npY_class)
+        else:
+            model = train_model(npX, npY_class)
+            save_model(model, model_file_prefix)
 finally:
     en.notify()
     plt.show()
