@@ -38,21 +38,21 @@ if not model_file.is_file():
 model = load_model(model_file_prefix)
 
 # load gene fingerprints to test
-gene_features_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/WorkingData/gene_go_fingerprint.csv', use_int=True)
-lm_gene_entrez_ids_list = load_csv('genes_by_var.csv')[:gene_count_data_limit]
+gene_features_dict = get_feature_dict('data/gene_go_fingerprint.csv', use_int=True)
+lm_gene_entrez_ids_list = load_csv('data/genes_by_var.csv')[:gene_count_data_limit]
 lm_gene_entrez_ids = []
 for sublist in lm_gene_entrez_ids_list :
     for item in sublist:
         lm_gene_entrez_ids.append(item)
 def get_gene_id_dict():
-    lm_genes = json.load(open('landmark_genes.json'))
+    lm_genes = json.load(open('data/landmark_genes.json'))
     dict = {}
     for lm_gene in lm_genes:
         dict[lm_gene['entrez_id']] = lm_gene['gene_symbol']
     return dict
 gene_id_dict = get_gene_id_dict()
 
-file_name = '/data/datasets/gwoo/tox21/ZincCompounds_InStock_maccs.tab'
+file_name = '/home/gwoo/Data/zinc/ZincCompounds_InStock_maccs.tab'
 top10s = {}
 
 try:

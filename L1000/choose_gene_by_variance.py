@@ -13,7 +13,7 @@ plot_historgram = False
 
 # load expressions data
 def load_landmark_genes():
-    lm_genes = json.load(open('landmark_genes.json'))
+    lm_genes = json.load(open('data/landmark_genes.json'))
     ids = []
     for lm_gene in lm_genes:
         ids.append(lm_gene['entrez_id'])
@@ -60,7 +60,7 @@ print(highest_var)
 gene_var.sort(key=itemgetter(1), reverse=True)
 gene_ids = [tup[0] for tup in gene_var]
 
-with open("genes_by_var.csv", "w") as output:
+with open("data/genes_by_var.csv", "w") as output:
     writer = csv.writer(output, lineterminator='\n')
     for val in gene_ids:
         writer.writerow([val])

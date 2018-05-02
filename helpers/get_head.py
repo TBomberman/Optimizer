@@ -2,8 +2,7 @@
 
 import csv
 
-file_name = '/data/datasets/gwoo/tox21/ZincCompounds_InStock_maccs.tab'
-# file_name = '/data/datasets/gwoo/tox21/ZincCompounds_WaitOK_maccs_full.csv'
+file_name = '/home/gwoo/Data/zinc/ZincCompounds_InStock_maccs.tab'
 
 with open(file_name, "r") as csv_file:
     reader = csv.reader(csv_file, dialect='excel', delimiter=',')
