@@ -71,6 +71,9 @@ try:
                 drug_counter += 1
                 continue
 
+            # get the batch of samples
+            samples_batch =np.array([])
+            num_genes = len(lm_gene_entrez_ids)
             for gene_id in lm_gene_entrez_ids:
                 gene_symbol = gene_id_dict[gene_id]
                 if gene_symbol not in gene_features_dict:
@@ -78,11 +81,18 @@ try:
                 gene_features = gene_features_dict[gene_symbol]
 
                 molecule_id = row[0]
-                data = np.asarray([drug_features + gene_features])
-                prediction = model.predict(data)
-                down_probability = prediction[0][0]
+                samples_batch = np.append(samples_batch, np.asarray(drug_features + gene_features))
+            samples_batch = samples_batch.reshape([num_genes, -1])
+
+            # predict the batch
+            predictions = model.predict(samples_batch)
+            prediction_counter = 0
+            for prediction in predictions:
+                down_probability = prediction[0]
                 if down_probability > 0.5:
-                    message = "Found compound " + str(molecule_id) + " that downregulates " + gene_symbol + " " + str(down_probability)
+                    gene_symbol = gene_id_dict[lm_gene_entrez_ids[prediction_counter % num_genes]]
+                    message = gene_symbol + " " + str(down_probability) + " Found compound " + str(molecule_id) \
+                              + " that downregulates " + gene_symbol + " " + str(down_probability)
                     if gene_symbol not in top10s:
                         top10s[gene_symbol] = Top10()
                         top10s[gene_symbol].add_item(down_probability, message)
@@ -91,6 +101,7 @@ try:
                         if down_probability > top10s[gene_symbol].get_lowest_key():
                             top10s[gene_symbol].add_item(down_probability, message)
                             print(message)
+                prediction_counter += 1
             drug_counter += 1
 finally:
     en.notify("Predicting Done")
