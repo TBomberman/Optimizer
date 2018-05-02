@@ -5,7 +5,7 @@ from L1000.data_loader import load_gene_expression_data
 
 def load_landmark_genes():
     script_dir = os.path.dirname(__file__)
-    file_path = os.path.join(script_dir, 'L1000/data/one_landmark_gene.json')
+    file_path = os.path.join(script_dir, 'data/one_landmark_gene.json')
 
     lm_genes = json.load(open(file_path))
     ids = []

@@ -26,7 +26,7 @@ print(len(drug_dict1))
 print(len(drug_dict2))
 print(len(drug_dict))
 
-with open("/home/gwoo/Data/L1000/LDS-1191/WorkingData/merged_id_smiles.smi", "w") as csv_file:
+with open("data/merged_id_smiles.smi", "w") as csv_file:
     writer = csv.writer(csv_file, delimiter='\t')
     for key, value in drug_dict.items():
         writer.writerow([value, key])
