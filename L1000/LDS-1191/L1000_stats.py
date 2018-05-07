@@ -1,7 +1,10 @@
 import json
-import stats_analysis
 import os
+
 from L1000.data_loader import load_gene_expression_data
+
+import stats_analysis
+
 
 def load_landmark_genes():
     script_dir = os.path.dirname(__file__)

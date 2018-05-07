@@ -1,16 +1,16 @@
-from L1000.data_loader import get_feature_dict, load_gene_expression_data, printProgressBar, load_csv
+import datetime
+import gc
 import json
-from mlp_optimizer import do_optimize
+import time
+
+import matplotlib.pyplot as plt
 # from random_forest import do_optimize
 import numpy as np
-import gc
-import sys
-from sklearn.utils import shuffle
-import time
-import helpers.email_notifier as en
-import matplotlib.pyplot as plt
-import datetime
+from L1000.data_loader import get_feature_dict, load_gene_expression_data, printProgressBar, load_csv
 from L1000.gene_predictor import train_model, save_model
+
+import helpers.email_notifier as en
+from mlp_optimizer import do_optimize
 
 start_time = time.time()
 gene_count_data_limit = 100

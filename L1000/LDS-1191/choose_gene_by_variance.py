@@ -1,9 +1,10 @@
-from L1000.data_loader import load_gene_expression_data
-import json
-import numpy as np
-from operator import itemgetter
 import csv
+import json
+from operator import itemgetter
+
 import matplotlib.pyplot as plt
+import numpy as np
+from L1000.data_loader import load_gene_expression_data
 
 # go through the data set
 # for each gene, calculate the variance

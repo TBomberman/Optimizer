@@ -1,12 +1,14 @@
 import csv
-import numpy as np
-import helpers.email_notifier as en
 import datetime
-from sortedcontainers import SortedDict
-from pathlib import Path
-from L1000.gene_predictor import load_model
-from L1000.data_loader import get_feature_dict, load_csv
 import json
+from pathlib import Path
+
+import numpy as np
+from L1000.data_loader import get_feature_dict, load_csv
+from L1000.gene_predictor import load_model
+from sortedcontainers import SortedDict
+
+import helpers.email_notifier as en
 
 model_file_prefix = "100PC3"
 gene_count_data_limit = 100
