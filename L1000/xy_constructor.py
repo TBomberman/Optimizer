@@ -34,13 +34,13 @@ def get_gene_id_dict():
 # get the dictionaries
 # get the expressions
 print(datetime.datetime.now(), "Loading drug and gene features")
-drug_features_dict = get_feature_dict('L1000/data/smiles_rdkit_maccs.csv', use_int=True)
-gene_features_dict = get_feature_dict('L1000/data/gene_go_fingerprint.csv', use_int=True)
+drug_features_dict = get_feature_dict('data/smiles_rdkit_maccs.csv', use_int=True)
+gene_features_dict = get_feature_dict('data/gene_go_fingerprint.csv', use_int=True)
 # info to separate by data by cell lines, drug + gene tests may not be equally spread out across cell lines
 cell_name_to_id_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/Metadata/Cell_Line_Metadata.txt', '\t', 2)
 # info to remove any dosages that are not 'µM'. Want to standardize the dosages.
 experiments_dose_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/Metadata/GSE92742_Broad_LINCS_sig_info.txt', '\t', 0)
-cell_features_dict = get_feature_dict('L1000/data/cell_line_fingerprint.csv')
+cell_features_dict = get_feature_dict('data/cell_line_fingerprint.csv')
 
 # getting the gene ids
 gene_id_dict = get_gene_id_dict()
