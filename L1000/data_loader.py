@@ -60,7 +60,7 @@ def get_feature_dict(file, delimiter=',', key_index=0, use_int=False):
             return my_dict
         return dict((row[key_index], row[1:]) for row in reader)
 
-def load_gene_expression_data(file,lm_gene_entrez_ids):
+def load_gene_expression_data(file,lm_gene_entrez_ids=None):
     return parse(
         file,
         col_meta_only=False, row_meta_only=False, rid=lm_gene_entrez_ids)
