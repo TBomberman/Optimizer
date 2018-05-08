@@ -17,8 +17,8 @@ from utilities import all_stats,remove_constant_values,reduce_corr
 
 import numpy as np
 
-expression = load_drug_single_gene_csv('/data/datasets/gwoo/L1000/LDS-1191/WorkingData/Y_drug_id_one_expression.csv')
-descriptors = load_descriptors('/data/datasets/gwoo/L1000/LDS-1191/WorkingData/X_all_descriptors.tab')
+expression = load_drug_single_gene_csv('/data/datasets/mllamosa/WorkingData/Y_drug_id_one_expression.csv')
+descriptors = load_descriptors('/data/datasets/mllamosa/WorkingData/X_all_descriptors.tab')
 [data,labels] = join_descriptors_label(expression,descriptors)
 
 # filter1 = remove_constant_values()
@@ -39,9 +39,10 @@ train_id = ids[0:cut]
 test_id = ids[cut:]
 
 # turn labels into binary
-cutoff = np.mean(labels)
+#cutoff = np.mean(labels)
+cutoff = -4
 y = np.zeros((len(labels), 1)).astype(int)
-pos_id = np.where(labels > cutoff)[0]
+pos_id = np.where(labels < cutoff)[0]
 y[pos_id] = 1
 
 partition = dd.Partition(trainset=train_id, testset=test_id)
@@ -50,7 +51,7 @@ data = np.nan_to_num(data)
 data = (data - np.min(data, axis=0)) / (np.max(data, axis=0) - np.min(data, axis=0))
 data = np.nan_to_num(data)
 
-model = dd.Model(data=np.hstack((data, y)),function=ml.RandF(parameters={'n_estimators':100, 'min_samples_split':5}), partition=partition,nfo=3)
+model = dd.Model(data=np.hstack((data, y)),function=ml.RandF(parameters={'n_estimators':100, 'min_samples_split':50}), partition=partition,nfo=3)
 #model = dd.Model(data=np.hstack((data, y)),function=ml.Mlr(), partition=partition,nfo=3)
 # model = dd.Model(data=np.hstack((data,labels)),function=ml.Sksvm(parameters={'regularization':0.1,'sigma':0.1}),partition=partition)
 model.training()
