@@ -14,7 +14,7 @@ from mlp_optimizer import do_optimize
 
 start_time = time.time()
 gene_count_data_limit = 100
-use_optimizer = False
+use_optimizer = True
 model_file_prefix = "test"
 
 def find_nth(haystack, needle, n):
@@ -116,8 +116,8 @@ for i in range(length-1, -1, -1): # go backwards, assuming later experiments hav
     end = find_nth(col_name, "_", 2)
     cell_name = col_name[start + 1:end]
     # cell_name = "A375"  # this line will combine all cell lines into one
-    # if cell_name != 'PC3':
-    #     continue
+    if cell_name != 'LNCAP':
+        continue
 
     if cell_name not in cell_name_to_id_dict:
         continue
@@ -207,11 +207,11 @@ try:
         num_drugs = len(set(cell_drugs[cell_id]))
         print("Sample Size:", sample_size, "Drugs tested:", num_drugs)
 
-        # if use_optimizer:
-        #     do_optimize(2, npX, npY_class)
-        # else:
-        #     model = train_model(npX, npY_class)
-        #     save_model(model, model_file_prefix)
+        if use_optimizer:
+            do_optimize(2, npX, npY_class)
+        else:
+            model = train_model(npX, npY_class)
+            save_model(model, model_file_prefix)
 finally:
     en.notify()
     plt.show()
