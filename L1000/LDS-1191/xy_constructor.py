@@ -14,8 +14,8 @@ from mlp_optimizer import do_optimize
 
 start_time = time.time()
 gene_count_data_limit = 100
-use_optimizer = False
-model_file_prefix = "100PC3test"
+use_optimizer = True
+model_file_prefix = "100PC32Dtest"
 
 def find_nth(haystack, needle, n):
     start = haystack.find(needle)
@@ -25,7 +25,7 @@ def find_nth(haystack, needle, n):
     return start
 
 def get_gene_id_dict():
-    lm_genes = json.load(open('data/landmark_genes.json'))
+    lm_genes = json.load(open('LDS-1191/data/landmark_genes.json'))
     dict = {}
     for lm_gene in lm_genes:
         dict[lm_gene['entrez_id']] = lm_gene['gene_symbol']
@@ -34,18 +34,18 @@ def get_gene_id_dict():
 # get the dictionaries
 # get the expressions
 print(datetime.datetime.now(), "Loading drug and gene features")
-drug_features_dict = get_feature_dict('data/smiles_rdkit_maccs.csv', use_int=True)
-gene_features_dict = get_feature_dict('data/gene_go_fingerprint.csv', use_int=True)
+drug_features_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/WorkingData/2Ddescriptors.csv', use_int=False)
+gene_features_dict = get_feature_dict('LDS-1191/data/gene_go_fingerprint.csv', use_int=True)
 # info to separate by data by cell lines, drug + gene tests may not be equally spread out across cell lines
 cell_name_to_id_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/Metadata/Cell_Line_Metadata.txt', '\t', 2)
 # info to remove any dosages that are not 'µM'. Want to standardize the dosages.
 experiments_dose_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/Metadata/GSE92742_Broad_LINCS_sig_info.txt', '\t', 0)
-cell_features_dict = get_feature_dict('data/cell_line_fingerprint.csv')
+cell_features_dict = get_feature_dict('LDS-1191/data/cell_line_fingerprint.csv')
 
 # getting the gene ids
 gene_id_dict = get_gene_id_dict()
 # lm_gene_entrez_ids = list(gene_id_dict.keys())[:200]
-lm_gene_entrez_ids_list = load_csv('data/genes_by_var.csv')[:gene_count_data_limit]
+lm_gene_entrez_ids_list = load_csv('LDS-1191/data/genes_by_var.csv')[:gene_count_data_limit]
 lm_gene_entrez_ids = []
 for sublist in lm_gene_entrez_ids_list :
     for item in sublist:
@@ -116,8 +116,8 @@ for i in range(length-1, -1, -1): # go backwards, assuming later experiments hav
     end = find_nth(col_name, "_", 2)
     cell_name = col_name[start + 1:end]
     # cell_name = "A375"  # this line will combine all cell lines into one
-    # if cell_name != 'PC3':
-    #     continue
+    if cell_name != 'PC3':
+        continue
 
     if cell_name not in cell_name_to_id_dict:
         continue
