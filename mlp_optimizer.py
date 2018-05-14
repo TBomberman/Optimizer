@@ -22,11 +22,11 @@ regularizer = l1 # l1 beats the other 2
 lammy = 0
 use_plot = False
 train_percentage = 0.7
-patience = 20
+patience = 5
 
 # uncomment this to disable regularizer
-def regularizer(lammy):
-    return None
+# def regularizer(lammy):
+#     return None
 
 # for reproducibility
 # np.random.seed(1337)
@@ -50,9 +50,9 @@ def do_optimize(nb_classes, data, labels):
     Y_test = y_test
     Y_val = y_val
 
-    # for hyperparam in range(0, 10):
+    # for hyperparam in range(1, 8):
     for hyperparam in [1]:
-        lammy = 1 / (10**10)
+        lammy = 8 / (10**7)
         # lammy = 0.0000001 # l1
         # neuron_count = dense * hyperparam
         neuron_count = int(d)# * 0.2 * hyperparam)
@@ -65,6 +65,7 @@ def do_optimize(nb_classes, data, labels):
         model = Sequential()
         history = History()
         early_stopping = EarlyStopping(monitor='val_loss', min_delta=0, patience=patience, verbose=1, mode='auto')
+        print('Patience', patience)
         out_epoch = NEpochLogger(display=5)
 
         model.add(Dense(neuron_count, input_shape=(d,), activity_regularizer=regularizer(lammy)))
