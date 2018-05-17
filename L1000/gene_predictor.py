@@ -43,7 +43,7 @@ class Gene_Predictor():
         neuron_count = data.shape[1]
         nb_classes = len(set(labels))
         dropout = 0.2
-        early_stopping = EarlyStopping(monitor='val_loss', min_delta=0, patience=20, verbose=1, mode='auto')
+        early_stopping = EarlyStopping(monitor='val_loss', min_delta=0, patience=10, verbose=1, mode='auto')
         out_epoch = NEpochLogger(display=5)
 
         cat_labels = np_utils.to_categorical(labels, nb_classes)
@@ -59,7 +59,7 @@ class Gene_Predictor():
         self.model.add(Dense(nb_classes))
         self.model.add(Activation('softmax'))
         self.model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-        self.model.fit(X_train, Y_train, batch_size=2048, nb_epoch=10000,
+        self.model.fit(X_train, Y_train, batch_size=2048, epochs=10000,
                   verbose=0, validation_data=(X_test, Y_test), callbacks=[early_stopping, out_epoch])
 
         y_score_train = self.model.predict_proba(X_train)
