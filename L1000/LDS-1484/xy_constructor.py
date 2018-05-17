@@ -136,7 +136,7 @@ for i in range(length-1, -1, -1): # go backwards, assuming later experiments hav
             cell_drugs[cell_id] = []
             cell_Y_gene_ids[cell_id] = []
 
-        repeat_key = drug_id + cell_id + our_gene_id
+        repeat_key = drug_id + "_" + cell_id + "_" + our_gene_id
         if repeat_key in repeat_X and dose_amt <= repeat_X[repeat_key]:
             # print("repeat_key", repeat_key, "dose amount", dose_amt, "is less than", repeat_X[repeat_key])
             continue
@@ -173,8 +173,10 @@ try:
             continue
         listX = []
         listY = []
+        listKeys = []
         for key, value in cell_X[cell_id].items():
             listX.append(value)
+            listKeys.append(key.split("_")[0])
         for key, value in cell_Y[cell_id].items():
             listY.append(value)
 
@@ -207,8 +209,15 @@ try:
         num_drugs = len(set(cell_drugs[cell_id]))
         print("Sample Size:", sample_size, "Drugs tested:", num_drugs)
 
+        # #count number of perturbed genes
+        # key_set = set(listKeys)
+        # set_keys = np.array(listKeys)
+        # for drug_key in key_set:
+        #     drug_idx = np.where(set_keys == drug_key)[0].tolist()
+        #     print(drug_key, gene_count_data_limit-np.count_nonzero(npY_class[drug_idx]))
+
         if use_optimizer:
-            do_optimize(2, npX, npY_class)
+            do_optimize(2, npX, npY_class, listKeys)
         else:
             model = train_model(npX, npY_class)
             save_model(model, model_file_prefix)
