@@ -10,8 +10,11 @@ from sortedcontainers import SortedDict
 
 import helpers.email_notifier as en
 
-model_file_prefix = "100PC3"
+model_file_prefix = "100PC3Down"
 gene_count_data_limit = 100
+find_promiscuous = True
+most_promiscious_drug = ''
+most_promiscious_drug_target_gene_count = 0
 
 class Top10():
     def __init__(self):
@@ -63,6 +66,7 @@ try:
         next(reader)
         drug_counter = 0
         for row in reader:
+            molecule_id = row[0]
             if drug_counter % 10000 == 0:
                 print(datetime.datetime.now(), "Evaluating molecule #", drug_counter)
             drug_features = []
@@ -74,36 +78,47 @@ try:
                 continue
 
             # get the batch of samples
-            samples_batch =np.array([])
+            samples_batch =np.array([], dtype="f2")
             num_genes = len(lm_gene_entrez_ids)
             for gene_id in lm_gene_entrez_ids:
                 gene_symbol = gene_id_dict[gene_id]
                 if gene_symbol not in gene_features_dict:
                     continue
                 gene_features = gene_features_dict[gene_symbol]
-
-                molecule_id = row[0]
                 samples_batch = np.append(samples_batch, np.asarray(drug_features + gene_features))
             samples_batch = samples_batch.reshape([num_genes, -1])
 
             # predict the batch
             predictions = model.predict(samples_batch)
             prediction_counter = 0
-            for prediction in predictions:
-                down_probability = prediction[0]
-                if down_probability > 0.5:
-                    gene_symbol = gene_id_dict[lm_gene_entrez_ids[prediction_counter % num_genes]]
-                    message = gene_symbol + " " + str(down_probability) + " Found compound " + str(molecule_id) \
-                              + " that downregulates " + gene_symbol + " " + str(down_probability)
-                    if gene_symbol not in top10s:
-                        top10s[gene_symbol] = Top10()
-                        top10s[gene_symbol].add_item(down_probability, message)
-                        print(message)
-                    else:
-                        if down_probability > top10s[gene_symbol].get_lowest_key():
+            if find_promiscuous:
+                downregulate_counter = 0
+                for prediction in predictions:
+                    down_probability = prediction[0]
+                    if down_probability > 0.5:
+                        downregulate_counter += 1
+                    prediction_counter += 1
+
+                if downregulate_counter > most_promiscious_drug_target_gene_count:
+                    most_promiscious_drug = molecule_id
+                    most_promiscious_drug_target_gene_count = downregulate_counter
+                    print(datetime.datetime.now(), "Compound", str(molecule_id), "downregulates", downregulate_counter, "genes")
+            else:
+                for prediction in predictions:
+                    down_probability = prediction[0]
+                    if down_probability > 0.5:
+                        gene_symbol = gene_id_dict[lm_gene_entrez_ids[prediction_counter % num_genes]]
+                        message = gene_symbol + " " + str(down_probability) + " Found compound " + str(molecule_id) \
+                                  + " that downregulates " + gene_symbol + " " + str(down_probability)
+                        if gene_symbol not in top10s:
+                            top10s[gene_symbol] = Top10()
                             top10s[gene_symbol].add_item(down_probability, message)
                             print(message)
-                prediction_counter += 1
+                        else:
+                            if down_probability > top10s[gene_symbol].get_lowest_key():
+                                top10s[gene_symbol].add_item(down_probability, message)
+                                print(message)
+                    prediction_counter += 1
             drug_counter += 1
 finally:
     en.notify("Predicting Done")
