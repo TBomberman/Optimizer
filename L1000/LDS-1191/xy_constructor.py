@@ -34,7 +34,7 @@ def get_gene_id_dict():
 # get the dictionaries
 # get the expressions
 print(datetime.datetime.now(), "Loading drug and gene features")
-drug_features_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/WorkingData/2Ddescriptors.csv', use_int=False)
+drug_features_dict = get_feature_dict('LDS-1191/data/smiles_rdkit_maccs.csv', use_int=True)
 gene_features_dict = get_feature_dict('LDS-1191/data/gene_go_fingerprint.csv', use_int=True)
 # info to separate by data by cell lines, drug + gene tests may not be equally spread out across cell lines
 cell_name_to_id_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/Metadata/Cell_Line_Metadata.txt', '\t', 2)
@@ -71,9 +71,9 @@ for gene_id in lm_gene_entrez_ids:
 
 # For every experiment
 print("Loading experiments")
-two_percent = int(length/25)
+four_percent = int(length/25)
 for i in range(length-1, -1, -1): # go backwards, assuming later experiments have stronger perturbation
-    if i % two_percent == 0: printProgressBar(length - i, length, prefix='Load experiments progress')
+    if i % four_percent == 0: printProgressBar(length - i, length, prefix='Load experiments progress')
     X = []
     Y = []
 
