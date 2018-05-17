@@ -15,7 +15,7 @@ from mlp_optimizer import do_optimize
 start_time = time.time()
 gene_count_data_limit = 100
 use_optimizer = True
-model_file_prefix = "100PC32Dtest"
+model_file_prefix = "100PC3Up"
 
 def find_nth(haystack, needle, n):
     start = haystack.find(needle)
@@ -71,10 +71,9 @@ for gene_id in lm_gene_entrez_ids:
 
 # For every experiment
 print("Loading experiments")
-one_percent = int(length/50)
+two_percent = int(length/25)
 for i in range(length-1, -1, -1): # go backwards, assuming later experiments have stronger perturbation
-    if i % one_percent == 0:
-        printProgressBar(length - i, length, prefix='Progress:', suffix='Complete', length=50)
+    if i % two_percent == 0: printProgressBar(length - i, length, prefix='Load experiments progress')
     X = []
     Y = []
 
@@ -138,7 +137,7 @@ for i in range(length-1, -1, -1): # go backwards, assuming later experiments hav
             cell_drugs[cell_id] = []
             cell_Y_gene_ids[cell_id] = []
 
-        repeat_key = drug_id + cell_id + gene_id
+        repeat_key = drug_id + "_" + cell_id + "_" + gene_id
         if repeat_key in repeat_X and dose_amt <= repeat_X[repeat_key]:
             # print("repeat_key", repeat_key, "dose amount", dose_amt, "is less than", repeat_X[repeat_key])
             continue
@@ -149,16 +148,17 @@ for i in range(length-1, -1, -1): # go backwards, assuming later experiments hav
             cell_X[cell_id][repeat_key] = drug_features + gene_features_dict[gene_symbol]
         else:
             cell_X[cell_id][repeat_key] = drug_features
-        cell_Y[cell_id][repeat_key] = column[gene_id]
+        pert = column[gene_id]
+        cell_Y[cell_id][repeat_key] = pert
         cell_Y_gene_ids[cell_id].append(gene_id)
-        gene_perts[gene_id].append(column[gene_id])
+        gene_perts[gene_id].append(pert)
         cell_drugs[cell_id].append(drug_id)
 
 elapsed_time = time.time() - start_time
 print("Time to load data:", elapsed_time)
 
 gene_cutoffs = {}
-percentile = 5 # for downregulation, use 95 for upregulation
+percentile = 95 # for downregulation, use 95 for upregulation
 for gene_id in lm_gene_entrez_ids:
     gene_cutoffs[gene_id] = np.percentile(gene_perts[gene_id], percentile)
 
@@ -174,13 +174,15 @@ try:
             continue
         listX = []
         listY = []
+        listKeys = []
         for key, value in cell_X[cell_id].items():
             listX.append(value)
+            listKeys.append(key.split("_")[0])
         for key, value in cell_Y[cell_id].items():
             listY.append(value)
 
-        npX = np.asarray(listX)
-        npY = np.asarray(listY)
+        npX = np.asarray(listX, dtype='float16')
+        npY = np.asarray(listY, dtype='float16')
         npY_gene_ids = np.asarray(cell_Y_gene_ids[cell_id])
 
         sample_size = len(npX)
@@ -207,8 +209,19 @@ try:
         num_drugs = len(set(cell_drugs[cell_id]))
         print("Sample Size:", sample_size, "Drugs tested:", num_drugs)
 
+        # count number of perturbed genes
+        # key_set = set(listKeys)
+        # set_keys = np.array(listKeys)
+        # num_gene_effects = []
+        # for drug_key in key_set:
+        #     drug_idx = np.where(set_keys == drug_key)[0].tolist()
+        #     num_gene_effects.append(gene_count_data_limit - np.count_nonzero(npY_class[drug_idx]))
+        # plt.hist(num_gene_effects, bins='auto')
+        # plt.draw()
+        # print(drug_key, num_gene_effects)
+
         if use_optimizer:
-            do_optimize(2, npX, npY_class)
+            do_optimize(2, npX, npY_class) #, listKeys)
         else:
             model = train_model(npX, npY_class)
             save_model(model, model_file_prefix)
