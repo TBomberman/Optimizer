@@ -22,11 +22,11 @@ regularizer = l1 # l1 beats the other 2
 lammy = 0
 use_plot = False
 train_percentage = 0.7
-patience = 5
+patience = 10
 
 # uncomment this to disable regularizer
-# def regularizer(lammy):
-#     return None
+def regularizer(lammy):
+    return None
 
 # for reproducibility
 # np.random.seed(1337)
@@ -70,7 +70,7 @@ def do_optimize(nb_classes, data, labels, iid_validate_set_keys=None):
 
     # for hyperparam in range(1, 8):
     for hyperparam in [1]:
-        lammy = 8 / (10**7)
+        lammy = 8 / (10**7) # LNCAP from LDS-1494 optimized
         # lammy = 0.0000001 # l1
         # neuron_count = dense * hyperparam
         neuron_count = int(d)# * 0.2 * hyperparam)
@@ -104,7 +104,7 @@ def do_optimize(nb_classes, data, labels, iid_validate_set_keys=None):
         # multi_model = multi_gpu_model(model, gpus=6)
         model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
 
-        model.fit(X_train, Y_train, batch_size=batch_size, nb_epoch=nb_epoch,
+        model.fit(X_train, Y_train, batch_size=batch_size, epochs=nb_epoch,
                   verbose=0, validation_data=(X_test, Y_test), callbacks=[history, early_stopping, out_epoch])
 
         score = model.evaluate(X_test, Y_test, verbose=0)
