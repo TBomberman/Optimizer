@@ -10,7 +10,8 @@ from sortedcontainers import SortedDict
 
 import helpers.email_notifier as en
 
-model_file_prefix = "100PC3Down"
+down_model_file_prefix = "100PC3Down"
+up_model_file_prefix = "100PC3Up"
 gene_count_data_limit = 100
 find_promiscuous = True
 most_promiscious_drug = ''
@@ -36,11 +37,14 @@ class Top10():
         return self.sorted_dict
 
 # load model
-model = object
-model_file = Path(model_file_prefix + ".json")
-if not model_file.is_file():
-    print(model_file + "File not found")
-model = load_model(model_file_prefix)
+def load_model_from_file_prefix(model_file_prefix):
+    model_file = Path(model_file_prefix + ".json")
+    if not model_file.is_file():
+        print(model_file + "File not found")
+    return load_model(model_file_prefix)
+
+down_model = load_model_from_file_prefix(down_model_file_prefix)
+up_model = load_model_from_file_prefix(up_model_file_prefix)
 
 # load gene fingerprints to test
 gene_features_dict = get_feature_dict('data/gene_go_fingerprint.csv', use_int=True)
@@ -59,7 +63,26 @@ gene_id_dict = get_gene_id_dict()
 
 file_name = '/home/gwoo/Data/zinc/ZincCompounds_InStock_maccs.tab'
 top10s = {}
-top10 = Top10()
+top10down = Top10()
+top10up = Top10()
+top10all = Top10()
+
+def calculate_perturbations(model, samples, class_value, top10_list, molecule_id, direction_str):
+    # predict the batch
+    predictions = model.predict(samples)
+    regulate_counter = 0
+    for prediction in predictions:
+        probability = prediction[class_value]
+        if probability > 0.5:
+            regulate_counter += 1
+
+    if top10_list.current_size == 0 or (top10_list.current_size > 0 and regulate_counter > top10_list.get_lowest_key()):
+        message = "Compound " + str(molecule_id) + " " + direction_str + "regulates " + str(regulate_counter) + " genes"
+        top10_list.add_item(regulate_counter, message)
+        print(datetime.datetime.now(), message)
+
+    return regulate_counter
+
 try:
     with open(file_name, "r") as csv_file:
         reader = csv.reader(csv_file, dialect='excel', delimiter=',')
@@ -88,36 +111,31 @@ try:
                 samples_batch = np.append(samples_batch, np.asarray(drug_features + gene_features))
             samples_batch = samples_batch.reshape([num_genes, -1])
 
-            # predict the batch
-            predictions = model.predict(samples_batch)
-            if find_promiscuous:
-                downregulate_counter = 0
-                for prediction in predictions:
-                    down_probability = prediction[0]
-                    if down_probability > 0.5:
-                        downregulate_counter += 1
-
-                if top10.current_size == 0 or (top10.current_size > 0 and downregulate_counter > top10.get_lowest_key()):
-                    message = "Compound " + str(molecule_id) + " downregulates " + str(downregulate_counter) + " genes"
-                    top10.add_item(downregulate_counter, message)
-                    print(datetime.datetime.now(), message)
-            else:
-                prediction_counter = 0
-                for prediction in predictions:
-                    down_probability = prediction[0]
-                    if down_probability > 0.5:
-                        gene_symbol = gene_id_dict[lm_gene_entrez_ids[prediction_counter % num_genes]]
-                        message = gene_symbol + " " + str(down_probability) + " Found compound " + str(molecule_id) \
-                                  + " that downregulates " + gene_symbol + " " + str(down_probability)
-                        if gene_symbol not in top10s:
-                            top10s[gene_symbol] = Top10()
-                            top10s[gene_symbol].add_item(down_probability, message)
-                            print(message)
-                        else:
-                            if down_probability > top10s[gene_symbol].get_lowest_key():
-                                top10s[gene_symbol].add_item(down_probability, message)
-                                print(message)
-                    prediction_counter += 1
+            downregulate_count = calculate_perturbations(down_model, samples_batch, 0, top10down, molecule_id, "down")
+            upregulate_count = calculate_perturbations(up_model, samples_batch, 1, top10up, molecule_id, "up")
+            allregulate_count = downregulate_count + upregulate_count
+            if top10all.current_size == 0 or (top10all.current_size > 0 and allregulate_count > top10all.get_lowest_key()):
+                message = "Compound " + str(molecule_id) + " downregulates " + str(downregulate_count) + \
+                          " genes and upregulates " + str(upregulate_count) + " genes. Total: " + str(allregulate_count)
+                top10all.add_item(allregulate_count, message)
+                print(datetime.datetime.now(), message)
+            # else:
+            #     prediction_counter = 0
+            #     for prediction in predictions:
+            #         down_probability = prediction[0]
+            #         if down_probability > 0.5:
+            #             gene_symbol = gene_id_dict[lm_gene_entrez_ids[prediction_counter % num_genes]]
+            #             message = gene_symbol + " " + str(down_probability) + " Found compound " + str(molecule_id) \
+            #                       + " that downregulates " + gene_symbol + " " + str(down_probability)
+            #             if gene_symbol not in top10s:
+            #                 top10s[gene_symbol] = Top10()
+            #                 top10s[gene_symbol].add_item(down_probability, message)
+            #                 print(message)
+            #             else:
+            #                 if down_probability > top10s[gene_symbol].get_lowest_key():
+            #                     top10s[gene_symbol].add_item(down_probability, message)
+            #                     print(message)
+            #         prediction_counter += 1
             drug_counter += 1
 finally:
     en.notify("Predicting Done")
