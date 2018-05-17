@@ -59,7 +59,7 @@ gene_id_dict = get_gene_id_dict()
 
 file_name = '/home/gwoo/Data/zinc/ZincCompounds_InStock_maccs.tab'
 top10s = {}
-
+top10 = Top10()
 try:
     with open(file_name, "r") as csv_file:
         reader = csv.reader(csv_file, dialect='excel', delimiter=',')
@@ -90,20 +90,19 @@ try:
 
             # predict the batch
             predictions = model.predict(samples_batch)
-            prediction_counter = 0
             if find_promiscuous:
                 downregulate_counter = 0
                 for prediction in predictions:
                     down_probability = prediction[0]
                     if down_probability > 0.5:
                         downregulate_counter += 1
-                    prediction_counter += 1
 
-                if downregulate_counter > most_promiscious_drug_target_gene_count:
-                    most_promiscious_drug = molecule_id
-                    most_promiscious_drug_target_gene_count = downregulate_counter
-                    print(datetime.datetime.now(), "Compound", str(molecule_id), "downregulates", downregulate_counter, "genes")
+                if top10.current_size == 0 or (top10.current_size > 0 and downregulate_counter > top10.get_lowest_key()):
+                    message = "Compound " + str(molecule_id) + " downregulates " + str(downregulate_counter) + " genes"
+                    top10.add_item(downregulate_counter, message)
+                    print(datetime.datetime.now(), message)
             else:
+                prediction_counter = 0
                 for prediction in predictions:
                     down_probability = prediction[0]
                     if down_probability > 0.5:
