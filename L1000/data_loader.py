@@ -65,7 +65,7 @@ def load_gene_expression_data(file,lm_gene_entrez_ids=None):
         file,
         col_meta_only=False, row_meta_only=False, rid=lm_gene_entrez_ids)
 
-def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█'):
+def printProgressBar (iteration, total, prefix = 'Progress', suffix = 'Complete', decimals = 1, length = 25, fill = '█'):
     """
     Call in a loop to create terminal progress bar
     @params:
