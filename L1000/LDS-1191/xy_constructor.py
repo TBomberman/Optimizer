@@ -15,7 +15,7 @@ from mlp_optimizer import do_optimize
 start_time = time.time()
 gene_count_data_limit = 100
 use_optimizer = True
-model_file_prefix = "100PC3Up"
+model_file_prefix = "100PC3PD"
 
 def find_nth(haystack, needle, n):
     start = haystack.find(needle)
@@ -36,6 +36,7 @@ def get_gene_id_dict():
 print(datetime.datetime.now(), "Loading drug and gene features")
 drug_features_dict = get_feature_dict('LDS-1191/data/smiles_rdkit_maccs.csv', use_int=True)
 gene_features_dict = get_feature_dict('LDS-1191/data/gene_go_fingerprint.csv', use_int=True)
+prot_features_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/WorkingData/protein_fingerprint.csv', use_int=False)
 # info to separate by data by cell lines, drug + gene tests may not be equally spread out across cell lines
 cell_name_to_id_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/Metadata/Cell_Line_Metadata.txt', '\t', 2)
 # info to remove any dosages that are not 'µM'. Want to standardize the dosages.
@@ -128,6 +129,9 @@ for i in range(length-1, -1, -1): # go backwards, assuming later experiments hav
         if gene_symbol not in gene_features_dict:
             continue
 
+        if gene_symbol not in prot_features_dict:
+            continue
+
         if cell_id not in cell_features_dict:
             continue
 
@@ -145,7 +149,7 @@ for i in range(length-1, -1, -1): # go backwards, assuming later experiments hav
 
         if gene_count_data_limit > 1:
             # cell_X[cell_id].append([dose_amt] + drug_features + cell_features_dict[cell_id] + gene_features_dict[gene_symbol])
-            cell_X[cell_id][repeat_key] = drug_features + gene_features_dict[gene_symbol]
+            cell_X[cell_id][repeat_key] = drug_features + gene_features_dict[gene_symbol] + prot_features_dict[gene_symbol]
         else:
             cell_X[cell_id][repeat_key] = drug_features
         pert = column[gene_id]
@@ -158,7 +162,7 @@ elapsed_time = time.time() - start_time
 print("Time to load data:", elapsed_time)
 
 gene_cutoffs = {}
-percentile = 95 # for downregulation, use 95 for upregulation
+percentile = 5 # for downregulation, use 95 for upregulation
 for gene_id in lm_gene_entrez_ids:
     gene_cutoffs[gene_id] = np.percentile(gene_perts[gene_id], percentile)
 
