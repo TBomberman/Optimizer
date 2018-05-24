@@ -8,7 +8,7 @@ from keras.models import Sequential
 from keras.utils import np_utils, multi_gpu_model
 from keras.regularizers import l1, l1_l2, l2
 from sklearn.model_selection import train_test_split
-
+from helpers.plot_roc import plot_roc
 import keras_enums as enums
 from helpers.utilities import all_stats
 from helpers.callbacks import NEpochLogger
@@ -117,9 +117,9 @@ def do_optimize(nb_classes, data, labels, iid_validate_set_keys=None):
         print('Test accuracy:', score[1])
 
         if nb_classes > 1:
-            train_stats = all_stats(Y_train[:, 0], y_score_train[:, 0])
-            test_stats = all_stats(Y_test[:, 0], y_score_test[:, 0], train_stats[-1])
-            val_stats = all_stats(Y_val[:, 0], y_score_val[:, 0], train_stats[-1])
+            train_stats = all_stats(Y_train[:, 1], y_score_train[:, 1])
+            val_stats = all_stats(Y_val[:, 1], y_score_val[:, 1] )
+            test_stats = all_stats(Y_test[:, 1], y_score_test[:, 1], val_stats[-1])
         else:
             train_stats = all_stats(Y_train, y_score_train)
             test_stats = all_stats(Y_test, y_score_test, train_stats[-1])
@@ -135,6 +135,7 @@ def do_optimize(nb_classes, data, labels, iid_validate_set_keys=None):
         # summarize history for loss
 
         if use_plot:
+            plot_roc(Y_test[:,0], y_score_test[:,0])
             # plt.scatter(Y_train, y_score_train)
             # plt.draw()
 
