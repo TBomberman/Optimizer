@@ -1,6 +1,7 @@
 from cmapPy.pandasGEXpress import parse
 import numpy as np
 import csv
+import helpers.remove_correlated_features as rcf
 
 # local vars
 cutoff = 0.5
@@ -15,8 +16,6 @@ def load_csv(file):
             reader = csv.reader(csv_file, dialect='excel')
             for row in reader:
                 expression.append(row)
-
-        print('gene expressions loaded. rows:  ' + str(len(expression)))
         return expression
 
 def load_descriptors(file):
@@ -84,3 +83,13 @@ def printProgressBar (iteration, total, prefix = 'Progress', suffix = 'Complete'
     # Print New Line on Complete
     if iteration == total:
         print()
+
+def get_trimmed_feature_dict(file, delimiter=',', key_index=0):
+    keys_csv = load_csv(file)
+    data = np.genfromtxt(file, delimiter=delimiter, skip_header=1)
+    numerical = data[0:,1:]
+    trimmed_data = rcf.trim_features(numerical)
+    my_dict = {}
+    for i in range(0, len(data)):
+        my_dict[keys_csv[i+1][key_index]] = trimmed_data[i]
+    return my_dict

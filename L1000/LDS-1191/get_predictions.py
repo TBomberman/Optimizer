@@ -64,6 +64,7 @@ up_model = load_model_from_file_prefix(up_model_file_prefix)
 # load gene fingerprints to test
 gene_features_dict = get_feature_dict('data/gene_go_fingerprint.csv', use_int=True)
 lm_gene_entrez_ids_list = load_csv('data/genes_by_var.csv')[:gene_count_data_limit]
+print('gene expressions loaded. rows:  ' + str(len(lm_gene_entrez_ids_list)))
 lm_gene_entrez_ids = []
 for sublist in lm_gene_entrez_ids_list :
     for item in sublist:
