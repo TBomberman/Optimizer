@@ -6,11 +6,11 @@ import time
 import matplotlib.pyplot as plt
 # from random_forest import do_optimize
 import numpy as np
-from L1000.data_loader import get_feature_dict, load_gene_expression_data, printProgressBar, load_csv
+from L1000.data_loader import get_feature_dict, load_gene_expression_data, printProgressBar, load_csv, get_trimmed_feature_dict
 from L1000.gene_predictor import train_model, save_model
 
 import helpers.email_notifier as en
-from mlp_optimizer import do_optimize
+from random_forest import do_optimize
 
 start_time = time.time()
 gene_count_data_limit = 100
@@ -34,9 +34,9 @@ def get_gene_id_dict():
 # get the dictionaries
 # get the expressions
 print(datetime.datetime.now(), "Loading drug and gene features")
-drug_features_dict = get_feature_dict('LDS-1191/data/smiles_rdkit_maccs.csv', use_int=True)
-gene_features_dict = get_feature_dict('LDS-1191/data/gene_go_fingerprint.csv', use_int=True)
-prot_features_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/WorkingData/protein_fingerprint.csv', use_int=False)
+drug_features_dict = get_feature_dict('LDS-1191/data/smiles_rdkit_maccs.csv') #, use_int=True)
+gene_features_dict = get_feature_dict('LDS-1191/data/gene_go_fingerprint.csv')#, use_int=True)
+prot_features_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/WorkingData/protein_fingerprint.csv')#, use_int=False)
 # info to separate by data by cell lines, drug + gene tests may not be equally spread out across cell lines
 cell_name_to_id_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/Metadata/Cell_Line_Metadata.txt', '\t', 2)
 # info to remove any dosages that are not 'µM'. Want to standardize the dosages.
@@ -149,7 +149,7 @@ for i in range(length-1, -1, -1): # go backwards, assuming later experiments hav
 
         if gene_count_data_limit > 1:
             # cell_X[cell_id].append([dose_amt] + drug_features + cell_features_dict[cell_id] + gene_features_dict[gene_symbol])
-            cell_X[cell_id][repeat_key] = drug_features + gene_features_dict[gene_symbol] + prot_features_dict[gene_symbol]
+            cell_X[cell_id][repeat_key] = drug_features + gene_features_dict[gene_symbol]#+ prot_features_dict[gene_symbol]
         else:
             cell_X[cell_id][repeat_key] = drug_features
         pert = column[gene_id]
