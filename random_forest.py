@@ -6,35 +6,19 @@ from sklearn.tree import DecisionTreeClassifier # see http://scikit-learn.org/st
 from sklearn.metrics import roc_auc_score, roc_curve, auc
 import matplotlib.pyplot as plt
 from helpers.plot_roc import plot_roc
+from sklearn.model_selection import train_test_split
+from keras.utils import np_utils
 
-def do_optimize(nb_classes, data, labels, data_test=None, labels_test=None):
-    if data_test is None:
-        # ids
-        work_ids = range(len(labels))
-        train_ids = sample(work_ids, int(0.7 * len(work_ids)))
-        test_ids = np.setdiff1d(work_ids, train_ids)
+train_percentage = 0.7
 
-        # X data
-        X_train = data[train_ids, :]
-        X_test = data[test_ids, :]
-
-        # Y data
-        y_train = labels[train_ids]
-        y_test = labels[test_ids]
-    else:
-        # ids
-        test_ids = range(len(labels_test))
-
-        # X data
-        X_train = data
-        X_test = data_test[test_ids, :]
-
-        # Y data
-        y_train = labels
-        y_test = labels_test[test_ids]
-
-    X_train = X_train.astype('float32')
-    X_test = X_test.astype('float32')
+def do_optimize(nb_classes, data, labels):
+    n = len(labels)
+    train_size = int(train_percentage * n)
+    print("Train size:", train_size)
+    test_size = int((1 - train_percentage) * n)
+    X_train, X_test, y_train, y_test = train_test_split(data, labels, train_size=train_size, test_size=test_size)
+    X_train = X_train.astype('float16')
+    X_test = X_test.astype('float16')
     Y_train = y_train
     Y_test = y_test
 
@@ -44,33 +28,32 @@ def do_optimize(nb_classes, data, labels, data_test=None, labels_test=None):
 
     if sum_train > 0 and sum_train < len(Y_train) and sum_test > 0 and sum_test < len(Y_test):
 
-        model = RandomForestRegressor(n_estimators=100, min_samples_split=50, n_jobs=-1)
-        # model = RandomForestClassifier()
+        for hyperparam in range(1,20):
+            print("hyperparam", hyperparam)
+            # model = RandomForestRegressor(n_estimators=100, min_samples_split=50, n_jobs=-1)
+            model = RandomForestClassifier(n_estimators=20, max_depth=2**hyperparam)
 
-        model.fit(X_train, Y_train)
-        y_pred = model.predict(X_train)
-        # uncomment below for RandomForestClassifier
-        # tr_error = np.mean((Y_train - y_pred)**2)
-        # tr_error = np.mean(y_pred != Y_train)
-        # scatter2D_plot(y_train, y_pred, "train", "rf")
-        tr_auc = roc_auc_score(Y_train, y_pred)
+            model.fit(X_train, Y_train)
+            y_pred = model.predict(X_train)
+            # uncomment below for RandomForestClassifier
+            # tr_error = np.mean((y_pred - Y_train)**2)
+            # scatter2D_plot(y_train, y_pred, "train", "rf")
+            tr_auc = roc_auc_score(Y_train, y_pred)
 
+            y_pred = model.predict(X_test)
+            # uncomment below for RandomForestClassifier
+            # te_error = np.mean((y_pred - Y_test)**2)
+            # scatter2D_plot(Y_test, y_pred, "test", "rf")
+            te_auc = roc_auc_score(Y_test, y_pred)
 
-        y_pred = model.predict(X_test)
-        # uncomment below for RandomForestClassifier
-        # te_error = np.mean((Y_test - y_pred) ** 2)
-        # te_error = np.mean(y_pred != Y_test)
-        # scatter2D_plot(Y_test, y_pred, "test", "rf")
-        te_auc = roc_auc_score(Y_test, y_pred)
+            # avg_test = (te_error + v_error)/2
+            # avg_auc = (te_auc + v_auc) / 2
+            # print("Random Forest (sklearn) error train: %.3f test: %.3f avg test: %.3f" % (tr_error, te_error, avg_test))
+            # print("Random Forest (sklearn) AUC train: %.3f test: %.3f val: %.3f avg test: %.3f" % (
+            #     tr_auc, te_auc, v_auc, avg_auc))
+            accuracy = 1 - np.mean(y_pred != y_test)
 
-        # avg_test = (te_error + v_error)/2
-        # avg_auc = (te_auc + v_auc) / 2
-        # print("Random Forest (sklearn) error train: %.3f test: %.3f avg test: %.3f" % (tr_error, te_error, avg_test))
-        # print("Random Forest (sklearn) AUC train: %.3f test: %.3f val: %.3f avg test: %.3f" % (
-        #     tr_auc, te_auc, v_auc, avg_auc))
-        accuracy = 1 - np.mean(y_pred != y_test)
+            print("Random Forest (sklearn) AUC train: %.3f test: %.3f accuracy: %.3f" % (tr_auc, te_auc, accuracy))
 
-        print("Random Forest (sklearn) AUC train: %.3f test: %.3f accuracy: %.3f" % (tr_auc, te_auc, accuracy))
-
-        if show_roc:
-            plot_roc(Y_test, y_pred)
+            if show_roc:
+                plot_roc(Y_test, y_pred)
