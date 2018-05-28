@@ -15,19 +15,23 @@ start_time = time.time()
 gene_count_data_limit = 100
 use_optimizer = True
 model_file_prefix = "100PC3PD"
-balance_negatives = True
+balance_negatives = False
 save_data_to_file = False
-use_data_from_file = True
+use_data_from_file = False
 
 if use_data_from_file:
     npX = np.load("PC3npX.npz")['arr_0']
     npY_class = np.load("PC3npY_class.npz")['arr_0']
-    if use_optimizer:
-        do_optimize(2, npX, npY_class)
-    else:
-        model = train_model(npX, npY_class)
-        save_model(model, model_file_prefix)
-    quit()
+    try:
+        if use_optimizer:
+            do_optimize(2, npX, npY_class)
+        else:
+            model = train_model(npX, npY_class)
+            save_model(model, model_file_prefix)
+    finally:
+        en.notify()
+        plt.show()
+        quit()
 
 def find_nth(haystack, needle, n):
     start = haystack.find(needle)
