@@ -16,13 +16,13 @@ from helpers.callbacks import NEpochLogger
 # local variables
 dropout = 0.2
 dense = 1403
-batch_size = 2048
-nb_epoch =10000 #1000 cutoff 1 #3000 cutoff  2 and
+batch_size = 2**12
+nb_epoch = 10000 #1000 cutoff 1 #3000 cutoff  2 and
 regularizer = l1 # l1 beats the other 2
 lammy = 0
 use_plot = False
 train_percentage = 0.7
-patience = 10
+patience = 20
 
 # uncomment this to disable regularizer
 def regularizer(lammy):
@@ -68,7 +68,7 @@ def do_optimize(nb_classes, data, labels, iid_validate_set_keys=None):
         X_val = data[val_ids]
         Y_val = labels[val_ids]
 
-    # for hyperparam in range(1, 8):
+    # for hyperparam in range(4, 7):
     for hyperparam in [1]:
         lammy = 8 / (10**7) # LNCAP from LDS-1494 optimized
         # lammy = 0.0000001 # l1
@@ -76,8 +76,10 @@ def do_optimize(nb_classes, data, labels, iid_validate_set_keys=None):
         neuron_count = int(d)# * 0.2 * hyperparam)
         layer_count = 1
         optimizer = enums.optimizers[4]
+        # act 0: 'elu', 1: 'selu', 2: 'sigmoid', 3: 'linear', 4: 'softplus', 5: 'softmax', 6: 'tanh', 7: 'hard_sigmoid',
+        # 8: 'relu', 9: 'softsign'
+        activation_input = enums.activation_functions[1]
         activation = enums.activation_functions[8]
-        activation_input = enums.activation_functions[6]
         activation_output = enums.activation_functions[5] # for 2 classification outputs
 
         model = Sequential()
@@ -115,6 +117,7 @@ def do_optimize(nb_classes, data, labels, iid_validate_set_keys=None):
 
         print('Test score:', score[0])
         print('Test accuracy:', score[1])
+        print("metrics", model.metrics_names)
 
         if nb_classes > 1:
             train_stats = all_stats(Y_train[:, 1], y_score_train[:, 1])
@@ -122,11 +125,12 @@ def do_optimize(nb_classes, data, labels, iid_validate_set_keys=None):
             test_stats = all_stats(Y_test[:, 1], y_score_test[:, 1], val_stats[-1])
         else:
             train_stats = all_stats(Y_train, y_score_train)
-            test_stats = all_stats(Y_test, y_score_test, train_stats[-1])
-            val_stats = all_stats(Y_val, y_score_val, train_stats[-1])
+            val_stats = all_stats(Y_val, y_score_val)
+            test_stats = all_stats(Y_test, y_score_test, val_stats[-1])
 
         print_out = 'Hidden layers: %s, Neurons per layer: %s, Hyperparam: %s' % (layer_count + 1, neuron_count, hyperparam)
         print(print_out)
+        print('All stats columns | AUC | Recall | Specificity | Number of Samples | Precision | Max F Cutoff')
         print('All stats train:', ['{:6.2f}'.format(val) for val in train_stats])
         print('All stats test:', ['{:6.2f}'.format(val) for val in test_stats])
         print('All stats val:', ['{:6.2f}'.format(val) for val in val_stats])
