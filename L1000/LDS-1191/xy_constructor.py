@@ -4,18 +4,30 @@ import json
 import time
 
 import matplotlib.pyplot as plt
-# from random_forest import do_optimize
+from mlp_optimizer import do_optimize
 import numpy as np
 from L1000.data_loader import get_feature_dict, load_gene_expression_data, printProgressBar, load_csv, get_trimmed_feature_dict
 from L1000.gene_predictor import train_model, save_model
 
 import helpers.email_notifier as en
-from random_forest import do_optimize
 
 start_time = time.time()
 gene_count_data_limit = 100
 use_optimizer = True
 model_file_prefix = "100PC3PD"
+balance_negatives = True
+save_data_to_file = False
+use_data_from_file = True
+
+if use_data_from_file:
+    npX = np.load("PC3npX.npz")['arr_0']
+    npY_class = np.load("PC3npY_class.npz")['arr_0']
+    if use_optimizer:
+        do_optimize(2, npX, npY_class)
+    else:
+        model = train_model(npX, npY_class)
+        save_model(model, model_file_prefix)
+    quit()
 
 def find_nth(haystack, needle, n):
     start = haystack.find(needle)
@@ -168,7 +180,7 @@ for gene_id in lm_gene_entrez_ids:
 
 gc.collect()
 cell_line_counter = 1
-print("Printing cell data. Gene count:", gene_count_data_limit, "\n")
+print("Gene count:", gene_count_data_limit, "\n")
 try:
     for cell_name in cell_name_to_id_dict:
         # print("Looking at", cell_name)
@@ -191,10 +203,6 @@ try:
 
         sample_size = len(npX)
 
-        if sample_size < 300: # smaller sizes was giving y values of only one class
-            # print("Skipping", cell_name, ". Sample size", sample_size, "is too small.\n")
-            continue
-
         class_cut_off = np.percentile(npY, percentile)
 
         npY_class = np.zeros(len(npY), dtype=int)
@@ -202,13 +210,35 @@ try:
             for gene_id in lm_gene_entrez_ids: # this section is for gene specific class cutoffs
                 class_cut_off = gene_cutoffs[gene_id]
                 gene_locations = np.where(npY_gene_ids == gene_id)
-                cutoff_locations = np.where(npY > class_cut_off)
-                intersect = np.intersect1d(gene_locations, cutoff_locations)
+                positive_locations = None
+                negative_locations = None
+                if percentile < 50:
+                    positive_locations = np.where(npY < class_cut_off)
+                    negative_locations = np.where(npY >= class_cut_off)
+                else:
+                    positive_locations = np.where(npY >= class_cut_off)
+                    negative_locations = np.where(npY < class_cut_off)
+                intersect = np.intersect1d(gene_locations, positive_locations)
                 npY_class[intersect] = 1
+            if balance_negatives:
+                positives_size = len(positive_locations[0])
+                negatives_size = len(negative_locations[0])
+                print("positives", positives_size)
+                print("negativs", negatives_size)
+                negative_locations_sample = np.random.randint(negatives_size, size=positives_size)
+                negative_locations_sample = [negative_locations[0][negative_locations_sample]]
+                combined_locations = [np.concatenate((positive_locations[0], negative_locations_sample[0]))]
+                npX = npX[combined_locations]
+                npY_class = npY_class[combined_locations]
+                sample_size = len(npY_class)
             print("Evaluating cell line", cell_line_counter, cell_name, "(Percentile:", percentile, ")")
         else:
             npY_class[np.where(npY > class_cut_off)] = 1 # generic class cutoff
             print("Evaluating cell line", cell_line_counter, cell_name, "class cutoff", class_cut_off, "(Percentile:", percentile, ")")
+
+        if sample_size < 300: # smaller sizes was giving y values of only one class
+            # print("Skipping", cell_name, ". Sample size", sample_size, "is too small.\n")
+            continue
 
         num_drugs = len(set(cell_drugs[cell_id]))
         print("Sample Size:", sample_size, "Drugs tested:", num_drugs)
@@ -223,6 +253,10 @@ try:
         # plt.hist(num_gene_effects, bins='auto')
         # plt.draw()
         # print(drug_key, num_gene_effects)
+
+        if save_data_to_file:
+            np.savez(cell_name + "npX", npX)
+            np.savez(cell_name + "npY_class", npY_class)
 
         if use_optimizer:
             do_optimize(2, npX, npY_class) #, listKeys)
