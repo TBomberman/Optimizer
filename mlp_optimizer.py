@@ -35,7 +35,7 @@ def regularizer(lammy):
 def do_optimize(nb_classes, data, labels, iid_validate_set_keys=None):
     n = len(labels)
     d = data.shape[1]
-    if nb_classes:
+    if nb_classes > 1:
         labels = np_utils.to_categorical(labels, nb_classes)
     if iid_validate_set_keys is None:
         train_size = int(train_percentage * n)
@@ -80,7 +80,9 @@ def do_optimize(nb_classes, data, labels, iid_validate_set_keys=None):
         # 8: 'relu', 9: 'softsign'
         activation_input = enums.activation_functions[1]
         activation = enums.activation_functions[8]
-        activation_output = enums.activation_functions[5] # for 2 classification outputs
+        activation_output = enums.activation_functions[5]
+        # usign rmse single output
+        # activation_output = enums.activation_functions[2]
 
         model = Sequential()
         history = History()
@@ -105,28 +107,29 @@ def do_optimize(nb_classes, data, labels, iid_validate_set_keys=None):
 
         # multi_model = multi_gpu_model(model, gpus=6)
         model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
+        # model.compile(loss='mean_squared_error', optimizer=optimizer, metrics=['accuracy'])
 
         model.fit(X_train, Y_train, batch_size=batch_size, epochs=nb_epoch,
                   verbose=0, validation_data=(X_test, Y_test), callbacks=[history, early_stopping, out_epoch])
 
         score = model.evaluate(X_test, Y_test, verbose=0)
 
-        y_score_train = model.predict_proba(X_train)
-        y_score_test = model.predict_proba(X_test)
-        y_score_val = model.predict_proba(X_val)
+        y_pred_train = model.predict_proba(X_train)
+        y_pred_test = model.predict_proba(X_test)
+        y_pred_val = model.predict_proba(X_val)
 
         print('Test score:', score[0])
         print('Test accuracy:', score[1])
         print("metrics", model.metrics_names)
 
         if nb_classes > 1:
-            train_stats = all_stats(Y_train[:, 1], y_score_train[:, 1])
-            val_stats = all_stats(Y_val[:, 1], y_score_val[:, 1] )
-            test_stats = all_stats(Y_test[:, 1], y_score_test[:, 1], val_stats[-1])
+            train_stats = all_stats(Y_train[:, 1], y_pred_train[:, 1])
+            val_stats = all_stats(Y_val[:, 1], y_pred_val[:, 1] )
+            test_stats = all_stats(Y_test[:, 1], y_pred_test[:, 1], val_stats[-1])
         else:
-            train_stats = all_stats(Y_train, y_score_train)
-            val_stats = all_stats(Y_val, y_score_val)
-            test_stats = all_stats(Y_test, y_score_test, val_stats[-1])
+            train_stats = all_stats(Y_train, y_pred_train)
+            val_stats = all_stats(Y_val, y_pred_val)
+            test_stats = all_stats(Y_test, y_pred_test, val_stats[-1])
 
         print_out = 'Hidden layers: %s, Neurons per layer: %s, Hyperparam: %s' % (layer_count + 1, neuron_count, hyperparam)
         print(print_out)
@@ -139,7 +142,7 @@ def do_optimize(nb_classes, data, labels, iid_validate_set_keys=None):
         # summarize history for loss
 
         if use_plot:
-            plot_roc(Y_test[:,0], y_score_test[:,0])
+            plot_roc(Y_test[:,0], y_pred_test[:,0])
             # plt.scatter(Y_train, y_score_train)
             # plt.draw()
 
