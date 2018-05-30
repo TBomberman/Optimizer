@@ -6,9 +6,10 @@ from keras.metrics import binary_accuracy
 from helpers.callbacks import NEpochLogger
 from pathlib import Path
 import numpy as np
+import os
 
 class MlpEnsemble(Model):
-    def __init__(self, layers=None, name=None, n_estimators=20, patience=20, log_steps=5, dropout=0.2,
+    def __init__(self, layers=None, name=None, n_estimators=3, patience=20, log_steps=5, dropout=0.2,
                  input_activation='selu', hidden_activation='relu', output_activation='softmax', optimizer='adam',
                  saved_models_path='ensemble_models/'):
         self.patience = patience
@@ -28,7 +29,7 @@ class MlpEnsemble(Model):
             if file.exists():
                 self.models[file_prefix] = self.load_model(file_prefix)
 
-    def load_model(file_prefix):
+    def load_model(self, file_prefix):
         # load json and create model
         json_file = open(file_prefix + '.json', 'r')
         loaded_model_json = json_file.read()
@@ -40,13 +41,13 @@ class MlpEnsemble(Model):
         loaded_model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
         return loaded_model
 
-    def save_model(model, file_prefix):
+    def save_model(self, model, file_prefix):
         # serialize model to JSON
         model_json = model.to_json()
+        os.makedirs(os.path.dirname(file_prefix), exist_ok=True)
         with open(file_prefix + ".json", "w") as json_file:
             json_file.write(model_json)
-            # serialize weights to HDF5
-            model.save_weights(file_prefix + ".h5")
+        model.save_weights(file_prefix + ".h5")
         print("Saved model", file_prefix, "to disk")
 
     def build_model(self, d):
@@ -92,8 +93,8 @@ class MlpEnsemble(Model):
         indices_set = []
         positive_idx = np.where(y[:,1])
         negative_idx = np.where(y[:,0])
-        n_positives = np.sum(y[:,1])
-        n_negatives = np.sum(y[:,0])
+        n_positives = int(np.sum(y[:,1]))
+        n_negatives = int(np.sum(y[:,0]))
         print("positives", n_positives)
         print("negatives", n_negatives)
         for i in range(0, self.n_estimators):
@@ -106,25 +107,28 @@ class MlpEnsemble(Model):
     def evaluate(self, x=None, y=None, batch_size=None, verbose=0, sample_weight=None, steps=None):
         scores = []
         sum_scores = 0
-        y_probs = np.empty(())
-        for model in self.models:
+        y_probs = []
+        for name, model in self.models.items():
             score = model.evaluate(x, y, verbose=0)
             scores.append(score)
             sum_scores += score[0]
             y_prob = model.predict_proba(x)
-            np.append(y_probs, y_prob)
+            y_probs.append(y_prob)
         avg_score = sum_scores / self.n_estimators
-        avg_y_probs = np.mean(y_probs)
+        y_probs = np.asarray(y_probs)
+        avg_y_probs = np.mean(y_probs, axis=0)
         avg_y_probs[np.where(avg_y_probs >= 0.5)] = 1
         avg_y_probs[np.where(avg_y_probs < 0.5)] = 0
         y_pred = avg_y_probs
-        acc = binary_accuracy(y, y_pred)
+        y = y.astype('float32')
+        acc = np.mean(y == y_pred)
         return [avg_score, acc]
 
     def predict_proba(self, x):
-        y_probs = np.empty(())
-        for model in self.models:
+        y_probs = []
+        for name, model in self.models.items():
             y_prob = model.predict_proba(x)
-            np.append(y_probs, y_prob)
-        return np.mean(y_probs)
+            y_probs.append(y_prob)
+        y_probs = np.asarray(y_probs)
+        return np.mean(y_probs, axis=0)
 

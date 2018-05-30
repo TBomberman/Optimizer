@@ -6,6 +6,7 @@ from L1000.mlp_ensemble import MlpEnsemble
 
 train_percentage = 0.7
 use_plot = False
+use_fit = False
 
 def do_optimize(nb_classes, data, labels):
     n = len(labels)
@@ -21,7 +22,8 @@ def do_optimize(nb_classes, data, labels):
     Y_val = y_val
 
     model = MlpEnsemble()
-    model.fit(X_train, Y_train, validation_data=(X_test, Y_test))
+    if use_fit:
+        model.fit(X_train, Y_train, validation_data=(X_test, Y_test))
 
     score = model.evaluate(X_test, Y_test)
     print('Test score:', score[0])
