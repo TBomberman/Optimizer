@@ -78,13 +78,16 @@ class MlpEnsemble(Model):
         out_epoch = NEpochLogger(display=self.log_steps)
         self.d = x.shape[1]
 
-        all_indices = self.get_balanced_data_indices_sets(y)
+        all_train_indices = self.get_balanced_data_indices_sets(y)
+        all_val_indices = self.get_balanced_data_indices_sets(validation_data[1])
         for i in range(0, self.n_estimators):
-            indices = all_indices[i]
+            train_indices = all_train_indices[i]
+            val_indices = all_val_indices[i]
             file_prefix = self.saved_models_path + "EnsembleModel" + str(i)
             model = self.build_model(self.d)
-            model.fit(x[indices], y[indices], batch_size=batch_size, epochs=epochs, verbose=0,
-                      validation_data=validation_data, callbacks=[history, early_stopping, out_epoch])
+            model.fit(x[train_indices], y[train_indices], batch_size=batch_size, epochs=epochs, verbose=0,
+                      validation_data=(validation_data[0][val_indices], validation_data[1][val_indices]),
+                      callbacks=[history, early_stopping, out_epoch])
             self.models[file_prefix] = model
             if save_models:
                 self.save_model(model, file_prefix)
@@ -105,13 +108,15 @@ class MlpEnsemble(Model):
         return indices_set
 
     def evaluate(self, x=None, y=None, batch_size=None, verbose=0, sample_weight=None, steps=None):
-        scores = []
         sum_scores = 0
         y_probs = []
         for name, model in self.models.items():
+            print("collecting probabilities from", name)
             score = model.evaluate(x, y, verbose=0)
-            scores.append(score)
-            sum_scores += score[0]
+            if isinstance(score, list):
+                sum_scores += score[0]
+            else:
+                sum_scores += score
             y_prob = model.predict_proba(x)
             y_probs.append(y_prob)
         avg_score = sum_scores / self.n_estimators
