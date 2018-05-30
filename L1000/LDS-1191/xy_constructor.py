@@ -17,10 +17,10 @@ use_optimizer = True
 model_file_prefix = "100PC3PD"
 balance_negatives = False
 save_data_to_file = False
-use_data_from_file = False
+use_data_from_file = True
 
 if use_data_from_file:
-    npX = np.load("PC3npX.npz")['arr_0']
+    npX = np.load("PC3npX.npz")['arr_0'] # must be not balanced too because 70% of this is X_train.npz
     npY_class = np.load("PC3npY_class.npz")['arr_0']
     try:
         if use_optimizer:
@@ -88,9 +88,8 @@ for gene_id in lm_gene_entrez_ids:
 
 # For every experiment
 print("Loading experiments")
-four_percent = int(length/25)
 for i in range(length-1, -1, -1): # go backwards, assuming later experiments have stronger perturbation
-    if i % four_percent == 0: printProgressBar(length - i, length, prefix='Load experiments progress')
+    printProgressBar(length - i, length, prefix='Load experiments progress')
     X = []
     Y = []
 
@@ -179,7 +178,10 @@ print("Time to load data:", elapsed_time)
 
 gene_cutoffs = {}
 percentile = 5 # for downregulation, use 95 for upregulation
+prog_ctr = 0
 for gene_id in lm_gene_entrez_ids:
+    prog_ctr += 1
+    printProgressBar(prog_ctr, gene_count_data_limit, prefix='Storing percentile cutoffs')
     gene_cutoffs[gene_id] = np.percentile(gene_perts[gene_id], percentile)
 
 gc.collect()
@@ -211,7 +213,10 @@ try:
 
         npY_class = np.zeros(len(npY), dtype=int)
         if use_gene_specific_cutoffs:
+            prog_ctr = 0
             for gene_id in lm_gene_entrez_ids: # this section is for gene specific class cutoffs
+                prog_ctr += 1
+                printProgressBar(prog_ctr, gene_count_data_limit, prefix='Marking positive pertubations')
                 class_cut_off = gene_cutoffs[gene_id]
                 gene_locations = np.where(npY_gene_ids == gene_id)
                 positive_locations = None
