@@ -3,10 +3,12 @@ from sklearn.model_selection import train_test_split
 from helpers.plot_roc import plot_roc
 from helpers.utilities import all_stats
 from L1000.mlp_ensemble import MlpEnsemble
+import numpy as np
 
 train_percentage = 0.7
 use_plot = False
 use_fit = False
+load_data = True
 
 def do_optimize(nb_classes, data, labels):
     n = len(labels)
@@ -15,7 +17,18 @@ def do_optimize(nb_classes, data, labels):
     train_size = int(train_percentage * n)
     print("Train size:", train_size)
     test_size = int((1-train_percentage) * n)
-    X_train, X_test, y_train, y_test = train_test_split(data, labels, train_size=train_size, test_size=test_size)
+    if load_data:
+        X_train = np.load("X_train.npz")['arr_0'] # not balanced
+        X_test = np.load("X_test.npz")['arr_0']
+        y_train = np.load("y_train.npz")['arr_0']
+        y_test = np.load("y_test.npz")['arr_0']
+    else:
+        X_train, X_test, y_train, y_test = train_test_split(data, labels, train_size=train_size, test_size=test_size)
+        np.savez("X_train", X_train)
+        np.savez("X_test", X_test)
+        np.savez("y_train", y_train)
+        np.savez("y_test", y_test)
+
     X_val, X_test, y_val, y_test = train_test_split(X_test, y_test, train_size=0.5, test_size=0.5)
     Y_train = y_train
     Y_test = y_test
