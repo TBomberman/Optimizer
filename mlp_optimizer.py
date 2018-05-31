@@ -121,6 +121,7 @@ def do_optimize(nb_classes, data, labels, iid_validate_set_keys=None):
         print('Test score:', score[0])
         print('Test accuracy:', score[1])
         print("metrics", model.metrics_names)
+        my_evaluate(X_test, Y_test, model)
 
         if nb_classes > 1:
             train_stats = all_stats(Y_train[:, 1], y_pred_train[:, 1])
@@ -166,3 +167,10 @@ def add_dense_dropout(count, neuron_count, model, activation):
         model.add(Dense(neuron_count, activity_regularizer=regularizer(lammy)))
         model.add(Activation(activation))
         model.add(Dropout(dropout))
+
+def my_evaluate(x, y, model):
+    y_pred = model.predict_proba(x)
+    y_pred[np.where(y_pred >= 0.5)] = 1
+    y_pred[np.where(y_pred < 0.5)] = 0
+    acc = np.mean(y_pred == y)
+    print('My Test accuracy:', acc)
