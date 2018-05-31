@@ -9,7 +9,7 @@ import numpy as np
 import os
 
 class MlpEnsemble(Model):
-    def __init__(self, layers=None, name=None, n_estimators=3, patience=20, log_steps=5, dropout=0.2,
+    def __init__(self, layers=None, name=None, n_estimators=20, patience=20, log_steps=5, dropout=0.2,
                  input_activation='selu', hidden_activation='relu', output_activation='softmax', optimizer='adam',
                  saved_models_path='ensemble_models/'):
         self.patience = patience
@@ -118,6 +118,8 @@ class MlpEnsemble(Model):
             else:
                 sum_scores += score
             y_prob = model.predict_proba(x)
+            y_prob[np.where(y_prob >= 0.5)] = 1 # use consensus
+            y_prob[np.where(y_prob < 0.5)] = 0 # use consensus
             y_probs.append(y_prob)
         avg_score = sum_scores / self.n_estimators
         y_probs = np.asarray(y_probs)
