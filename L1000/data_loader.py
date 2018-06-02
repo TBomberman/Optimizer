@@ -65,7 +65,7 @@ def load_gene_expression_data(file,lm_gene_entrez_ids=None):
         col_meta_only=False, row_meta_only=False, rid=lm_gene_entrez_ids)
 
 def printProgressBar (iteration, total, prefix = 'Progress', suffix = 'Complete', decimals = 1, length = 25,
-                      fill = '█', pct_interval=5):
+                      fill = '>', pct_interval=5):
     """
     Call in a loop to create terminal progress bar
     @params:
@@ -77,7 +77,7 @@ def printProgressBar (iteration, total, prefix = 'Progress', suffix = 'Complete'
         length      - Optional  : character length of bar (Int)
         fill        - Optional  : bar fill character (Str)
     """
-    pct_iterations = int((total*pct_interval)/100)
+    pct_iterations = max(int((total*pct_interval)/100), 1)
     if iteration % pct_iterations > 0:
         return
     percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
