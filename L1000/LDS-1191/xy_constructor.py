@@ -230,16 +230,21 @@ try:
                 intersect = np.intersect1d(gene_locations, positive_locations)
                 npY_class[intersect] = 1
             if balance_negatives:
-                positives_size = len(positive_locations[0])
-                negatives_size = len(negative_locations[0])
+                positive_idx = np.where(npY_class==1)
+                negative_idx = np.where(npY_class==0)
+                positives_size = len(positive_idx[0])
+                negatives_size = len(negative_idx[0])
                 print("positives", positives_size)
                 print("negativs", negatives_size)
+                positive_locations = np.where(npY_class == 1)
+                negative_locations = np.where(npY_class == 0)
                 negative_locations_sample = np.random.randint(negatives_size, size=positives_size)
                 negative_locations_sample = [negative_locations[0][negative_locations_sample]]
                 combined_locations = [np.concatenate((positive_locations[0], negative_locations_sample[0]))]
                 npX = npX[combined_locations]
                 npY_class = npY_class[combined_locations]
                 sample_size = len(npY_class)
+                print("size after balancing", sample_size)
             print("Evaluating cell line", cell_line_counter, cell_name, "(Percentile:", percentile, ")")
         else:
             npY_class[np.where(npY > class_cut_off)] = 1 # generic class cutoff
