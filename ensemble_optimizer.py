@@ -7,8 +7,9 @@ import numpy as np
 
 train_percentage = 0.7
 use_plot = False
-use_fit = False
-load_data = True
+use_fit = True
+load_data = False
+save_data = False
 
 def do_optimize(nb_classes, data, labels):
     n = len(labels)
@@ -24,6 +25,8 @@ def do_optimize(nb_classes, data, labels):
         y_test = np.load("y_test.npz")['arr_0']
     else:
         X_train, X_test, y_train, y_test = train_test_split(data, labels, train_size=train_size, test_size=test_size)
+
+    if save_data:
         np.savez("X_train", X_train)
         np.savez("X_test", X_test)
         np.savez("y_train", y_train)
@@ -41,6 +44,12 @@ def do_optimize(nb_classes, data, labels):
     score = model.evaluate(X_test, Y_test)
     print('Test score:', score[0])
     print('Test accuracy:', score[1])
+
+    y_pred = model.predict_proba(X_test)
+    y_pred[np.where(y_pred >= 0.5)] = 1
+    y_pred[np.where(y_pred < 0.5)] = 0
+    acc = np.mean(y_pred == Y_test)
+    print('My Test accuracy:', acc)
 
     y_pred_train = model.predict_proba(X_train)
     y_pred_test = model.predict_proba(X_test)
