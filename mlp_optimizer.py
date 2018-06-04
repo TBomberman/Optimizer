@@ -22,7 +22,7 @@ regularizer = l1 # l1 beats the other 2
 lammy = 0
 use_plot = False
 train_percentage = 0.7
-patience = 20
+patience = 10
 
 # uncomment this to disable regularizer
 def regularizer(lammy):
@@ -74,6 +74,8 @@ def do_optimize(nb_classes, data, labels, iid_validate_set_keys=None):
         # lammy = 0.0000001 # l1
         # neuron_count = dense * hyperparam
         neuron_count = int(d)# * 0.2 * hyperparam)
+
+        # model = get_model(neuron_count, nb_classes, hyperparam)
         layer_count = 1
         optimizer = enums.optimizers[4]
         # act 0: 'elu', 1: 'selu', 2: 'sigmoid', 3: 'linear', 4: 'softplus', 5: 'softmax', 6: 'tanh', 7: 'hard_sigmoid',
@@ -85,22 +87,16 @@ def do_optimize(nb_classes, data, labels, iid_validate_set_keys=None):
         # activation_output = enums.activation_functions[2]
 
         model = Sequential()
-        history = History()
-        early_stopping = EarlyStopping(monitor='val_loss', min_delta=0, patience=patience, verbose=1, mode='auto')
         print('Patience', patience)
-        out_epoch = NEpochLogger(display=5)
 
-        model.add(Dense(neuron_count, input_shape=(d,), activity_regularizer=regularizer(lammy)))
+        model.add(Dense(neuron_count, input_shape=(neuron_count,), activity_regularizer=regularizer(lammy)))
         # model.add(Activation('tanh'))
         model.add(Activation(activation_input))
         model.add(Dropout(dropout))
 
         add_dense_dropout(layer_count, neuron_count, model, activation)
 
-        if nb_classes > 1:
-            model.add(Dense(labels.shape[1], activity_regularizer=regularizer(lammy)))
-        else:
-            model.add(Dense(1, activity_regularizer=regularizer(lammy)))
+        model.add(Dense(nb_classes, activity_regularizer=regularizer(lammy)))
         # model.add(Activation('softmax'))
         model.add(Activation(activation_output))
         # model.summary() # too much verbage
@@ -109,19 +105,22 @@ def do_optimize(nb_classes, data, labels, iid_validate_set_keys=None):
         model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
         # model.compile(loss='mean_squared_error', optimizer=optimizer, metrics=['accuracy'])
 
+        history = History()
+        early_stopping = EarlyStopping(monitor='val_loss', min_delta=0, patience=patience, verbose=1, mode='auto')
+        out_epoch = NEpochLogger(display=5)
         model.fit(X_train, Y_train, batch_size=batch_size, epochs=nb_epoch,
                   verbose=0, validation_data=(X_test, Y_test), callbacks=[history, early_stopping, out_epoch])
 
         score = model.evaluate(X_test, Y_test, verbose=0)
 
-        y_pred_train = model.predict_proba(X_train)
-        y_pred_test = model.predict_proba(X_test)
-        y_pred_val = model.predict_proba(X_val)
-
         print('Test score:', score[0])
         print('Test accuracy:', score[1])
         print("metrics", model.metrics_names)
         my_evaluate(X_test, Y_test, model)
+
+        y_pred_train = model.predict_proba(X_train)
+        y_pred_test = model.predict_proba(X_test)
+        y_pred_val = model.predict_proba(X_val)
 
         if nb_classes > 1:
             train_stats = all_stats(Y_train[:, 1], y_pred_train[:, 1])
@@ -174,3 +173,35 @@ def my_evaluate(x, y, model):
     y_pred[np.where(y_pred < 0.5)] = 0
     acc = np.mean(y_pred == y)
     print('My Test accuracy:', acc)
+
+def get_model(neuron_count, nb_classes, hyperparam=0):
+    layer_count = 1
+
+    optimizer = enums.optimizers[4]
+    # act 0: 'elu', 1: 'selu', 2: 'sigmoid', 3: 'linear', 4: 'softplus', 5: 'softmax', 6: 'tanh', 7: 'hard_sigmoid',
+    # 8: 'relu', 9: 'softsign'
+    activation_input = enums.activation_functions[1]
+    activation = enums.activation_functions[8]
+    activation_output = enums.activation_functions[5]
+    # usign rmse single output
+    # activation_output = enums.activation_functions[2]
+
+    model = Sequential()
+    print('Patience', patience)
+
+    model.add(Dense(neuron_count, input_shape=(neuron_count,), activity_regularizer=regularizer(lammy)))
+    # model.add(Activation('tanh'))
+    model.add(Activation(activation_input))
+    model.add(Dropout(dropout))
+
+    add_dense_dropout(layer_count, neuron_count, model, activation)
+
+    model.add(Dense(nb_classes, activity_regularizer=regularizer(lammy)))
+    # model.add(Activation('softmax'))
+    model.add(Activation(activation_output))
+    # model.summary() # too much verbage
+
+    # multi_model = multi_gpu_model(model, gpus=6)
+    model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
+    # model.compile(loss='mean_squared_error', optimizer=optimizer, metrics=['accuracy'])
+    return model
