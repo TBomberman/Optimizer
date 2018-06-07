@@ -12,6 +12,7 @@ from helpers.plot_roc import plot_roc
 import keras_enums as enums
 from helpers.utilities import all_stats
 from helpers.callbacks import NEpochLogger
+from keras.utils import plot_model
 
 # local variables
 dropout = 0.2
@@ -205,3 +206,9 @@ def get_model(neuron_count, nb_classes, hyperparam=0):
     model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
     # model.compile(loss='mean_squared_error', optimizer=optimizer, metrics=['accuracy'])
     return model
+
+def plot_model():
+    model = get_model(1402, 2)
+    plot_model(model, to_file='model.png', show_shapes=True, show_layer_names=False)
+
+# plot_model()
