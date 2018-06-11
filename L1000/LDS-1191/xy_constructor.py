@@ -12,12 +12,12 @@ from L1000.gene_predictor import train_model, save_model
 import helpers.email_notifier as en
 
 start_time = time.time()
-gene_count_data_limit = 100
+gene_count_data_limit = 977
 use_optimizer = True
 model_file_prefix = "100PC3PD"
-balance_negatives = False
 save_data_to_file = False
-use_data_from_file = True
+use_data_from_file = False
+use_gene_specific_cutoffs = True
 
 if use_data_from_file:
     npX = np.load("PC3npX.npz")['arr_0'] # must be not balanced too because 70% of this is X_train.npz
@@ -50,9 +50,9 @@ def get_gene_id_dict():
 # get the dictionaries
 # get the expressions
 print(datetime.datetime.now(), "Loading drug and gene features")
-drug_features_dict = get_feature_dict('LDS-1191/data/smiles_rdkit_maccs.csv') #, use_int=True)
+drug_features_dict = get_feature_dict('LDS-1191/data/smiles_rdkit_maccs_trimmed.csv') #, use_int=True)
 gene_features_dict = get_feature_dict('LDS-1191/data/gene_go_fingerprint.csv')#, use_int=True)
-prot_features_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/WorkingData/protein_fingerprint.csv')#, use_int=False)
+# prot_features_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/WorkingData/protein_fingerprint.csv')#, use_int=False)
 # info to separate by data by cell lines, drug + gene tests may not be equally spread out across cell lines
 cell_name_to_id_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/Metadata/Cell_Line_Metadata.txt', '\t', 2)
 # info to remove any dosages that are not 'µM'. Want to standardize the dosages.
@@ -80,8 +80,6 @@ cell_Y_gene_ids = {}
 cell_drugs = {}
 repeat_X = {}
 gene_perts = {}
-
-use_gene_specific_cutoffs = True
 
 for gene_id in lm_gene_entrez_ids:
     gene_perts[gene_id] = []
@@ -144,8 +142,8 @@ for i in range(length-1, -1, -1): # go backwards, assuming later experiments hav
         if gene_symbol not in gene_features_dict:
             continue
 
-        if gene_symbol not in prot_features_dict:
-            continue
+        # if gene_symbol not in prot_features_dict:
+        #     continue
 
         if cell_id not in cell_features_dict:
             continue
@@ -176,13 +174,17 @@ for i in range(length-1, -1, -1): # go backwards, assuming later experiments hav
 elapsed_time = time.time() - start_time
 print("Time to load data:", elapsed_time)
 
-gene_cutoffs = {}
-percentile = 5 # for downregulation, use 95 for upregulation
+gene_cutoffs_down = {}
+gene_cutoffs_up = {}
+percentile_down = 5 # for downregulation, use 95 for upregulation
+percentile_up = 95
+
 prog_ctr = 0
 for gene_id in lm_gene_entrez_ids:
     prog_ctr += 1
     printProgressBar(prog_ctr, gene_count_data_limit, prefix='Storing percentile cutoffs')
-    gene_cutoffs[gene_id] = np.percentile(gene_perts[gene_id], percentile)
+    gene_cutoffs_down[gene_id] = np.percentile(gene_perts[gene_id], percentile_down)
+    gene_cutoffs_up[gene_id] = np.percentile(gene_perts[gene_id], percentile_up)
 
 gc.collect()
 cell_line_counter = 1
@@ -194,65 +196,51 @@ try:
         if cell_id not in cell_X:
             # print("Skipping", cell_name, ". No cell line data.\n")
             continue
-        listX = []
-        listY = []
+        npX = []
+        npY = []
         listKeys = []
         for key, value in cell_X[cell_id].items():
-            listX.append(value)
+            npX.append(value)
             listKeys.append(key.split("_")[0])
         for key, value in cell_Y[cell_id].items():
-            listY.append(value)
+            npY.append(value)
 
-        npX = np.asarray(listX, dtype='float16')
-        npY = np.asarray(listY, dtype='float16')
+        npX = np.asarray(npX, dtype='float16')
+        npY = np.asarray(npY, dtype='float16')
         npY_gene_ids = np.asarray(cell_Y_gene_ids[cell_id])
-
-        sample_size = len(npX)
-
-        class_cut_off = np.percentile(npY, percentile)
 
         npY_class = np.zeros(len(npY), dtype=int)
         if use_gene_specific_cutoffs:
             prog_ctr = 0
+            combined_locations = []
             for gene_id in lm_gene_entrez_ids: # this section is for gene specific class cutoffs
                 prog_ctr += 1
                 printProgressBar(prog_ctr, gene_count_data_limit, prefix='Marking positive pertubations')
-                class_cut_off = gene_cutoffs[gene_id]
+                class_cut_off_down = gene_cutoffs_down[gene_id]
+                class_cut_off_up = gene_cutoffs_up[gene_id]
                 gene_locations = np.where(npY_gene_ids == gene_id)
-                positive_locations = None
-                negative_locations = None
-                if percentile < 50:
-                    positive_locations = np.where(npY < class_cut_off)
-                    negative_locations = np.where(npY >= class_cut_off)
-                else:
-                    positive_locations = np.where(npY >= class_cut_off)
-                    negative_locations = np.where(npY < class_cut_off)
-                intersect = np.intersect1d(gene_locations, positive_locations)
+                down_locations = np.where(npY <= class_cut_off_down)
+                up_locations = np.where(npY >= class_cut_off_up)
+                intersect = np.intersect1d(gene_locations, down_locations)
+                combined_locations += intersect.tolist()
+                intersect = np.intersect1d(gene_locations, up_locations)
                 npY_class[intersect] = 1
-            if balance_negatives:
-                positive_idx = np.where(npY_class==1)
-                negative_idx = np.where(npY_class==0)
-                positives_size = len(positive_idx[0])
-                negatives_size = len(negative_idx[0])
-                print("positives", positives_size)
-                print("negativs", negatives_size)
-                positive_locations = np.where(npY_class == 1)
-                negative_locations = np.where(npY_class == 0)
-                negative_locations_sample = np.random.randint(negatives_size, size=positives_size)
-                negative_locations_sample = [negative_locations[0][negative_locations_sample]]
-                combined_locations = [np.concatenate((positive_locations[0], negative_locations_sample[0]))]
-                npX = npX[combined_locations]
-                npY_class = npY_class[combined_locations]
-                sample_size = len(npY_class)
-                print("size after balancing", sample_size)
-            print("Evaluating cell line", cell_line_counter, cell_name, "(Percentile:", percentile, ")")
+                combined_locations += intersect.tolist()
+            npX = npX[combined_locations]
+            npY_class = npY_class[combined_locations]
+            print("size after top down split", len(npY_class))
+            print("Evaluating cell line", cell_line_counter, cell_name, "(Percentile ends:", percentile_down, ")")
         else:
-            npY_class[np.where(npY > class_cut_off)] = 1 # generic class cutoff
-            print("Evaluating cell line", cell_line_counter, cell_name, "class cutoff", class_cut_off, "(Percentile:", percentile, ")")
+            npY_class[np.where(npY > class_cut_off_down)] = 1 # generic class cutoff
+            print("Evaluating cell line", cell_line_counter, cell_name, "class cutoff", class_cut_off_down, "(Percentile ends:", percentile_down, ")")
+
+        sample_size = len(npY_class)
 
         if sample_size < 300: # smaller sizes was giving y values of only one class
             # print("Skipping", cell_name, ". Sample size", sample_size, "is too small.\n")
             continue
+
+        print(np.sum(npY_class))
 
         num_drugs = len(set(cell_drugs[cell_id]))
         print("Sample Size:", sample_size, "Drugs tested:", num_drugs)
