@@ -13,7 +13,7 @@ import helpers.email_notifier as en
 from mlp_optimizer import do_optimize
 
 start_time = time.time()
-gene_count_data_limit = 100
+gene_count_data_limit = 977
 use_optimizer = True
 model_file_prefix = "test"
 
@@ -155,15 +155,22 @@ for i in range(length-1, -1, -1): # go backwards, assuming later experiments hav
 elapsed_time = time.time() - start_time
 print("Time to load data:", elapsed_time)
 
-gene_cutoffs = {}
+gene_cutoffs_down = {}
+gene_cutoffs_up = {}
+percentile_down = 5 # for downregulation, use 95 for upregulation
+percentile_up = 95
 percentile = 5 # for downregulation, use 95 for upregulation
+prog_ctr = 0
 for gene_id in lm_gene_entrez_ids_list:
+    prog_ctr += 1
+    printProgressBar(prog_ctr, gene_count_data_limit, prefix='Storing percentile cutoffs')
     our_gene_id = gene_id[0]
-    gene_cutoffs[our_gene_id] = np.percentile(gene_perts[our_gene_id], percentile)
+    gene_cutoffs_down[our_gene_id] = np.percentile(gene_perts[our_gene_id], percentile_down)
+    gene_cutoffs_up[our_gene_id] = np.percentile(gene_perts[our_gene_id], percentile_up)
 
 gc.collect()
 cell_line_counter = 1
-print("Printing cell data. Gene count:", gene_count_data_limit, "\n")
+print("Gene count:", gene_count_data_limit, "\n")
 try:
     for cell_name in cell_name_to_id_dict:
         # print("Looking at", cell_name)
@@ -180,36 +187,46 @@ try:
         for key, value in cell_Y[cell_id].items():
             listY.append(value)
 
-        npX = np.asarray(listX)
-        npY = np.asarray(listY)
+        npX = np.asarray(listX, dtype='float16')
+        npY = np.asarray(listY, dtype='float16')
         npY_gene_ids = np.asarray(cell_Y_gene_ids[cell_id])
 
-        sample_size = len(npX)
+        npY_class = np.zeros(len(npY), dtype=int)
+        if use_gene_specific_cutoffs:
+            prog_ctr = 0
+            combined_locations = []
+            for their_gene_id in lm_gene_entrez_ids_list: # this section is for gene specific class cutoffs
+                gene_id = their_gene_id[0]
+                prog_ctr += 1
+                printProgressBar(prog_ctr, gene_count_data_limit, prefix='Marking positive pertubations')
+                class_cut_off_down = gene_cutoffs_down[gene_id]
+                class_cut_off_up = gene_cutoffs_up[gene_id]
+                gene_locations = np.where(npY_gene_ids == gene_id)
+                down_locations = np.where(npY <= class_cut_off_down)
+                up_locations = np.where(npY >= class_cut_off_up)
+                npY_class[up_locations] = 1
+                intersect = np.intersect1d(gene_locations, down_locations)
+                combined_locations += intersect.tolist()
+                intersect = np.intersect1d(gene_locations, up_locations)
+                combined_locations += intersect.tolist()
+            npX = npX[combined_locations]
+            npY_class = npY_class[combined_locations]
+            print("size after top down split", len(npY_class))
+            print("Evaluating cell line", cell_line_counter, cell_name, "(Percentile ends:", percentile_down, ")")
+        else:
+            npY_class[np.where(npY > class_cut_off_down)] = 1 # generic class cutoff
+            print("Evaluating cell line", cell_line_counter, cell_name, "class cutoff", class_cut_off_down, "(Percentile ends:", percentile_down, ")")
+
+        sample_size = len(npY_class)
 
         if sample_size < 300: # smaller sizes was giving y values of only one class
             # print("Skipping", cell_name, ". Sample size", sample_size, "is too small.\n")
             continue
 
-        class_cut_off = np.percentile(npY, percentile)
-
-        npY_class = np.zeros(len(npY), dtype=int)
-        if use_gene_specific_cutoffs:
-            for gene_id in lm_gene_entrez_ids_list: # this section is for gene specific class cutoffs
-                our_gene_id = gene_id[0]
-                class_cut_off = gene_cutoffs[our_gene_id]
-                gene_locations = np.where(npY_gene_ids == our_gene_id)
-                cutoff_locations = np.where(npY > class_cut_off)
-                intersect = np.intersect1d(gene_locations, cutoff_locations)
-                npY_class[intersect] = 1
-            print("Evaluating cell line", cell_line_counter, cell_name, "(Percentile:", percentile, ")")
-        else:
-            npY_class[np.where(npY > class_cut_off)] = 1 # generic class cutoff
-            print("Evaluating cell line", cell_line_counter, cell_name, "class cutoff", class_cut_off, "(Percentile:", percentile, ")")
-
         num_drugs = len(set(cell_drugs[cell_id]))
         print("Sample Size:", sample_size, "Drugs tested:", num_drugs)
 
-        # #count number of perturbed genes
+        # count number of perturbed genes
         # key_set = set(listKeys)
         # set_keys = np.array(listKeys)
         # for drug_key in key_set:
@@ -217,7 +234,7 @@ try:
         #     print(drug_key, gene_count_data_limit-np.count_nonzero(npY_class[drug_idx]))
 
         if use_optimizer:
-            do_optimize(2, npX, npY_class, listKeys)
+            do_optimize(2, npX, npY_class) #, listKeys)
         else:
             model = train_model(npX, npY_class)
             save_model(model, model_file_prefix)
