@@ -16,7 +16,7 @@ gene_count_data_limit = 100
 find_promiscuous = True
 most_promiscious_drug = ''
 most_promiscious_drug_target_gene_count = 0
-operation = "counter"
+operation = "promiscuous"
 hit_score = 0
 
 class Top10():
@@ -30,10 +30,17 @@ class Top10():
             self.sorted_dict.popitem(False)
         else:
             self.current_size += 1
-        self.sorted_dict[key] = value
+        ctr = 0
+        key_suffix = str(key).zfill(3) + "_" + str(ctr)
+        while key_suffix in self.sorted_dict:
+            ctr += 1
+            key_suffix = str(key).zfill(3) + "_" + str(ctr)
+        self.sorted_dict[key_suffix] = value
 
-    def get_lowest_key(self):
-        return self.sorted_dict.keys()[0]
+    def get_lowest_key_prefix(self):
+        key = self.sorted_dict.keys()[0]
+        tokens = key.split('_')
+        return int(tokens[0])
 
     def get_dict(self):
         return self.sorted_dict
@@ -98,7 +105,7 @@ def calculate_perturbations(model, samples, class_value, top10_list, molecule_id
                 gene_list_str += str(gene_list[gene_counter]) + " "
         gene_counter += 1
 
-    if top10_list.current_size == 0 or (top10_list.current_size > 0 and regulate_counter > top10_list.get_lowest_key()):
+    if top10_list.current_size <= 0 or regulate_counter > top10_list.get_lowest_key_prefix():
         message = "Compound " + str(molecule_id) + " " + direction_str + "regulates " +  str(regulate_counter) + " " + \
                   misexp_str + " genes."
         message += gene_list_str
@@ -109,7 +116,7 @@ def calculate_perturbations(model, samples, class_value, top10_list, molecule_id
 
 try:
     with open(file_name, "r") as csv_file:
-        reader = csv.reader(csv_file, dialect='excel', delimiter=',')
+        reader = csv.reader(csv_file, dialect='excel', delimiter=',' )
         next(reader)
         drug_counter = 0
         for row in reader:
@@ -125,7 +132,7 @@ try:
                 continue
 
             if operation == "counter":
-                # hits / (non hits + hits + missed)
+                # hits / (non hits + hits + missed )
 
                 # get the batch of samples
                 samples_batch = np.array([], dtype="f2")
@@ -153,7 +160,7 @@ try:
                                                            "up", "underexpressed", under_expressed_genes)
                 allregulate_count = downregulate_count + upregulate_count
                 if top10all.current_size == 0 or \
-                        (top10all.current_size > 0 and allregulate_count > top10all.get_lowest_key()):
+                        (top10all.current_size > 0 and allregulate_count > top10all.get_lowest_key_prefix()):
                     message = "Compound " + str(molecule_id) + " downregulates " + str(downregulate_count) + \
                               " overexpressed genes and upregulates " + str(upregulate_count) + \
                               " underexpressed genes. Total: " + str(allregulate_count)
@@ -175,7 +182,7 @@ try:
                 downregulate_count = calculate_perturbations(down_model, samples_batch, 0, top10down, molecule_id, "down")
                 upregulate_count = calculate_perturbations(up_model, samples_batch, 1, top10up, molecule_id, "up")
                 allregulate_count = downregulate_count + upregulate_count
-                if top10all.current_size == 0 or (top10all.current_size > 0 and allregulate_count > top10all.get_lowest_key()):
+                if top10all.current_size == 0 or (top10all.current_size > 0 and allregulate_count > top10all.get_lowest_key_prefix()):
                     message = "Compound " + str(molecule_id) + " downregulates " + str(downregulate_count) + \
                               " genes and upregulates " + str(upregulate_count) + " genes. Total: " + str(allregulate_count)
                     top10all.add_item(allregulate_count, message)
