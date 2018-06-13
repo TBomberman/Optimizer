@@ -7,7 +7,7 @@ import numpy as np
 from L1000.data_loader import get_feature_dict, load_csv
 from L1000.gene_predictor import load_model
 from sortedcontainers import SortedDict
-
+import matplotlib.pyplot as plt
 import helpers.email_notifier as en
 
 down_model_file_prefix = "100PC3Down"
@@ -18,6 +18,7 @@ most_promiscious_drug = ''
 most_promiscious_drug_target_gene_count = 0
 operation = "promiscuous"
 hit_score = 0
+plot_histograms = False
 
 class Top10():
     def __init__(self):
@@ -89,6 +90,9 @@ top10s = {}
 top10down = Top10()
 top10up = Top10()
 top10all = Top10()
+down_counts = []
+up_counts = []
+all_counts = []
 
 def calculate_perturbations(model, samples, class_value, top10_list, molecule_id, direction_str, misexp_str='',
                             gene_list=[]):
@@ -204,7 +208,33 @@ try:
                 #                     top10s[gene_symbol].add_item(down_probability, message)
                 #                     print(message)
                 #         prediction_counter += 1
-
+            down_counts.append(downregulate_count)
+            up_counts.append(upregulate_count)
+            all_counts.append(allregulate_count)
             drug_counter += 1
+
+    if plot_histograms:
+        plt.figure()
+        plt.title('Histogram of Downregulations')
+        plt.ylabel('# of compounds')
+        plt.xlabel('# of genes pertubated')
+        plt.hist(down_counts, bins=100)
+        plt.draw()
+
+        plt.figure()
+        plt.title('Histogram of Upregulations')
+        plt.ylabel('# of compounds')
+        plt.xlabel('# of genes pertubated')
+        plt.hist(up_counts, bins=100)
+        plt.draw()
+
+        plt.figure()
+        plt.title('Histogram of Number of Compounds vs Total Regulated Genes')
+        plt.ylabel('# of compounds')
+        plt.xlabel('# of genes pertubated')
+        plt.hist(all_counts, bins=100)
+        plt.draw()
+
 finally:
     en.notify("Predicting Done")
+    plt.show()
