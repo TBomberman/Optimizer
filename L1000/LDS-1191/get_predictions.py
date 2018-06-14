@@ -18,7 +18,8 @@ most_promiscious_drug = ''
 most_promiscious_drug_target_gene_count = 0
 operation = "promiscuous"
 hit_score = 0
-plot_histograms = True
+plot_histograms = False
+save_histogram_data = False
 
 class Top10():
     def __init__(self):
@@ -119,11 +120,27 @@ def calculate_perturbations(model, samples, class_value, top10_list, molecule_id
     return regulate_counter
 
 try:
+    iteration = 0
+    n_drugs = 500000
+    n_gpus = 7
+    batch_size = int(n_drugs / n_gpus)
+    start = iteration * batch_size
+    end = start + batch_size - 1
+    print('iteration', iteration)
+
     with open(file_name, "r") as csv_file:
         reader = csv.reader(csv_file, dialect='excel', delimiter=',' )
         next(reader)
         drug_counter = 0
         for row in reader:
+
+            if save_histogram_data:
+                if drug_counter < start:
+                    drug_counter += 1
+                    continue
+                if drug_counter > end:
+                    break
+
             molecule_id = row[0]
             if drug_counter % 10000 == 0:
                 print(datetime.datetime.now(), "Evaluating molecule #", drug_counter)
@@ -212,6 +229,16 @@ try:
             up_counts.append(upregulate_count)
             all_counts.append(allregulate_count)
             drug_counter += 1
+
+    def save_list(list, direction, iteration):
+        prefix = "save_counts/"
+        file = open(prefix + direction + iteration + '.txt', 'w')
+        for item in list:
+            file.write(str(item) + "\n")
+    if save_histogram_data:
+        save_list(down_counts, 'down', str(iteration))
+        save_list(up_counts, 'up', str(iteration))
+        save_list(all_counts, 'all', str(iteration))
 
     if plot_histograms:
         plt.figure()
