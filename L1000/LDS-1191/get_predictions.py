@@ -18,7 +18,7 @@ most_promiscious_drug = ''
 most_promiscious_drug_target_gene_count = 0
 operation = "promiscuous"
 hit_score = 0
-plot_histograms = False
+plot_histograms = True
 
 class Top10():
     def __init__(self):
@@ -217,21 +217,21 @@ try:
         plt.figure()
         plt.title('Histogram of Downregulations')
         plt.ylabel('# of compounds')
-        plt.xlabel('# of genes pertubated')
+        plt.xlabel('# of genes perturbated')
         plt.hist(down_counts, bins=100)
         plt.draw()
 
         plt.figure()
         plt.title('Histogram of Upregulations')
         plt.ylabel('# of compounds')
-        plt.xlabel('# of genes pertubated')
+        plt.xlabel('# of genes perturbated')
         plt.hist(up_counts, bins=100)
         plt.draw()
 
         plt.figure()
         plt.title('Histogram of Number of Compounds vs Total Regulated Genes')
         plt.ylabel('# of compounds')
-        plt.xlabel('# of genes pertubated')
+        plt.xlabel('# of genes perturbated')
         plt.hist(all_counts, bins=100)
         plt.draw()
 
