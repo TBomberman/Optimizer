@@ -77,12 +77,8 @@ length = len(level_5_gctoo.col_metadata_df.index)
 cell_X = {}
 cell_Y = {}
 cell_Y_gene_ids = {}
-cell_drugs = {}
+cell_drugs_counts = {}
 repeat_X = {}
-gene_perts = {}
-
-for gene_id in lm_gene_entrez_ids:
-    gene_perts[gene_id] = []
 
 # For every experiment
 print("Loading experiments")
@@ -151,7 +147,7 @@ for i in range(length-1, -1, -1): # go backwards, assuming later experiments hav
         if cell_id not in cell_X:
             cell_X[cell_id] = {}
             cell_Y[cell_id] = {}
-            cell_drugs[cell_id] = []
+            cell_drugs_counts[cell_id] = 0
             cell_Y_gene_ids[cell_id] = []
 
         repeat_key = drug_id + "_" + cell_id + "_" + gene_id
@@ -165,11 +161,10 @@ for i in range(length-1, -1, -1): # go backwards, assuming later experiments hav
             cell_X[cell_id][repeat_key] = drug_features + gene_features_dict[gene_symbol]#+ prot_features_dict[gene_symbol]
         else:
             cell_X[cell_id][repeat_key] = drug_features
-        pert = column[gene_id]
+        pert = column[gene_id].astype('float16')
         cell_Y[cell_id][repeat_key] = pert
         cell_Y_gene_ids[cell_id].append(gene_id)
-        gene_perts[gene_id].append(pert)
-        cell_drugs[cell_id].append(drug_id)
+        cell_drugs_counts[cell_id] += 1
 
 elapsed_time = time.time() - start_time
 print("Time to load data:", elapsed_time)
@@ -181,11 +176,13 @@ percentile_up = 95
 
 prog_ctr = 0
 for gene_id in lm_gene_entrez_ids:
+    row = level_5_gctoo.data_df.loc[gene_id, :].values
     prog_ctr += 1
     printProgressBar(prog_ctr, gene_count_data_limit, prefix='Storing percentile cutoffs')
-    gene_cutoffs_down[gene_id] = np.percentile(gene_perts[gene_id], percentile_down)
-    gene_cutoffs_up[gene_id] = np.percentile(gene_perts[gene_id], percentile_up)
+    gene_cutoffs_down[gene_id] = np.percentile(row, percentile_down)
+    gene_cutoffs_up[gene_id] = np.percentile(row, percentile_up)
 
+del level_5_gctoo
 gc.collect()
 cell_line_counter = 1
 print("Gene count:", gene_count_data_limit, "\n")
@@ -201,7 +198,7 @@ try:
         listKeys = []
         for key, value in cell_X[cell_id].items():
             npX.append(value)
-            listKeys.append(key.split("_")[0])
+            # listKeys.append(key.split("_")[0])
         for key, value in cell_Y[cell_id].items():
             npY.append(value)
 
@@ -242,7 +239,7 @@ try:
 
         print(np.sum(npY_class))
 
-        num_drugs = len(set(cell_drugs[cell_id]))
+        num_drugs = cell_drugs_counts[cell_id]
         print("Sample Size:", sample_size, "Drugs tested:", num_drugs)
 
         # count number of perturbed genes
