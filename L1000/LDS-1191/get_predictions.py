@@ -87,6 +87,7 @@ def get_gene_id_dict():
 gene_id_dict = get_gene_id_dict()
 
 file_name = '/home/gwoo/Data/zinc/ZincCompounds_InStock_maccs.tab'
+# file_name = 'data/nathan_smiles_rdkit_maccs.csv'
 top10s = {}
 top10down = Top10()
 top10up = Top10()
