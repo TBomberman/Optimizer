@@ -8682,6 +8682,17 @@
 "id": "58e2bfc2bd21ee32a4284bf6"
 },
 {
+"entrez_id": "3108",
+"gene_symbol": "HLA-DMA",
+"gene_name": "major histocompatibility complex, class II, DM alpha",
+"gene_family": [
+"Histocompatibility complex",
+"C1-set domain containing"
+],
+"l1000_type": "landmark",
+"id": "58e2bfc2bd21ee32a4284bfe"
+},
+{
 "entrez_id": "5782",
 "gene_symbol": "PTPN12",
 "gene_name": "protein tyrosine phosphatase, non-receptor type 12",
