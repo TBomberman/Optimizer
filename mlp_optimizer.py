@@ -33,41 +33,20 @@ def regularizer(lammy):
 # np.random.seed(1337)
 # random.seed(1337)
 
-def do_optimize(nb_classes, data, labels, iid_validate_set_keys=None):
+def do_optimize(nb_classes, data, labels):
     n = len(labels)
     d = data.shape[1]
     if nb_classes > 1:
         labels = np_utils.to_categorical(labels, nb_classes)
-    if iid_validate_set_keys is None:
-        train_size = int(train_percentage * n)
-        print("Train size:", train_size)
-        test_size = int((1-train_percentage) * n)
-        X_train, X_test, y_train, y_test = train_test_split(data, labels, train_size=train_size, test_size=test_size)
-        X_val, X_test, y_val, y_test = train_test_split(X_test, y_test, train_size=0.5, test_size=0.5)
-        Y_train = y_train
-        Y_test = y_test
-        Y_val = y_val
-    else:
-        set_keys = np.array(iid_validate_set_keys)
-        key_set = set(iid_validate_set_keys)
-        num_keys = len(key_set)
-        test_keys_size = int(num_keys*(1-train_percentage))
-        test_ids = []
-        i = 0
-        for key in key_set:
-            if i > test_keys_size:
-                break
-            test_ids += np.where(set_keys == key)[0].tolist()
-            i += 1
-        mask = np.zeros(n, dtype=bool)
-        mask[test_ids] = True
-        test_ids, val_ids = train_test_split(test_ids, train_size=0.5, test_size=0.5)
-        X_train = data[~mask]
-        Y_train = labels[~mask]
-        X_test = data[test_ids]
-        Y_test = labels[test_ids]
-        X_val = data[val_ids]
-        Y_val = labels[val_ids]
+
+    train_size = int(train_percentage * n)
+    print("Train size:", train_size)
+    test_size = int((1-train_percentage) * n)
+    X_train, X_test, y_train, y_test = train_test_split(data, labels, train_size=train_size, test_size=test_size)
+    X_val, X_test, y_val, y_test = train_test_split(X_test, y_test, train_size=0.5, test_size=0.5)
+    Y_train = y_train
+    Y_test = y_test
+    Y_val = y_val
 
     # for hyperparam in range(4, 7):
     for hyperparam in [1]:
