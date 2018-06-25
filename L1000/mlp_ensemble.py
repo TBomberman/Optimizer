@@ -68,44 +68,41 @@ class MlpEnsemble(Model):
             validation_data=None, shuffle=True, class_weight=None, sample_weight=None, initial_epoch=0,
             steps_per_epoch=None,validation_steps=None, save_models=True, **kwargs):
 
-        # split the data into 20 sets
-        # create array of n_estimator models
-        # fit each model with each set
-        # add option to save each model
         history = History()
         early_stopping = EarlyStopping(monitor='val_loss', min_delta=0, patience=self.patience, verbose=1, mode='auto')
         print('Patience', self.patience)
         out_epoch = NEpochLogger(display=self.log_steps)
         self.d = x.shape[1]
+        samples_size = len(y)
+        validation_size = int(samples_size / self.n_estimators)
 
-        all_train_indices = self.get_balanced_data_indices_sets(y)
-        all_val_indices = self.get_balanced_data_indices_sets(validation_data[1])
+        # split the data into n_estimators sets
+        # create array of n_estimator models
+        # fit each model with each set
+        # add option to save each model
+        indices = []
         for i in range(0, self.n_estimators):
-            train_indices = all_train_indices[i]
-            val_indices = all_val_indices[i]
+            val_start = i * validation_size
+            val_end = val_start + validation_size
+            indices.append(list(range(val_start, val_end)))
+
+        for i in range(0, self.n_estimators):
+            print('cross iteration', i)
+            val_indices = indices[i]
+            train_indices = []
+            for j in range(0, self.n_estimators):
+                if j != i:
+                    train_indices = train_indices + indices[j]
+            print('got indices')
             file_prefix = self.saved_models_path + "EnsembleModel" + str(i)
             model = self.build_model(self.d)
+            print('begin fit')
             model.fit(x[train_indices], y[train_indices], batch_size=batch_size, epochs=epochs, verbose=0,
-                      validation_data=(validation_data[0][val_indices], validation_data[1][val_indices]),
+                      validation_data=(x[val_indices], y[val_indices]),
                       callbacks=[history, early_stopping, out_epoch])
             self.models[file_prefix] = model
             if save_models:
                 self.save_model(model, file_prefix)
-
-    def get_balanced_data_indices_sets(self, y):
-        indices_set = []
-        positive_idx = np.where(y[:,1])
-        negative_idx = np.where(y[:,0])
-        n_positives = int(np.sum(y[:,1]))
-        n_negatives = int(np.sum(y[:,0]))
-        print("positives", n_positives)
-        print("negatives", n_negatives)
-        for i in range(0, self.n_estimators):
-            negative_locations_sample = np.random.randint(n_negatives, size=n_positives)
-            negative_locations_sample = [negative_idx[0][negative_locations_sample]]
-            combined_locations = [np.concatenate((positive_idx[0], negative_locations_sample[0]))]
-            indices_set.append(combined_locations)
-        return indices_set
 
     def evaluate(self, x=None, y=None, batch_size=None, verbose=0, sample_weight=None, steps=None):
         sum_scores = 0
