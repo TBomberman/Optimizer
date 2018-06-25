@@ -8,23 +8,22 @@ import numpy as np
 train_percentage = 0.7
 use_plot = False
 use_fit = True
-load_data = False
+load_data = True
 save_data = False
 
 def do_optimize(nb_classes, data, labels):
+    path_prefix = 'L1000/LDS-1191/saved_xy_data/'
+    if load_data:
+        data = np.load(path_prefix + "PC3npXEndsAllCutoffs.npz")['arr_0'] # not balanced
+        labels = np.load(path_prefix + "PC3npY_classEndsAllCutoffs.npz")['arr_0']
+
     n = len(labels)
     labels = np_utils.to_categorical(labels, nb_classes)
 
     train_size = int(train_percentage * n)
     print("Train size:", train_size)
     test_size = int((1-train_percentage) * n)
-    if load_data:
-        X_train = np.load("X_train.npz")['arr_0'] # not balanced
-        X_test = np.load("X_test.npz")['arr_0']
-        y_train = np.load("y_train.npz")['arr_0']
-        y_test = np.load("y_test.npz")['arr_0']
-    else:
-        X_train, X_test, y_train, y_test = train_test_split(data, labels, train_size=train_size, test_size=test_size)
+    X_train, X_test, y_train, y_test = train_test_split(data, labels, train_size=train_size, test_size=test_size)
 
     if save_data:
         np.savez("X_train", X_train)
@@ -67,3 +66,5 @@ def do_optimize(nb_classes, data, labels):
 
     if use_plot:
         plot_roc(Y_test[:,1], y_pred_test[:,1])
+
+# do_optimize(2, [], [])
