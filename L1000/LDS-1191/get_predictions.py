@@ -22,6 +22,9 @@ hit_score = 0
 plot_histograms = False
 save_histogram_data = False
 use_ends_model = True
+path_prefix = "saved_models/"
+zinc_file_name  = '/home/gwoo/Data/zinc/ZincCompounds_InStock_maccs.tab'
+# zinc_file_name  = 'data/nathan_smiles_rdkit_maccs.csv'
 
 class Top10():
     def __init__(self):
@@ -49,6 +52,145 @@ class Top10():
     def get_dict(self):
         return self.sorted_dict
 
+class Top10Float(Top10):
+    def add_item(self, key, value):
+        if self.current_size >= self.max_size:
+            self.sorted_dict.popitem(False)
+        else:
+            self.current_size += 1
+        key_suffix = str(key)
+        self.sorted_dict[key_suffix] = value
+
+    def get_lowest_key_prefix(self):
+        key = self.sorted_dict.keys()[0]
+        return float(key)
+
+# load model
+def load_model_from_file_prefix(model_file_prefix):
+    model_file = Path(model_file_prefix + ".json")
+    if not model_file.is_file():
+        print(model_file.name + "File not found")
+    return load_model(model_file_prefix)
+
+def get_gene_id_dict():
+    lm_genes = json.load(open('data/landmark_genes.json'))
+    dict = {}
+    for lm_gene in lm_genes:
+        dict[lm_gene['entrez_id']] = lm_gene['gene_symbol']
+    return dict
+gene_id_dict = get_gene_id_dict()
+
+def save_list(list, direction, iteration):
+    prefix = "save_counts/"
+    file = open(prefix + direction + iteration + '.txt', 'w')
+    for item in list:
+        file.write(str(item) + "\n")
+
+def get_specific_predictions(up_gene_ids, down_gene_ids):
+
+    def get_drug_features(row):
+        drug_features = []
+        for value in row[1:]:
+            drug_features.append(int(value))
+        return drug_features
+
+    def get_samples(drug_features, gene_features_list):
+        num_genes = len(gene_features_list)
+        samples_batch = np.array([], dtype="float16")
+        for gene_features in gene_features_list:
+            samples_batch = np.append(samples_batch, np.asarray(drug_features + gene_features))
+        return samples_batch.reshape([num_genes, -1])
+
+    def get_genes_features_list(up_gene_ids, down_gene_ids):
+        gene_features_dict = get_feature_dict('data/gene_go_fingerprint.csv', use_int=True)
+        gene_ids_by_var = load_csv('data/genes_by_var.csv')
+
+        gene_ids_list = []
+        for sublist in gene_ids_by_var:
+            for item in sublist:
+                gene_ids_list.append(item)
+
+        up_gene_features_list = []
+        down_gene_features_list = []
+        flat_gene_features_list = []
+        for gene_id in gene_ids_list:
+            gene_symbol = gene_id_dict[gene_id]
+            if gene_symbol not in gene_features_dict:
+                continue
+            gene_features = gene_features_dict[gene_symbol]
+
+            if gene_id in up_gene_ids:
+                up_gene_features_list.append(gene_features)
+            elif gene_id in down_gene_ids:
+                down_gene_features_list.append(gene_features)
+            else:
+                flat_gene_features_list.append(gene_features)
+        return up_gene_features_list, down_gene_features_list, flat_gene_features_list
+
+    def get_specific_score(num_pert_samples, up_samples, down_samples, flat_samples, model):
+        predictions = model.predict(up_samples)
+        pert_sum = 0.0
+        for prediction in predictions:
+            pert_sum += prediction[1]
+        predictions = model.predict(down_samples)
+        for prediction in predictions:
+            pert_sum += prediction[0]
+        pert_score = pert_sum / num_pert_samples
+        predictions = model.predict(flat_samples)
+        num_flat_samples = len(predictions)
+        flat_sum = 0.0
+        for prediction in predictions:
+            if prediction[1] > 0.5:
+                flat_sum += prediction[1]
+            else:
+                flat_sum += prediction[0]
+        flat_score = flat_sum / num_flat_samples
+        return pert_score, flat_score, 1 + pert_score - flat_score
+
+    top10scores = Top10Float()
+    num_pert_samples = len(up_gene_ids) + len(down_gene_ids)
+    model = load_model_from_file_prefix(path_prefix + ends_model_file_prefix)
+    up_gene_features_list, down_gene_features_list, flat_gene_features_list = get_genes_features_list(up_gene_ids,
+                                                                                                      down_gene_ids)
+    scores = []
+    with open(zinc_file_name, "r") as csv_file:
+        reader = csv.reader(csv_file, dialect='excel', delimiter=',')
+        next(reader)
+        drug_counter = 0
+        for row in reader:
+            try:
+                molecule_id = row[0]
+                drug_features = get_drug_features(row)
+                up_samples = get_samples(drug_features, up_gene_features_list)
+                down_samples = get_samples(drug_features, down_gene_features_list)
+                flat_samples = get_samples(drug_features, flat_gene_features_list)
+                pert_score, flat_score, total_score = get_specific_score(num_pert_samples, up_samples, down_samples,
+                                                                         flat_samples, model)
+                scores.append(total_score)
+                if top10scores.current_size == 0 or \
+                        (top10scores.current_size > 0 and total_score > top10scores.get_lowest_key_prefix()):
+                    message = "compound " + str(molecule_id) \
+                              + " has pert score " + "{:0.4f}".format(pert_score) \
+                              + " flat score " + "{:0.4f}".format(flat_score) \
+                              + " total score " + "{:0.4f}".format(total_score)
+                    top10scores.add_item(total_score, message)
+                    print(datetime.datetime.now(), message)
+            except:
+                continue
+            finally:
+                drug_counter += 1
+
+        if save_histogram_data:
+            save_list(scores, 'scores', '')
+
+try:
+    germans_up_genes = ['7852', '3815']
+    germans_down_genes = ['6657', '652']
+    get_specific_predictions(germans_up_genes, germans_down_genes)
+finally:
+    en.notify("Predicting Done")
+    quit()
+
 over_expressed_genes = []
 under_expressed_genes = []
 
@@ -62,14 +204,6 @@ with open("data/pca_misexpressed_lm_genes.csv", "r") as csv_file:
             under_expressed_genes.append(row[1])
 mis_expressed_genes = over_expressed_genes + under_expressed_genes
 
-# load model
-def load_model_from_file_prefix(model_file_prefix):
-    model_file = Path(model_file_prefix + ".json")
-    if not model_file.is_file():
-        print(model_file.name + "File not found")
-    return load_model(model_file_prefix)
-
-path_prefix = "saved_models/"
 if use_ends_model:
     ends_model = load_model_from_file_prefix(path_prefix + ends_model_file_prefix)
     down_model = None
@@ -87,16 +221,7 @@ lm_gene_entrez_ids = []
 for sublist in lm_gene_entrez_ids_list :
     for item in sublist:
         lm_gene_entrez_ids.append(item)
-def get_gene_id_dict():
-    lm_genes = json.load(open('data/landmark_genes.json'))
-    dict = {}
-    for lm_gene in lm_genes:
-        dict[lm_gene['entrez_id']] = lm_gene['gene_symbol']
-    return dict
-gene_id_dict = get_gene_id_dict()
 
-file_name = '/home/gwoo/Data/zinc/ZincCompounds_InStock_maccs.tab'
-# file_name = 'data/nathan_smiles_rdkit_maccs.csv'
 top10s = {}
 top10down = Top10()
 top10up = Top10()
@@ -162,7 +287,7 @@ try:
     end = start + batch_size - 1
     print('iteration', iteration)
 
-    with open(file_name, "r") as csv_file:
+    with open(zinc_file_name , "r") as csv_file:
         reader = csv.reader(csv_file, dialect='excel', delimiter=',' )
         next(reader)
         drug_counter = 0
@@ -281,11 +406,6 @@ try:
             all_counts.append(allregulate_count)
             drug_counter += 1
 
-    def save_list(list, direction, iteration):
-        prefix = "save_counts/"
-        file = open(prefix + direction + iteration + '.txt', 'w')
-        for item in list:
-            file.write(str(item) + "\n")
     if save_histogram_data:
         save_list(down_counts, 'down', str(iteration))
         save_list(up_counts, 'up', str(iteration))
