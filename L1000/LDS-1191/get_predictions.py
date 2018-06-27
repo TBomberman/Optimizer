@@ -20,7 +20,7 @@ most_promiscious_drug_target_gene_count = 0
 operation = "promiscuous"
 hit_score = 0
 plot_histograms = False
-save_histogram_data = False
+save_histogram_data = True
 use_ends_model = True
 path_prefix = "saved_models/"
 zinc_file_name  = '/home/gwoo/Data/zinc/ZincCompounds_InStock_maccs.tab'
@@ -144,8 +144,8 @@ def get_specific_predictions(up_gene_ids, down_gene_ids):
                 flat_sum += prediction[1]
             else:
                 flat_sum += prediction[0]
-        flat_score = flat_sum / num_flat_samples
-        return pert_score, flat_score, 1 + pert_score - flat_score
+        flat_score = 1 - flat_sum / num_flat_samples
+        return pert_score, flat_score, pert_score + flat_score
 
     top10scores = Top10Float()
     num_pert_samples = len(up_gene_ids) + len(down_gene_ids)
@@ -153,12 +153,27 @@ def get_specific_predictions(up_gene_ids, down_gene_ids):
     up_gene_features_list, down_gene_features_list, flat_gene_features_list = get_genes_features_list(up_gene_ids,
                                                                                                       down_gene_ids)
     scores = []
+    iteration = 0
+    n_drugs = 500000
+    n_gpus = 14
+    batch_size = int(n_drugs / n_gpus)
+    start = iteration * batch_size
+    end = start + batch_size - 1
+    print('iteration', iteration)
+
     with open(zinc_file_name, "r") as csv_file:
         reader = csv.reader(csv_file, dialect='excel', delimiter=',')
         next(reader)
         drug_counter = 0
         for row in reader:
             try:
+                if save_histogram_data:
+                    if drug_counter < start:
+                        drug_counter += 1
+                        continue
+                    if drug_counter > end:
+                        break
+
                 molecule_id = row[0]
                 drug_features = get_drug_features(row)
                 up_samples = get_samples(drug_features, up_gene_features_list)
@@ -175,13 +190,13 @@ def get_specific_predictions(up_gene_ids, down_gene_ids):
                               + " total score " + "{:0.4f}".format(total_score)
                     top10scores.add_item(total_score, message)
                     print(datetime.datetime.now(), message)
+
+                if save_histogram_data and drug_counter % 1000 == 0:
+                    save_list(scores, 'scores', str(iteration))
             except:
                 continue
             finally:
                 drug_counter += 1
-
-        if save_histogram_data:
-            save_list(scores, 'scores', '')
 
 try:
     germans_up_genes = ['7852', '3815']
