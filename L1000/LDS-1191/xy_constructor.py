@@ -14,7 +14,7 @@ import helpers.email_notifier as en
 start_time = time.time()
 gene_count_data_limit = 978
 use_optimizer = True
-model_file_prefix = "100PC3PD"
+model_file_prefix = "100PC3"
 save_data_to_file = False
 use_data_from_file = False
 
@@ -49,15 +49,16 @@ def get_gene_id_dict():
 # get the dictionaries
 # get the expressions
 print(datetime.datetime.now(), "Loading drug and gene features")
-drug_features_dict = get_feature_dict('LDS-1191/data/smiles_rdkit_maccs_trimmed.csv') #, use_int=True)
-# drug_desc_dict = get_feature_dict('LDS-1191/data/2Ddescriptors16bit.csv') #, use_int=True)
-gene_features_dict = get_feature_dict('LDS-1191/data/gene_go_fingerprint.csv')#, use_int=True)
+drug_features_dict = get_feature_dict('LDS-1191/data/smiles_rdkit_maccs.csv') #, use_int=True)
+# drug_descriptor_file = '/data/datasets/gwoo/L1000/LDS-1191/WorkingData/1to12std.csv'
+# drug_desc_dict = get_feature_dict(drug_descriptor_file) #, use_int=True)
+# print(drug_descriptor_file)
+gene_features_dict = get_feature_dict('LDS-1191/data/gene_go_fingerprint_moreThan3.csv')#, use_int=True)
 # prot_features_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/WorkingData/protein_fingerprint.csv')#, use_int=False)
 # info to separate by data by cell lines, drug + gene tests may not be equally spread out across cell lines
 cell_name_to_id_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/Metadata/Cell_Line_Metadata.txt', '\t', 2)
 # info to remove any dosages that are not 'µM'. Want to standardize the dosages.
 experiments_dose_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/Metadata/GSE92742_Broad_LINCS_sig_info.txt', '\t', 0)
-# cell_features_dict = get_feature_dict('LDS-1191/data/cell_line_fingerprint.csv')
 
 # float16_dict = {}
 # for key in prot_features_dict:
@@ -150,11 +151,12 @@ for i in range(length-1, -1, -1): # go backwards, assuming later experiments hav
         # if gene_symbol not in prot_features_dict:
         #     continue
 
-        # if cell_id not in cell_features_dict:
-        #     continue
+        pert = column[gene_id].astype('float16')
+        pert_conc_ratio = abs(pert / dose_amt)
 
         repeat_key = drug_id + "_" + cell_id + "_" + gene_id
-        if repeat_key in repeat_X and dose_amt <= repeat_X[repeat_key]:
+        if repeat_key in repeat_X and pert_conc_ratio <= repeat_X[repeat_key]:
+        # if repeat_key in repeat_X and dose_amt <= repeat_X[repeat_key]:
             continue
 
         if cell_id not in cell_X:
@@ -163,13 +165,13 @@ for i in range(length-1, -1, -1): # go backwards, assuming later experiments hav
             cell_drugs_counts[cell_id] = 0
             cell_Y_gene_ids[cell_id] = []
 
-        repeat_X[repeat_key] = dose_amt
+        repeat_X[repeat_key] = pert_conc_ratio
+        # repeat_X[repeat_key] = dose_amt
 
         if gene_count_data_limit > 1:
             cell_X[cell_id][repeat_key] = drug_features + gene_features_dict[gene_symbol]# + more_drug_features + prot_features_dict[gene_symbol]
         else:
             cell_X[cell_id][repeat_key] = drug_features
-        pert = column[gene_id].astype('float16')
         cell_Y[cell_id][repeat_key] = pert
         cell_Y_gene_ids[cell_id].append(gene_id)
         cell_drugs_counts[cell_id] += 1
@@ -245,8 +247,9 @@ try:
         print("Sample Size:", sample_size, "Drugs tested:", num_drugs / gene_count_data_limit)
 
         if save_data_to_file:
-            np.savez(cell_name + "npX", npX)
-            np.savez(cell_name + "npY_class", npY_class)
+            prefix = "LDS-1191/saved_xy_data/"
+            np.savez(prefix + cell_name + "npXEndsAllCutoffs", npX)
+            np.savez(prefix + cell_name + "npY_classEndsAllCutoffs", npY_class)
 
         if use_optimizer:
             do_optimize(2, npX, npY_class)
