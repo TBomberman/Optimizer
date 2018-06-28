@@ -95,11 +95,10 @@ def get_specific_predictions(up_gene_ids, down_gene_ids):
         return drug_features
 
     def get_samples(drug_features, gene_features_list):
-        num_genes = len(gene_features_list)
-        samples_batch = np.array([], dtype="float16")
+        samples_list = []
         for gene_features in gene_features_list:
-            samples_batch = np.append(samples_batch, np.asarray(drug_features + gene_features))
-        return samples_batch.reshape([num_genes, -1])
+            samples_list.append(np.asarray(drug_features + gene_features))
+        return np.asarray(samples_list, dtype="float16")
 
     def get_genes_features_list(up_gene_ids, down_gene_ids):
         gene_features_dict = get_feature_dict('data/gene_go_fingerprint.csv', use_int=True)
@@ -144,8 +143,8 @@ def get_specific_predictions(up_gene_ids, down_gene_ids):
                 flat_sum += prediction[1]
             else:
                 flat_sum += prediction[0]
-        flat_score = 1 - flat_sum / num_flat_samples
-        return pert_score, flat_score, pert_score + flat_score
+        flat_score = flat_sum / num_flat_samples
+        return pert_score, flat_score, pert_score / flat_score
 
     top10scores = Top10Float()
     num_pert_samples = len(up_gene_ids) + len(down_gene_ids)
@@ -197,6 +196,8 @@ def get_specific_predictions(up_gene_ids, down_gene_ids):
                 continue
             finally:
                 drug_counter += 1
+        if save_histogram_data:
+            save_list(scores, 'scores', str(iteration))
 
 try:
     germans_up_genes = ['7852', '3815']
