@@ -31,7 +31,7 @@ def save_model(model, file_prefix):
         json_file.write(model_json)
     # serialize weights to HDF5
     model.save_weights(file_prefix + ".h5")
-    print("Saved model to disk")
+    print("Saved model", file_prefix)
 
 class Gene_Predictor():
 
