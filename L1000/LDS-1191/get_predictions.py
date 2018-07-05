@@ -10,9 +10,9 @@ from sortedcontainers import SortedDict
 import matplotlib.pyplot as plt
 import helpers.email_notifier as en
 
-down_model_file_prefix = "100PC3Down74"
-up_model_file_prefix = "100PC3Up78"
-ends_model_file_prefix = "PC3EndsModel85"
+down_model_file_prefix = "VCAP5Down"
+up_model_file_prefix = "VCAP5Up"
+ends_model_file_prefix = "VCAP5Down"
 gene_count_data_limit = 978
 find_promiscuous = True
 most_promiscious_drug = ''
@@ -21,7 +21,7 @@ operation = "promiscuous"
 hit_score = 0
 plot_histograms = False
 save_histogram_data = True
-use_ends_model = False
+use_ends_model = True
 path_prefix = "saved_models/"
 zinc_file_name  = '/home/gwoo/Data/zinc/ZincCompounds_InStock_maccs.tab'
 # zinc_file_name  = 'data/nathan_smiles_rdkit_maccs.csv'
@@ -129,19 +129,23 @@ def get_specific_predictions(up_gene_ids, down_gene_ids):
     def get_specific_score(num_pert_samples, up_samples, down_samples, flat_samples, model, up_model, down_model):
         pert_sum = 0.0
         if use_ends_model:
-            predictions = model.predict(up_samples)
-            for prediction in predictions:
-                pert_sum += prediction[1]
-            predictions = model.predict(down_samples)
-            for prediction in predictions:
-                pert_sum += prediction[0]
+            if len(up_samples) > 0:
+                predictions = model.predict(up_samples)
+                for prediction in predictions:
+                    pert_sum += prediction[1]
+            if len(down_samples) > 0:
+                predictions = model.predict(down_samples)
+                for prediction in predictions:
+                    pert_sum += prediction[0]
         else:
-            predictions = up_model.predict(up_samples)
-            for prediction in predictions:
-                pert_sum += prediction[1]
-            predictions = down_model.predict(down_samples)
-            for prediction in predictions:
-                pert_sum += prediction[1]
+            if len(up_samples) > 0:
+                predictions = up_model.predict(up_samples)
+                for prediction in predictions:
+                    pert_sum += prediction[1]
+            if len(down_samples) > 0:
+                predictions = down_model.predict(down_samples)
+                for prediction in predictions:
+                    pert_sum += prediction[1]
 
         pert_score = pert_sum / num_pert_samples
 
@@ -224,8 +228,8 @@ def get_specific_predictions(up_gene_ids, down_gene_ids):
             save_list(scores, 'scores', str(iteration))
 
 try:
-    germans_up_genes = ['7852', '3815']
-    germans_down_genes = ['6657', '652']
+    germans_up_genes = []
+    germans_down_genes = ['6657']
     get_specific_predictions(germans_up_genes, germans_down_genes)
 finally:
     en.notify("Predicting Done")
