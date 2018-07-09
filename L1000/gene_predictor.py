@@ -20,7 +20,7 @@ def load_model(file_prefix):
     loaded_model = model_from_json(loaded_model_json)
     # load weights into new model
     loaded_model.load_weights(file_prefix + '.h5')
-    print("Loaded model from disk")
+    print("Loaded model", file_prefix)
     loaded_model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
     return loaded_model
 
