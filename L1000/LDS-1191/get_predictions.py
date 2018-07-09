@@ -10,8 +10,54 @@ from sortedcontainers import SortedDict
 import matplotlib.pyplot as plt
 import helpers.email_notifier as en
 
-down_model_file_prefix = "VCAP5Down"
-up_model_file_prefix = "VCAP5Up"
+down_model_file_prefixes = [
+    'PC35Down78',
+    'VCAP5Down75',
+    'HCC5155Down81',
+    'A549Down',
+    'HEPG2Down',
+    'MCF7Down',
+    'HEK293TDown',
+    'HT29Down',
+    'A375Down',
+    'HA1EDown',
+    'THP1Down',
+    'BT20Down',
+    'U937Down',
+    'MCF10ADown',
+    'HUH7Down',
+    'NKDBADown',
+    'NOMO1Down',
+    'JURKATDown',
+    'SKBR3Down',
+    'HS578TDown',
+    'MDAMB231Down'
+]
+
+up_model_file_prefixes = [
+    'PC35Up77',
+    'VCAP5Up74',
+    'A5495Up.75',
+    'HCC5155Up.80',
+    'HEPG2Up',
+	'MCF7Up',
+    'HEK293TUp',
+    'HT29Up',
+    'A375Up',
+    'HA1EUp',
+    'THP1Up',
+    'BT20Up',
+    'U937Up',
+    'MCF10AUp',
+    'HUH7Up',
+    'NKDBAUp',
+    'NOMO1Up',
+    'JURKATUp',
+    'SKBR3Up',
+    'HS578TUp',
+    'MDAMB231Up'
+]
+
 ends_model_file_prefix = "VCAP5Down"
 gene_count_data_limit = 978
 find_promiscuous = True
@@ -21,7 +67,7 @@ operation = "promiscuous"
 hit_score = 0
 plot_histograms = False
 save_histogram_data = True
-use_ends_model = True
+use_ends_model = False
 path_prefix = "saved_models/"
 zinc_file_name  = '/home/gwoo/Data/zinc/ZincCompounds_InStock_maccs.tab'
 # zinc_file_name  = 'data/nathan_smiles_rdkit_maccs.csv'
@@ -86,7 +132,63 @@ def save_list(list, direction, iteration):
     for item in list:
         file.write(str(item) + "\n")
 
-def get_specific_predictions(up_gene_ids, down_gene_ids):
+def get_specific_score(num_pert_samples, up_samples, down_samples, flat_samples, model, up_model, down_model):
+    pert_sum = 0.0
+    if use_ends_model:
+        if len(up_samples) > 0:
+            predictions = model.predict(up_samples)
+            for prediction in predictions:
+                pert_sum += prediction[1]
+        if len(down_samples) > 0:
+            predictions = model.predict(down_samples)
+            for prediction in predictions:
+                pert_sum += prediction[0]
+    else:
+        if len(up_samples) > 0:
+            predictions = up_model.predict(up_samples)
+            for prediction in predictions:
+                pert_sum += prediction[1]
+        if len(down_samples) > 0:
+            predictions = down_model.predict(down_samples)
+            for prediction in predictions:
+                pert_sum += prediction[1]
+
+    pert_score = pert_sum / num_pert_samples
+
+    if use_ends_model:
+        predictions = model.predict(flat_samples)
+    else:
+        predictions_up = up_model.predict(flat_samples)
+        predictions_down = down_model.predict(flat_samples)
+        predictions = np.mean(np.array([predictions_up, predictions_down]), axis=0)
+
+    num_flat_samples = len(predictions)
+    flat_sum = 0.0
+    for prediction in predictions:
+        if prediction[1] > 0.5:
+            flat_sum += prediction[1]
+        else:
+            flat_sum += prediction[0]
+    flat_score = flat_sum / num_flat_samples
+    return pert_score, flat_score, pert_score / flat_score
+
+def get_specific_score_concensus(num_pert_samples, up_samples, down_samples, flat_samples, model, up_models, down_models):
+    num_models = len(up_models)
+    pert_score_sum = 0
+    flat_score_sum = 0
+    for i in range(0, num_models):
+        up_model = up_models[i]
+        down_model = down_models[i]
+        pert_score, flat_score, total_score = get_specific_score(num_pert_samples, up_samples, down_samples,
+                                                             flat_samples, model, up_model, down_model)
+        pert_score_sum += pert_score
+        flat_score_sum += flat_score
+    avg_pert_score = pert_score_sum / num_models
+    avg_flat_score = flat_score_sum / num_models
+
+    return avg_pert_score, avg_flat_score, avg_pert_score / avg_flat_score
+
+def get_specific_predictions(up_gene_ids, down_gene_ids, score_function, model, up_models, down_models):
 
     def get_drug_features(row):
         drug_features = []
@@ -126,56 +228,8 @@ def get_specific_predictions(up_gene_ids, down_gene_ids):
                 flat_gene_features_list.append(gene_features)
         return up_gene_features_list, down_gene_features_list, flat_gene_features_list
 
-    def get_specific_score(num_pert_samples, up_samples, down_samples, flat_samples, model, up_model, down_model):
-        pert_sum = 0.0
-        if use_ends_model:
-            if len(up_samples) > 0:
-                predictions = model.predict(up_samples)
-                for prediction in predictions:
-                    pert_sum += prediction[1]
-            if len(down_samples) > 0:
-                predictions = model.predict(down_samples)
-                for prediction in predictions:
-                    pert_sum += prediction[0]
-        else:
-            if len(up_samples) > 0:
-                predictions = up_model.predict(up_samples)
-                for prediction in predictions:
-                    pert_sum += prediction[1]
-            if len(down_samples) > 0:
-                predictions = down_model.predict(down_samples)
-                for prediction in predictions:
-                    pert_sum += prediction[1]
-
-        pert_score = pert_sum / num_pert_samples
-
-        if use_ends_model:
-            predictions = model.predict(flat_samples)
-        else:
-            predictions_up = up_model.predict(flat_samples)
-            predictions_down = down_model.predict(flat_samples)
-            predictions = np.mean(np.array([predictions_up, predictions_down]), axis=0)
-
-        num_flat_samples = len(predictions)
-        flat_sum = 0.0
-        for prediction in predictions:
-            if prediction[1] > 0.5:
-                flat_sum += prediction[1]
-            else:
-                flat_sum += prediction[0]
-        flat_score = flat_sum / num_flat_samples
-        return pert_score, flat_score, pert_score / flat_score
-
     top10scores = Top10Float()
     num_pert_samples = len(up_gene_ids) + len(down_gene_ids)
-    if use_ends_model:
-        model = load_model_from_file_prefix(path_prefix + ends_model_file_prefix)
-        up_model = None
-        down_model = None
-    else:
-        up_model = load_model_from_file_prefix(path_prefix + up_model_file_prefix)
-        down_model = load_model_from_file_prefix(path_prefix + down_model_file_prefix)
-        model = None
 
     up_gene_features_list, down_gene_features_list, flat_gene_features_list = get_genes_features_list(up_gene_ids,
                                                                                                       down_gene_ids)
@@ -206,8 +260,8 @@ def get_specific_predictions(up_gene_ids, down_gene_ids):
                 up_samples = get_samples(drug_features, up_gene_features_list)
                 down_samples = get_samples(drug_features, down_gene_features_list)
                 flat_samples = get_samples(drug_features, flat_gene_features_list)
-                pert_score, flat_score, total_score = get_specific_score(num_pert_samples, up_samples, down_samples,
-                                                                         flat_samples, model, up_model, down_model)
+                pert_score, flat_score, total_score = score_function(num_pert_samples, up_samples, down_samples,
+                                                                         flat_samples, model, up_models, down_models)
                 scores.append(total_score)
                 if top10scores.current_size == 0 or \
                         (top10scores.current_size > 0 and total_score > top10scores.get_lowest_key_prefix()):
@@ -230,7 +284,18 @@ def get_specific_predictions(up_gene_ids, down_gene_ids):
 try:
     germans_up_genes = []
     germans_down_genes = ['6657']
-    get_specific_predictions(germans_up_genes, germans_down_genes)
+    up_models = []
+    down_models = []
+    model = None
+    if use_ends_model:
+        model = load_model_from_file_prefix(path_prefix + ends_model_file_prefix)
+    else:
+        for i in range(0, len(down_model_file_prefixes)):
+            up_models.append(load_model_from_file_prefix(path_prefix + up_model_file_prefixes[i]))
+            down_models.append(load_model_from_file_prefix(path_prefix + down_model_file_prefixes[i]))
+
+    get_specific_predictions( germans_up_genes, germans_down_genes, get_specific_score_concensus, model, up_models,
+                             down_models)
 finally:
     en.notify("Predicting Done")
     quit()
@@ -253,8 +318,8 @@ if use_ends_model:
     down_model = None
     up_model = None
 else:
-    down_model = load_model_from_file_prefix(path_prefix + down_model_file_prefix)
-    up_model = load_model_from_file_prefix(path_prefix + up_model_file_prefix)
+    down_model = load_model_from_file_prefix(path_prefix + down_model_file_prefixes[0])
+    up_model = load_model_from_file_prefix(path_prefix + up_model_file_prefixes[0])
     ends_model = None
 
 # load gene fingerprints to test
