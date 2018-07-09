@@ -69,7 +69,8 @@ plot_histograms = False
 save_histogram_data = True
 use_ends_model = False
 path_prefix = "saved_models/"
-zinc_file_name  = '/home/gwoo/Data/zinc/ZincCompounds_InStock_maccs.tab'
+# zinc_file_name  = '/home/gwoo/Data/zinc/ZincCompounds_InStock_maccs.tab'
+zinc_file_name  = 'data/german_smiles_rdkit_maccs.csv'
 # zinc_file_name  = 'data/nathan_smiles_rdkit_maccs.csv'
 
 class Top10():
@@ -145,22 +146,31 @@ def get_specific_score(num_pert_samples, up_samples, down_samples, flat_samples,
                 pert_sum += prediction[0]
     else:
         if len(up_samples) > 0:
-            predictions = up_model.predict(up_samples)
-            for prediction in predictions:
+            predictions_up = up_model.predict(up_samples)
+            for prediction in predictions_up:
                 pert_sum += prediction[1]
+            predictions_down = down_model.predict(up_samples)
+            for prediction in predictions_down:
+                pert_sum += prediction[0]
         if len(down_samples) > 0:
-            predictions = down_model.predict(down_samples)
-            for prediction in predictions:
+            predictions_down = down_model.predict(down_samples)
+            for prediction in predictions_down:
                 pert_sum += prediction[1]
+            predictions_up = up_model.predict(down_samples)
+            for prediction in predictions_up:
+                pert_sum += prediction[0]
 
-    pert_score = pert_sum / num_pert_samples
+    pert_score = pert_sum / (2 * num_pert_samples)
 
     if use_ends_model:
         predictions = model.predict(flat_samples)
     else:
         predictions_up = up_model.predict(flat_samples)
         predictions_down = down_model.predict(flat_samples)
-        predictions = np.mean(np.array([predictions_up, predictions_down]), axis=0)
+        flipped_down_predictions = np.fliplr(predictions_down)
+        predictions = np.mean(np.array([predictions_up, flipped_down_predictions]), axis=0)
+
+    # print(predictions)
 
     num_flat_samples = len(predictions)
     flat_sum = 0.0
@@ -225,6 +235,7 @@ def get_specific_predictions(up_gene_ids, down_gene_ids, score_function, model, 
             elif gene_id in down_gene_ids:
                 down_gene_features_list.append(gene_features)
             else:
+                # print('flat gene id', gene_id)
                 flat_gene_features_list.append(gene_features)
         return up_gene_features_list, down_gene_features_list, flat_gene_features_list
 
@@ -260,6 +271,7 @@ def get_specific_predictions(up_gene_ids, down_gene_ids, score_function, model, 
                 up_samples = get_samples(drug_features, up_gene_features_list)
                 down_samples = get_samples(drug_features, down_gene_features_list)
                 flat_samples = get_samples(drug_features, flat_gene_features_list)
+                # print('mol id', molecule_id)
                 pert_score, flat_score, total_score = score_function(num_pert_samples, up_samples, down_samples,
                                                                          flat_samples, model, up_models, down_models)
                 scores.append(total_score)
