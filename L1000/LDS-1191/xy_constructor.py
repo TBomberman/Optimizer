@@ -13,9 +13,9 @@ import helpers.email_notifier as en
 
 start_time = time.time()
 gene_count_data_limit = 978
-use_optimizer = True
-target_cell_name = 'A549'
-direction = 'Down'
+use_optimizer = False
+target_cell_name = 'VCAP'
+direction = 'Both' #'Down'
 model_file_prefix = target_cell_name + direction
 save_data_to_file = False
 use_data_from_file = False
@@ -84,9 +84,11 @@ level_5_gctoo = load_gene_expression_data("/home/gwoo/Data/L1000/LDS-1191/Data/G
 
 length = len(level_5_gctoo.col_metadata_df.index)
 
-for target_cell_name in ['VCAP', 'HCC515', 'A549', 'HEPG2', 'MCF7', 'HEK293T', 'HT29', 'A375', 'HA1E', 'THP1', 'BT20', 'U937',
-                         'MCF10A', 'HUH7', 'NKDBA', 'NOMO1', 'JURKAT', 'SKBR3', 'HS578T', 'MDAMB231']:
-    for direction in ['Down', 'Up']:
+# for target_cell_name in ['VCAP', 'HCC515', 'A549', 'HEPG2', 'MCF7', 'HEK293T', 'HT29', 'A375', 'HA1E', 'THP1', 'BT20', 'U937',
+#                          'MCF10A', 'HUH7', 'NKDBA', 'NOMO1', 'JURKAT', 'SKBR3', 'HS578T', 'MDAMB231']:
+#     for direction in ['Down', 'Up']:
+for target_cell_name in ['VCAP']:
+    for direction in ['Both']:
 
         model_file_prefix = target_cell_name + direction
 
@@ -234,9 +236,18 @@ for target_cell_name in ['VCAP', 'HCC515', 'A549', 'HEPG2', 'MCF7', 'HEK293T', '
                     up_locations = np.where(npY >= class_cut_off_up)
                     if direction == 'Down':
                         intersect = np.intersect1d(gene_locations, down_locations)
-                    else:
+                    elif direction == 'Up':
                         intersect = np.intersect1d(gene_locations, up_locations)
+                    else: # 'Both'
+                        intersect = np.intersect1d(gene_locations, down_locations)
+                        combined_locations += intersect.tolist()
+                        intersect = np.intersect1d(gene_locations, up_locations)
+                        combined_locations += intersect.tolist()
                     npY_class[intersect] = 1
+
+                if direction == 'Both':
+                    npX = npX[combined_locations]
+                    npY_class = npY_class[combined_locations]
                 print("Evaluating cell line", cell_line_counter, cell_name, "(Percentile ends:", percentile_down, ")")
 
                 sample_size = len(npY_class)
