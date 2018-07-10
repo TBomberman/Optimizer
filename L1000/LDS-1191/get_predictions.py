@@ -10,6 +10,12 @@ from sortedcontainers import SortedDict
 import matplotlib.pyplot as plt
 import helpers.email_notifier as en
 
+import tensorflow as tf
+from keras.backend.tensorflow_backend import set_session
+config = tf.ConfigProto()
+config.gpu_options.per_process_gpu_memory_fraction = 0.25
+set_session(tf.Session(config=config))
+
 down_model_file_prefixes = [
     'PC35Down78',
     'VCAP5Down75',
@@ -75,7 +81,7 @@ zinc_file_name  = '/home/gwoo/Data/zinc/ZincCompounds_InStock_maccs.tab'
 
 class Top10():
     def __init__(self):
-        self.max_size = 10
+        self.max_size = 20
         self.current_size = 0
         self.sorted_dict = SortedDict()
 
@@ -267,8 +273,7 @@ def get_specific_predictions(up_gene_ids, down_gene_ids, score_function, model, 
                 pert_score, flat_score, total_score = score_function(num_pert_samples, up_samples, down_samples,
                                                                          flat_samples, model, up_models, down_models)
                 scores.append(total_score)
-                if top10scores.current_size == 0 or \
-                        (top10scores.current_size > 0 and total_score > top10scores.get_lowest_key_prefix()):
+                if top10scores.current_size < top10scores.max_size or total_score > top10scores.get_lowest_key_prefix():
                     message = "compound " + str(molecule_id) \
                               + " has pert score " + "{:0.4f}".format(pert_score) \
                               + " flat score " + "{:0.4f}".format(flat_score) \
