@@ -69,8 +69,8 @@ plot_histograms = False
 save_histogram_data = True
 use_ends_model = False
 path_prefix = "saved_models/"
-# zinc_file_name  = '/home/gwoo/Data/zinc/ZincCompounds_InStock_maccs.tab'
-zinc_file_name  = 'data/german_smiles_rdkit_maccs.csv'
+zinc_file_name  = '/home/gwoo/Data/zinc/ZincCompounds_InStock_maccs.tab'
+# zinc_file_name  = 'data/german_smiles_rdkit_maccs.csv'
 # zinc_file_name  = 'data/nathan_smiles_rdkit_maccs.csv'
 
 class Top10():
@@ -135,51 +135,43 @@ def save_list(list, direction, iteration):
 
 def get_specific_score(num_pert_samples, up_samples, down_samples, flat_samples, model, up_model, down_model):
     pert_sum = 0.0
-    if use_ends_model:
-        if len(up_samples) > 0:
-            predictions = model.predict(up_samples)
-            for prediction in predictions:
-                pert_sum += prediction[1]
-        if len(down_samples) > 0:
-            predictions = model.predict(down_samples)
-            for prediction in predictions:
-                pert_sum += prediction[0]
-    else:
-        if len(up_samples) > 0:
-            predictions_up = up_model.predict(up_samples)
-            for prediction in predictions_up:
-                pert_sum += prediction[1]
-            predictions_down = down_model.predict(up_samples)
-            for prediction in predictions_down:
-                pert_sum += prediction[0]
-        if len(down_samples) > 0:
-            predictions_down = down_model.predict(down_samples)
-            for prediction in predictions_down:
-                pert_sum += prediction[1]
-            predictions_up = up_model.predict(down_samples)
-            for prediction in predictions_up:
-                pert_sum += prediction[0]
-
-    pert_score = pert_sum / (2 * num_pert_samples)
+    n_up = len(up_samples)
+    n_down = len(down_samples)
+    n_flat = len(flat_samples)
+    all_samples = flat_samples
+    if n_up > 0:
+        all_samples = np.concatenate((all_samples, up_samples))
+    if n_down > 0:
+        all_samples = np.concatenate((all_samples, down_samples))
+    up_start = n_flat
+    down_start = n_flat + n_up
 
     if use_ends_model:
-        predictions = model.predict(flat_samples)
+        all_predictions = model.predict(all_samples)
     else:
-        predictions_up = up_model.predict(flat_samples)
-        predictions_down = down_model.predict(flat_samples)
-        flipped_down_predictions = np.fliplr(predictions_down)
-        predictions = np.mean(np.array([predictions_up, flipped_down_predictions]), axis=0)
+        up_model_all_predictions = up_model.predict(all_samples)
+        down_model_all_predictions = down_model.predict(all_samples)
+        flipped_down_predictions = np.fliplr(down_model_all_predictions)
+        all_predictions = np.mean(np.array([up_model_all_predictions, flipped_down_predictions]), axis=0)
 
     # print(predictions)
+    flat_predictions = all_predictions[:up_start - 1]
+    up_predictions = all_predictions[up_start: down_start - 1]
+    down_predictions = all_predictions[down_start:]
 
-    num_flat_samples = len(predictions)
+    for prediction in up_predictions:
+        pert_sum += prediction[1]
+    for prediction in down_predictions:
+        pert_sum += prediction[0]
+    pert_score = pert_sum / num_pert_samples
+
     flat_sum = 0.0
-    for prediction in predictions:
+    for prediction in flat_predictions:
         if prediction[1] > 0.5:
             flat_sum += prediction[1]
         else:
             flat_sum += prediction[0]
-    flat_score = flat_sum / num_flat_samples
+    flat_score = flat_sum / n_flat
     return pert_score, flat_score, pert_score / flat_score
 
 def get_specific_score_concensus(num_pert_samples, up_samples, down_samples, flat_samples, model, up_models, down_models):
