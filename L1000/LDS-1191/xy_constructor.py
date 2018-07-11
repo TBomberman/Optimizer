@@ -2,7 +2,7 @@ import datetime
 import gc
 import json
 import time
-
+import random
 import matplotlib.pyplot as plt
 from mlp_optimizer import do_optimize
 import numpy as np
@@ -10,6 +10,11 @@ from L1000.data_loader import get_feature_dict, load_gene_expression_data, print
 from L1000.gene_predictor import train_model, save_model
 
 import helpers.email_notifier as en
+# import tensorflow as tf
+# from keras.backend.tensorflow_backend import set_session
+# config = tf.ConfigProto()
+# config.gpu_options.per_process_gpu_memory_fraction = 0.5
+# set_session(tf.Session(config=config))
 
 start_time = time.time()
 gene_count_data_limit = 978
@@ -68,6 +73,24 @@ experiments_dose_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/Met
 #     float16_dict[key] = [float(i) for i in prot_features_dict[key]]
 # prot_features_dict = float16_dict
 
+# set maccs keys aside
+import os.path
+keep_away_filename = 'keep_away.txt'
+if os.path.isfile(keep_away_filename):
+    keep_away_keys = load_csv(keep_away_filename)
+else:
+    n_maccs = len(drug_features_dict)
+    keep_away_indexes = random.sample(range(0, n_maccs), 1000)
+    keys = list(drug_features_dict.keys())
+    keep_away_file = open(keep_away_filename, 'w')
+    keep_away_keys = []
+    for i in keep_away_indexes:
+        key = keys[i]
+        keep_away_file.write("%s\n" % key)
+        keep_away_keys.append([key])
+for key in keep_away_keys:
+    drug_features_dict.pop(key[0], None)
+drug_features_dict.pop("BRD-K56851771", None)
 
 # getting the gene ids
 gene_id_dict = get_gene_id_dict()
@@ -88,7 +111,7 @@ length = len(level_5_gctoo.col_metadata_df.index)
 #                          'MCF10A', 'HUH7', 'NKDBA', 'NOMO1', 'JURKAT', 'SKBR3', 'HS578T', 'MDAMB231']:
 #     for direction in ['Down', 'Up']:
 for target_cell_name in ['VCAP']:
-    for direction in ['Both']:
+    for direction in ['Down', 'Up']:
 
         model_file_prefix = target_cell_name + direction
 
