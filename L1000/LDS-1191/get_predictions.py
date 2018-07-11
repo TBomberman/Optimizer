@@ -13,58 +13,58 @@ import helpers.email_notifier as en
 import tensorflow as tf
 from keras.backend.tensorflow_backend import set_session
 config = tf.ConfigProto()
-config.gpu_options.per_process_gpu_memory_fraction = 0.25
+config.gpu_options.per_process_gpu_memory_fraction = 0.05
 set_session(tf.Session(config=config))
 
 down_model_file_prefixes = [
-    'PC35Down78',
+    # 'PC35Down78',
     'VCAP5Down75',
-    'HCC5155Down81',
-    'A549Down',
-    'HEPG2Down',
-    'MCF7Down',
-    'HEK293TDown',
-    'HT29Down',
-    'A375Down',
-    'HA1EDown',
-    'THP1Down',
-    'BT20Down',
-    'U937Down',
-    'MCF10ADown',
-    'HUH7Down',
-    'NKDBADown',
-    'NOMO1Down',
-    'JURKATDown',
-    'SKBR3Down',
-    'HS578TDown',
-    'MDAMB231Down'
+    # 'HCC5155Down81',
+    # 'A549Down',
+    # 'HEPG2Down',
+    # 'MCF7Down',
+    # 'HEK293TDown',
+    # 'HT29Down',
+    # 'A375Down',
+    # 'HA1EDown',
+    # 'THP1Down',
+    # 'BT20Down',
+    # 'U937Down',
+    # 'MCF10ADown',
+    # 'HUH7Down',
+    # 'NKDBADown',
+    # 'NOMO1Down',
+    # 'JURKATDown',
+    # 'SKBR3Down',
+    # 'HS578TDown',
+    # 'MDAMB231Down'
 ]
 
 up_model_file_prefixes = [
-    'PC35Up77',
+    # 'PC35Up77',
     'VCAP5Up74',
-    'A5495Up.75',
-    'HCC5155Up.80',
-    'HEPG2Up',
-	'MCF7Up',
-    'HEK293TUp',
-    'HT29Up',
-    'A375Up',
-    'HA1EUp',
-    'THP1Up',
-    'BT20Up',
-    'U937Up',
-    'MCF10AUp',
-    'HUH7Up',
-    'NKDBAUp',
-    'NOMO1Up',
-    'JURKATUp',
-    'SKBR3Up',
-    'HS578TUp',
-    'MDAMB231Up'
+    # 'A5495Up.75',
+    # 'HCC5155Up.80',
+    # 'HEPG2Up',
+    # 'MCF7Up',
+    # 'HEK293TUp',
+    # 'HT29Up',
+    # 'A375Up',
+    # 'HA1EUp',
+    # 'THP1Up',
+    # 'BT20Up',
+    # 'U937Up',
+    # 'MCF10AUp',
+    # 'HUH7Up',
+    # 'NKDBAUp',
+    # 'NOMO1Up',
+    # 'JURKATUp',
+    # 'SKBR3Up',
+    # 'HS578TUp',
+    # 'MDAMB231Up'
 ]
 
-ends_model_file_prefix = "VCAP5Down"
+ends_model_file_prefix = "VCAPBoth86"
 gene_count_data_limit = 978
 find_promiscuous = True
 most_promiscious_drug = ''
@@ -72,12 +72,12 @@ most_promiscious_drug_target_gene_count = 0
 operation = "promiscuous"
 hit_score = 0
 plot_histograms = False
-save_histogram_data = True
+save_histogram_data = False
 use_ends_model = False
 path_prefix = "saved_models/"
-zinc_file_name  = '/home/gwoo/Data/zinc/ZincCompounds_InStock_maccs.tab'
+# zinc_file_name  = '/home/gwoo/Data/zinc/ZincCompounds_InStock_maccs.tab'
 # zinc_file_name  = 'data/german_smiles_rdkit_maccs.csv'
-# zinc_file_name  = 'data/nathan_smiles_rdkit_maccs.csv'
+zinc_file_name  = 'data/nathan_smiles_rdkit_maccs.csv'
 
 class Top10():
     def __init__(self):
@@ -139,6 +139,9 @@ def save_list(list, direction, iteration):
     for item in list:
         file.write(str(item) + "\n")
 
+def ndprint(a, format_string='{0:.3f}'):
+    print([format_string.format(val, i) for i, val in enumerate(a)])
+
 def get_specific_score(num_pert_samples, up_samples, down_samples, flat_samples, model, up_model, down_model):
     pert_sum = 0.0
     n_up = len(up_samples)
@@ -160,7 +163,7 @@ def get_specific_score(num_pert_samples, up_samples, down_samples, flat_samples,
         flipped_down_predictions = np.fliplr(down_model_all_predictions)
         all_predictions = np.mean(np.array([up_model_all_predictions, flipped_down_predictions]), axis=0)
 
-    # print(predictions)
+    ndprint(all_predictions[:, 1])
     flat_predictions = all_predictions[:up_start - 1]
     up_predictions = all_predictions[up_start: down_start - 1]
     down_predictions = all_predictions[down_start:]
@@ -169,7 +172,10 @@ def get_specific_score(num_pert_samples, up_samples, down_samples, flat_samples,
         pert_sum += prediction[1]
     for prediction in down_predictions:
         pert_sum += prediction[0]
-    pert_score = pert_sum / num_pert_samples
+    if num_pert_samples <= 0:
+        pert_score = 0
+    else:
+        pert_score = pert_sum / num_pert_samples
 
     flat_sum = 0.0
     for prediction in flat_predictions:
@@ -181,16 +187,20 @@ def get_specific_score(num_pert_samples, up_samples, down_samples, flat_samples,
     return pert_score, flat_score, pert_score / flat_score
 
 def get_specific_score_concensus(num_pert_samples, up_samples, down_samples, flat_samples, model, up_models, down_models):
-    num_models = len(up_models)
+    num_models = max(len(up_models), 1)
     pert_score_sum = 0
     flat_score_sum = 0
-    for i in range(0, num_models):
-        up_model = up_models[i]
-        down_model = down_models[i]
-        pert_score, flat_score, total_score = get_specific_score(num_pert_samples, up_samples, down_samples,
-                                                             flat_samples, model, up_model, down_model)
-        pert_score_sum += pert_score
-        flat_score_sum += flat_score
+    if use_ends_model:
+        pert_score_sum, flat_score_sum, total_score = get_specific_score(num_pert_samples, up_samples, down_samples,
+                                                                 flat_samples, model, None, None)
+    else:
+        for i in range(0, num_models):
+            up_model = up_models[i]
+            down_model = down_models[i]
+            pert_score, flat_score, total_score = get_specific_score(num_pert_samples, up_samples, down_samples,
+                                                                 flat_samples, model, up_model, down_model)
+            pert_score_sum += pert_score
+            flat_score_sum += flat_score
     avg_pert_score = pert_score_sum / num_models
     avg_flat_score = flat_score_sum / num_models
 
@@ -219,6 +229,7 @@ def get_specific_predictions(up_gene_ids, down_gene_ids, score_function, model, 
             for item in sublist:
                 gene_ids_list.append(item)
 
+        gene_name_list = []
         up_gene_features_list = []
         down_gene_features_list = []
         flat_gene_features_list = []
@@ -235,6 +246,8 @@ def get_specific_predictions(up_gene_ids, down_gene_ids, score_function, model, 
             else:
                 # print('flat gene id', gene_id)
                 flat_gene_features_list.append(gene_features)
+                gene_name_list.append(gene_symbol)
+        print(gene_name_list)
         return up_gene_features_list, down_gene_features_list, flat_gene_features_list
 
     top10scores = Top10Float()
@@ -244,8 +257,8 @@ def get_specific_predictions(up_gene_ids, down_gene_ids, score_function, model, 
                                                                                                       down_gene_ids)
     scores = []
     iteration = 0
-    n_drugs = 500000
-    n_gpus = 15
+    n_drugs = 5
+    n_gpus = 1
     batch_size = int(n_drugs / n_gpus)
     start = iteration * batch_size
     end = start + batch_size - 1
@@ -269,7 +282,7 @@ def get_specific_predictions(up_gene_ids, down_gene_ids, score_function, model, 
                 up_samples = get_samples(drug_features, up_gene_features_list)
                 down_samples = get_samples(drug_features, down_gene_features_list)
                 flat_samples = get_samples(drug_features, flat_gene_features_list)
-                # print('mol id', molecule_id)
+                print('mol id', molecule_id)
                 pert_score, flat_score, total_score = score_function(num_pert_samples, up_samples, down_samples,
                                                                          flat_samples, model, up_models, down_models)
                 scores.append(total_score)
@@ -292,7 +305,7 @@ def get_specific_predictions(up_gene_ids, down_gene_ids, score_function, model, 
 
 try:
     germans_up_genes = []
-    germans_down_genes = ['6657']
+    germans_down_genes = [] #['6657']
     up_models = []
     down_models = []
     model = None
