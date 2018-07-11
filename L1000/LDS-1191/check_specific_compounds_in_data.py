@@ -158,6 +158,7 @@ for i in range(length-1, -1, -1): # go backwards, assuming later experiments hav
         + " has pert score " + "{:0.4f}".format(avg_pert_score) \
         + " flat score " + "{:0.4f}".format(avg_flat_score) \
         + " total score " + "{:0.4f}".format(total_score) \
-        + " dose " + str(dose_amt) + " cell line " + cell_name
+        + " dose " + str(dose_amt) + " cell line " + cell_name \
+        + " pert count " + str(pert_count) + " flat count " + str(flat_count)
         top10scores.add_item(total_score, message)
         print(datetime.datetime.now(), message)
