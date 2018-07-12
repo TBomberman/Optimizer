@@ -1,5 +1,6 @@
 import datetime
 import json
+import numpy as np
 from L1000.data_loader import get_feature_dict, load_gene_expression_data, printProgressBar, load_csv
 from sortedcontainers import SortedDict
 
@@ -85,6 +86,9 @@ length = len(level_5_gctoo.col_metadata_df.index)
 repeat_X = {}
 top10scores = Top10Float()
 
+pert_scores_all_cell_lines = {}
+flat_scores_all_cell_lines = {}
+
 # For every experiment
 print("Loading experiments")
 for i in range(length-1, -1, -1): # go backwards, assuming later experiments have stronger perturbation
@@ -150,15 +154,40 @@ for i in range(length-1, -1, -1): # go backwards, assuming later experiments hav
         else:
             flat_score += abs(pert)
             flat_count += 1
-    avg_pert_score = pert_score / pert_count
-    avg_flat_score = flat_score / flat_count
-    total_score = avg_pert_score / avg_flat_score
+    cell_drug_avg_pert_score = pert_score / pert_count
+    cell_drug_avg_flat_score = flat_score / flat_count
+
+    if cell_id not in pert_scores_all_cell_lines:
+        pert_scores_all_cell_lines[cell_id] = {}
+        flat_scores_all_cell_lines[cell_id] = {}
+
+    if drug_id not in pert_scores_all_cell_lines[cell_id]:
+        pert_scores_all_cell_lines[cell_id][drug_id] = []
+        flat_scores_all_cell_lines[cell_id][drug_id] = []
+
+    pert_scores_all_cell_lines[cell_id][drug_id].append(cell_drug_avg_pert_score)
+    flat_scores_all_cell_lines[cell_id][drug_id].append(cell_drug_avg_flat_score)
+
+for drug_id in drug_features_dict.keys():
+    cell_drug_pert_score_sum = 0.0
+    cell_drug_flat_score_sum = 0.0
+    cell_count = 0
+    for cell in pert_scores_all_cell_lines.keys():
+        if drug_id not in pert_scores_all_cell_lines[cell]:
+            continue
+        cell_drug_pert_score_sum += np.mean(pert_scores_all_cell_lines[cell][drug_id])
+        cell_drug_flat_score_sum += np.mean(flat_scores_all_cell_lines[cell][drug_id])
+        cell_count += 1
+
+    if cell_count <= 0:
+        continue
+
+    total_score = cell_drug_pert_score_sum / cell_drug_flat_score_sum
     if top10scores.current_size < top10scores.max_size or total_score > top10scores.get_lowest_key_prefix():
         message = "Compound " + str(drug_id) \
-        + " has pert score " + "{:0.4f}".format(avg_pert_score) \
-        + " flat score " + "{:0.4f}".format(avg_flat_score) \
+        + " has pert score " + "{:0.4f}".format(cell_drug_pert_score_sum/cell_count) \
+        + " flat score " + "{:0.4f}".format(cell_drug_flat_score_sum/cell_count) \
         + " total score " + "{:0.4f}".format(total_score) \
-        + " dose " + str(dose_amt) + " cell line " + cell_name \
-        + " pert count " + str(pert_count) + " flat count " + str(flat_count)
+        + " cell count " + str(cell_count)
         top10scores.add_item(total_score, message)
         print(datetime.datetime.now(), message)
