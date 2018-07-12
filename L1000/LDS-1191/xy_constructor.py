@@ -8,6 +8,7 @@ from mlp_optimizer import do_optimize
 import numpy as np
 from L1000.data_loader import get_feature_dict, load_gene_expression_data, printProgressBar, load_csv, get_trimmed_feature_dict
 from L1000.gene_predictor import train_model, save_model
+from collections import namedtuple
 
 import helpers.email_notifier as en
 # import tensorflow as tf
@@ -24,6 +25,58 @@ direction = 'Both' #'Down'
 model_file_prefix = target_cell_name + direction
 save_data_to_file = False
 use_data_from_file = False
+
+ResponsePoint = namedtuple("ResponsePoint", "PertZScore Dose")
+
+class IC50:
+    def __init__(self, point):
+        self.Up = point
+        self.Down = None
+
+    def get_point_slope(up, down):
+        rise = up.PertZScore - down.PertZScore
+        run = up.Dose - down.Dose
+        return rise / run
+
+    # returns True if Up changed
+    def add_response_point(self, point):
+        if point.Dose >= self.Up.Dose:
+            new_slope = self.get_point_slope(point, self.Up)
+            old_slope = self.get_slope()
+            if new_slope > old_slope:
+                self.Down = self.Up
+                self.Up = point
+            return True
+
+        if point.Dose < self.Up.Dose and self.Down is None:
+            self.Down = point
+            return False
+
+        if point.Dose < self.Up.Dose and point.Dose >= self.Down.dose:
+            front_slope = self.get_point_slope(self.Up, point)
+            back_slope = self.get_point_slope(point, self.Down)
+            if front_slope > back_slope:
+                self.Down = point
+                return False
+            else:
+                self.Up = point
+                return True
+
+        if point.Dose < self.Down.Dose:
+            old_slope = self.get_slope()
+            new_slope = self.get_point_slope(self.Down, point)
+            if new_slope > old_slope:
+                self.Up = self.Down
+                self.Down = point
+                return True
+        return False
+
+    def get_slope(self):
+        if self.Down is None:
+            return 0
+        else:
+            return self.get_point_slope(self.Up, self.Down)
+
 
 if use_data_from_file:
     prefix = "LDS-1191/saved_xy_data/"
@@ -185,10 +238,9 @@ for target_cell_name in ['VCAP']:
                 #     continue
 
                 pert = column[gene_id].astype('float16')
-                pert_conc_ratio = abs(pert / dose_amt)
-
                 repeat_key = drug_id + "_" + cell_id + "_" + gene_id
-                if repeat_key in repeat_X and pert_conc_ratio <= repeat_X[repeat_key]:
+                point = ResponsePoint(pert, dose_amt)
+                if repeat_key in repeat_X and not repeat_X[repeat_key].add_response_point(point):
                 # if repeat_key in repeat_X and dose_amt <= repeat_X[repeat_key]:
                     continue
 
@@ -198,8 +250,8 @@ for target_cell_name in ['VCAP']:
                     cell_drugs_counts[cell_id] = 0
                     cell_Y_gene_ids[cell_id] = []
 
-                repeat_X[repeat_key] = pert_conc_ratio
-                # repeat_X[repeat_key] = dose_amt
+                if repeat_key not in repeat_X:
+                    repeat_X[repeat_key] = IC50(point)
 
                 if gene_count_data_limit > 1:
                     cell_X[cell_id][repeat_key] = drug_features + gene_features_dict[gene_symbol]# + more_drug_features + prot_features_dict[gene_symbol]
