@@ -130,6 +130,8 @@ for i in range(length-1, -1, -1): # go backwards, assuming later experiments hav
     end = find_nth(col_name, "_", 2)
     cell_name = col_name[start + 1:end]
 
+    if cell_name != 'VCAP':
+        continue
     if cell_name not in cell_name_to_id_dict:
         continue
     cell_id = cell_name_to_id_dict[cell_name][0]
@@ -168,6 +170,7 @@ for i in range(length-1, -1, -1): # go backwards, assuming later experiments hav
     pert_scores_all_cell_lines[cell_id][drug_id].append(cell_drug_avg_pert_score)
     flat_scores_all_cell_lines[cell_id][drug_id].append(cell_drug_avg_flat_score)
 
+scores = []
 for drug_id in drug_features_dict.keys():
     cell_drug_pert_score_sum = 0.0
     cell_drug_flat_score_sum = 0.0
@@ -183,6 +186,7 @@ for drug_id in drug_features_dict.keys():
         continue
 
     total_score = cell_drug_pert_score_sum / cell_drug_flat_score_sum
+    scores.append(total_score)
     if top10scores.current_size < top10scores.max_size or total_score > top10scores.get_lowest_key_prefix():
         message = "Compound " + str(drug_id) \
         + " has pert score " + "{:0.4f}".format(cell_drug_pert_score_sum/cell_count) \
@@ -191,3 +195,11 @@ for drug_id in drug_features_dict.keys():
         + " cell count " + str(cell_count)
         top10scores.add_item(total_score, message)
         print(datetime.datetime.now(), message)
+
+def save_list(list, direction):
+    prefix = "save_counts/"
+    file = open(prefix + direction + '.txt', 'w')
+    for item in list:
+        file.write(str(item) + "\n")
+
+save_list(scores, 'scores')
