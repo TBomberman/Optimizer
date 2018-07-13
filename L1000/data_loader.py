@@ -2,6 +2,7 @@ from cmapPy.pandasGEXpress import parse
 import numpy as np
 import csv
 import helpers.remove_correlated_features as rcf
+import datetime
 
 # local vars
 cutoff = 0.5
@@ -83,7 +84,7 @@ def printProgressBar (iteration, total, prefix = 'Progress', suffix = 'Complete'
     percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
     filledLength = int(length * iteration // total)
     bar = fill * filledLength + '-' * (length - filledLength)
-    print('%s |%s| %s%% %s' % (prefix, bar, percent, suffix), end = '\n')
+    print('%s %s |%s| %s%% %s' % (datetime.datetime.now(), prefix, bar, percent, suffix), end = '\n')
     # Print New Line on Complete
     if iteration == total:
         print()

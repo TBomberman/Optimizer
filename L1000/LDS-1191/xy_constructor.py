@@ -157,12 +157,15 @@ for target_cell_name in ['VCAP']:
                 # column counts: -666 17071, % 2833, uL 238987, uM 205066, ng 1439, ng / uL 2633, ng / mL 5625
                 continue
             dose_amt = float(experiment_data[4])
-            if dose_amt == 0:
-                if experiment_data[6] == '1 nM':
-                    dose_amt = 0.001
-                else:
-                    print("Omitting 0 dose.\n")
-                    continue
+            if dose_amt < 4.9 or dose_amt > 5.1: # only use the 5 mm bin
+                continue
+                
+            # if dose_amt == 0:
+            #     if experiment_data[6] == '1 nM':
+            #         dose_amt = 0.001
+            #     else:
+            #         print("Omitting 0 dose.\n")
+            #         continue
 
             # parse the cell name
             start = find_nth(col_name, "_", 1)
@@ -185,10 +188,11 @@ for target_cell_name in ['VCAP']:
                 #     continue
 
                 pert = column[gene_id].astype('float16')
-                pert_conc_ratio = abs(pert / dose_amt)
+                # pert_conc_ratio = abs(pert / dose_amt)
+                abspert = abs(pert)
 
                 repeat_key = drug_id + "_" + cell_id + "_" + gene_id
-                if repeat_key in repeat_X and pert_conc_ratio <= repeat_X[repeat_key]:
+                if repeat_key in repeat_X and abspert <= repeat_X[repeat_key]:
                 # if repeat_key in repeat_X and dose_amt <= repeat_X[repeat_key]:
                     continue
 
@@ -198,8 +202,8 @@ for target_cell_name in ['VCAP']:
                     cell_drugs_counts[cell_id] = 0
                     cell_Y_gene_ids[cell_id] = []
 
-                repeat_X[repeat_key] = pert_conc_ratio
-                # repeat_X[repeat_key] = dose_amt
+                # repeat_X[repeat_key] = pert_conc_ratio
+                repeat_X[repeat_key] = abspert
 
                 if gene_count_data_limit > 1:
                     cell_X[cell_id][repeat_key] = drug_features + gene_features_dict[gene_symbol]# + more_drug_features + prot_features_dict[gene_symbol]
@@ -210,7 +214,7 @@ for target_cell_name in ['VCAP']:
                 cell_drugs_counts[cell_id] += 1
 
         elapsed_time = time.time() - start_time
-        print("Time to load data:", elapsed_time)
+        print(datetime.datetime.now(), "Time to load data:", elapsed_time)
 
         gene_cutoffs_down = {}
         gene_cutoffs_up = {}
@@ -228,21 +232,15 @@ for target_cell_name in ['VCAP']:
 
         gc.collect()
         cell_line_counter = 1
-        print("Gene count:", gene_count_data_limit, "\n")
+        print(datetime.datetime.now(), "Gene count:", gene_count_data_limit, "\n")
         try:
             for cell_name in cell_name_to_id_dict:
                 cell_id = cell_name_to_id_dict[cell_name][0]
                 if cell_id not in cell_X:
                     continue
-                npX = []
-                npY = []
-                for key, value in cell_X[cell_id].items():
-                    npX.append(value)
-                for key, value in cell_Y[cell_id].items():
-                    npY.append(value)
-
-                npX = np.asarray(npX, dtype='float16')
-                npY = np.asarray(npY, dtype='float16')
+                print(datetime.datetime.now(), "Converting dictionary values to np")
+                npX = np.asarray(list(cell_X[cell_id].values()), dtype='float16')
+                npY = np.asarray(list(cell_Y[cell_id].values()), dtype='float16')
                 npY_gene_ids = np.asarray(cell_Y_gene_ids[cell_id])
 
                 npY_class = np.zeros(len(npY), dtype=int)
