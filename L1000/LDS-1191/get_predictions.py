@@ -17,8 +17,12 @@ config.gpu_options.per_process_gpu_memory_fraction = 0.05
 set_session(tf.Session(config=config))
 
 down_model_file_prefixes = [
+    'PC3Down5bin-1k77',
+    'VCAPDown5bin-1k74',
+    'A549Down5bin-1k76',
+    'MCF7Down5bin-1k76',
     # 'PC35Down78',
-    'VCAP5Down75',
+    # 'VCAP5Down75',
     # 'HCC5155Down81',
     # 'A549Down',
     # 'HEPG2Down',
@@ -41,8 +45,12 @@ down_model_file_prefixes = [
 ]
 
 up_model_file_prefixes = [
+    'PC3Up5bin-1k78',
+    'VCAPUp5bin-1k73',
+    'A549Up5bin-1k77',
+    'MCF7Up5bin-1k77',
     # 'PC35Up77',
-    'VCAP5Up74',
+    # 'VCAP5Up74',
     # 'A5495Up.75',
     # 'HCC5155Up.80',
     # 'HEPG2Up',
@@ -75,9 +83,10 @@ plot_histograms = False
 save_histogram_data = False
 use_ends_model = False
 path_prefix = "saved_models/"
-# zinc_file_name  = '/home/gwoo/Data/zinc/ZincCompounds_InStock_maccs.tab'
+zinc_file_name  = '/home/gwoo/Data/zinc/ZincCompounds_InStock_maccs.tab'
 # zinc_file_name  = 'data/german_smiles_rdkit_maccs.csv'
-zinc_file_name  = 'data/nathan_smiles_rdkit_maccs.csv'
+# zinc_file_name  = 'data/nathan_smiles_rdkit_maccs.csv'
+# zinc_file_name  = 'data/smiles_rdkit_maccs.csv'
 
 class Top10():
     def __init__(self):
@@ -163,7 +172,7 @@ def get_specific_score(num_pert_samples, up_samples, down_samples, flat_samples,
         flipped_down_predictions = np.fliplr(down_model_all_predictions)
         all_predictions = np.mean(np.array([up_model_all_predictions, flipped_down_predictions]), axis=0)
 
-    ndprint(all_predictions[:, 1])
+    # ndprint(all_predictions[:, 1])
     flat_predictions = all_predictions[:up_start - 1]
     up_predictions = all_predictions[up_start: down_start - 1]
     down_predictions = all_predictions[down_start:]
@@ -247,7 +256,7 @@ def get_specific_predictions(up_gene_ids, down_gene_ids, score_function, model, 
                 # print('flat gene id', gene_id)
                 flat_gene_features_list.append(gene_features)
                 gene_name_list.append(gene_symbol)
-        print(gene_name_list)
+        # print(gene_name_list)
         return up_gene_features_list, down_gene_features_list, flat_gene_features_list
 
     top10scores = Top10Float()
@@ -257,8 +266,8 @@ def get_specific_predictions(up_gene_ids, down_gene_ids, score_function, model, 
                                                                                                       down_gene_ids)
     scores = []
     iteration = 0
-    n_drugs = 5
-    n_gpus = 1
+    n_drugs = 500000
+    n_gpus = 14
     batch_size = int(n_drugs / n_gpus)
     start = iteration * batch_size
     end = start + batch_size - 1
@@ -270,6 +279,8 @@ def get_specific_predictions(up_gene_ids, down_gene_ids, score_function, model, 
         drug_counter = 0
         for row in reader:
             try:
+                if drug_counter % 100 == 0:
+                    print(drug_counter)
                 if save_histogram_data:
                     if drug_counter < start:
                         drug_counter += 1
@@ -278,21 +289,28 @@ def get_specific_predictions(up_gene_ids, down_gene_ids, score_function, model, 
                         break
 
                 molecule_id = row[0]
+                # if molecule_id != 'ZINC000225292017':
+                #     continue
                 drug_features = get_drug_features(row)
                 up_samples = get_samples(drug_features, up_gene_features_list)
                 down_samples = get_samples(drug_features, down_gene_features_list)
                 flat_samples = get_samples(drug_features, flat_gene_features_list)
-                print('mol id', molecule_id)
-                pert_score, flat_score, total_score = score_function(num_pert_samples, up_samples, down_samples,
-                                                                         flat_samples, model, up_models, down_models)
-                scores.append(total_score)
-                if top10scores.current_size < top10scores.max_size or total_score > top10scores.get_lowest_key_prefix():
-                    message = "compound " + str(molecule_id) \
-                              + " has pert score " + "{:0.4f}".format(pert_score) \
-                              + " flat score " + "{:0.4f}".format(flat_score) \
-                              + " total score " + "{:0.4f}".format(total_score)
-                    top10scores.add_item(total_score, message)
-                    print(datetime.datetime.now(), message)
+                # print('mol id', molecule_id)
+                num_models = max(len(up_models), 1)
+                for i in range(0, num_models):
+                    up_models1 = [up_models[i]]
+                    down_models1 = [down_models[i]]
+                    pert_score, flat_score, total_score = score_function(num_pert_samples, up_samples, down_samples,
+                                                                             flat_samples, model, up_models1, down_models1)
+
+                    scores.append(total_score)
+                    if top10scores.current_size < top10scores.max_size or total_score > top10scores.get_lowest_key_prefix():
+                        message = "model " + str(i) + " compound " + str(molecule_id) \
+                                  + " has pert score " + "{:0.4f}".format(pert_score) \
+                                  + " flat score " + "{:0.4f}".format(flat_score) \
+                                  + " total score " + "{:0.4f}".format(total_score)
+                        top10scores.add_item(total_score, message)
+                        print(datetime.datetime.now(), message)
 
                 if save_histogram_data and drug_counter % 1000 == 0:
                     save_list(scores, 'scores', str(iteration))
@@ -305,7 +323,7 @@ def get_specific_predictions(up_gene_ids, down_gene_ids, score_function, model, 
 
 try:
     germans_up_genes = []
-    germans_down_genes = [] #['6657']
+    germans_down_genes = ['6657']
     up_models = []
     down_models = []
     model = None
