@@ -93,7 +93,7 @@ for i in range(length-1, -1, -1): # go backwards, assuming later experiments hav
         pert = column[gene_id]
         abspert = abs(pert)
 
-        repeat_key = drug_id + "_" + cell_id
+        repeat_key = drug_id + "_" + cell_id + "_" + gene_id
         if repeat_key in repeat_X and abspert <= repeat_X[repeat_key]:
             continue
         repeat_X[repeat_key] = abspert
