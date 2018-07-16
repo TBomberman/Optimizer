@@ -105,8 +105,8 @@ for i in range(length-1, -1, -1): # go backwards, assuming later experiments hav
             pert_counts += 1
 
 print('pert counts', str(pert_counts))
-corr_x = []
-corr_y = []
+corr_x_pred = []
+corr_y_actu = []
 
 from pathlib import Path
 from L1000.gene_predictor import load_model
@@ -145,26 +145,39 @@ for drug_id in perts.keys():
             continue
         gene_features = gene_features_dict[gene_symbol]
         all_samples.append(np.asarray(drug_features + gene_features))
-        corr_y.append(perts[drug_id][gene_id])
+        corr_y_actu.append(perts[drug_id][gene_id])
 np_all_samples = np.asarray(all_samples)
 up_model_all_predictions = up_model.predict(np_all_samples)
 down_model_all_predictions = down_model.predict(np_all_samples)
 flipped_down_predictions = np.fliplr(down_model_all_predictions)
 all_predictions = np.mean(np.array([up_model_all_predictions, flipped_down_predictions]), axis=0)
 for prediction in all_predictions:
-    corr_x.append(prediction[1])
+    corr_x_pred.append(prediction[1])
 
-print('corr y length', len(corr_y))
-print('corr x length', len(corr_x))
+print('corr y length', len(corr_y_actu))
+print('corr x length', len(corr_x_pred))
 
 # x = []
 # for val in corr_x:
 #     x.append((val - 0.5)*10)
 
-x = corr_x
-y = corr_y
+x = corr_x_pred
+y = corr_y_actu
 
-import matplotlib.pyplot as plt
-from helpers.utilities import scatter2D_plot, scatterdens_plot
-scatter2D_plot(y, x, file="Corr")
-plt.show()
+class_x = np.asarray(x)
+up_locations = np.where(class_x >= 0.5)
+class_x = np.zeros(len(x))
+class_x[up_locations] = 1
+
+class_y = np.asarray(y)
+up_locations = np.where(class_y >= 0)
+class_y = np.zeros(len(y))
+class_y[up_locations] = 1
+acc = np.mean(class_x == class_y)
+print('saved test molecules accuracy', acc, 'count', len(class_x))
+print('count x up', np.sum(class_x), 'count y up', np.sum(class_y))
+
+# import matplotlib.pyplot as plt
+# from helpers.utilities import scatter2D_plot, scatterdens_plot
+# scatter2D_plot(y, x, file="Corr")
+# plt.show()
