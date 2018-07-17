@@ -75,6 +75,7 @@ experiments_dose_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/Met
 
 # set maccs keys aside
 import os.path
+print('remove 1k molecules for validation')
 keep_away_filename = 'keep_away.txt'
 if os.path.isfile(keep_away_filename):
     keep_away_keys = load_csv(keep_away_filename)
@@ -110,9 +111,10 @@ length = len(level_5_gctoo.col_metadata_df.index)
 # for target_cell_name in ['VCAP', 'HCC515', 'A549', 'HEPG2', 'MCF7', 'HEK293T', 'HT29', 'A375', 'HA1E', 'THP1', 'BT20', 'U937',
 #                          'MCF10A', 'HUH7', 'NKDBA', 'NOMO1', 'JURKAT', 'SKBR3', 'HS578T', 'MDAMB231']:
 #     for direction in ['Down', 'Up']:
-for target_cell_name in ['VCAP']:#, 'A549', 'MCF7', 'PC3']:
-    for direction in ['Both', 'Up', 'Down']:
-        for bin in [5, 10]:
+for bin in [10, 5]:
+    for target_cell_name in ['VCAP', 'PC3']:#, 'A549', 'MCF7', 'PC3']:
+        for direction in ['Multi']:
+
             model_file_prefix = target_cell_name + '_' + direction + str(bin)
             print(model_file_prefix)
 
@@ -258,14 +260,25 @@ for target_cell_name in ['VCAP']:#, 'A549', 'MCF7', 'PC3']:
                         up_locations = np.where(npY >= class_cut_off_up)
                         if direction == 'Down':
                             intersect = np.intersect1d(gene_locations, down_locations)
+                            npY_class[intersect] = 1
                         elif direction == 'Up':
                             intersect = np.intersect1d(gene_locations, up_locations)
-                        else: # 'Both'
+                            npY_class[intersect] = 1
+                        elif direction == 'Both':
                             intersect = np.intersect1d(gene_locations, down_locations)
                             combined_locations += intersect.tolist()
                             intersect = np.intersect1d(gene_locations, up_locations)
                             combined_locations += intersect.tolist()
-                        npY_class[intersect] = 1
+                            npY_class[intersect] = 1
+                        else: # direction = multi
+                            intersect = np.intersect1d(gene_locations, down_locations)
+                            gene_down_locations = intersect.tolist()
+                            combined_locations += gene_down_locations
+                            intersect = np.intersect1d(gene_locations, up_locations)
+                            gene_up_locations = intersect.tolist()
+                            combined_locations += gene_up_locations
+                            npY_class[gene_up_locations] = 2
+                            npY_class[gene_down_locations] = 1
 
                     if direction == 'Both':
                         npX = npX[combined_locations]
@@ -288,7 +301,7 @@ for target_cell_name in ['VCAP']:#, 'A549', 'MCF7', 'PC3']:
                         np.savez(prefix + cell_name + "npY_classEndsAllCutoffs", npY_class)
 
                     if use_optimizer:
-                        do_optimize(2, npX, npY_class)
+                        do_optimize(len(np.unique(npY_class)), npX, npY_class)
                     else:
                         model = train_model(npX, npY_class)
                         save_model(model, model_file_prefix)

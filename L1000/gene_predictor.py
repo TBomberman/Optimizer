@@ -66,16 +66,31 @@ class Gene_Predictor():
         y_score_test = self.model.predict_proba(X_test)
         y_score_val = self.model.predict_proba(X_val)
 
-        train_stats = all_stats(Y_train[:, 0], y_score_train[:, 0])
-        val_stats = all_stats(Y_val[:, 0], y_score_val[:, 0])
-        test_stats = all_stats(Y_test[:, 0], y_score_test[:, 0], val_stats[-1])
+        def print_stats(train_stats, test_stats, val_stats):
+            print('Hidden layers: 2, Neurons per layer:', neuron_count)
+            print('All stats columns | AUC | Recall | Specificity | Number of Samples | Precision | Max F Cutoff')
+            print('All stats train:', ['{:6.2f}'.format(val) for val in train_stats])
+            print('All stats test:', ['{:6.2f}'.format(val) for val in test_stats])
+            print('All stats val:', ['{:6.2f}'.format(val) for val in val_stats])
+            print('Total:', ['{:6.2f}'.format(val) for val in [train_stats[0] + test_stats[0] + val_stats[0]]])
 
-
-        print('Hidden layers: 2, Neurons per layer:', neuron_count)
-        print('All stats train:', ['{:6.2f}'.format(val) for val in train_stats])
-        print('All stats test:', ['{:6.2f}'.format(val) for val in test_stats])
-        print('All stats val:', ['{:6.2f}'.format(val) for val in val_stats])
-        print('Total:', ['{:6.2f}'.format(val) for val in [train_stats[0] + test_stats[0] + val_stats[0]]])
+        if nb_classes > 2:
+            for class_index in range(0, nb_classes):
+                print('class', class_index, 'stats')
+                train_stats = all_stats(Y_train[:, class_index], y_score_train[:, class_index])
+                val_stats = all_stats(Y_val[:, class_index], y_score_val[:, class_index])
+                test_stats = all_stats(Y_test[:, class_index], y_score_test[:, class_index])
+                print_stats(train_stats, test_stats, val_stats)
+        elif nb_classes == 2:
+            train_stats = all_stats(Y_train[:, 1], y_score_train[:, 1])
+            val_stats = all_stats(Y_val[:, 1], y_score_val[:, 1] )
+            test_stats = all_stats(Y_test[:, 1], y_score_test[:, 1], val_stats[-1])
+            print_stats(train_stats, test_stats, val_stats)
+        else:
+            train_stats = all_stats(Y_train, y_score_train)
+            val_stats = all_stats(Y_val, y_score_val)
+            test_stats = all_stats(Y_test, y_score_test, val_stats[-1])
+            print_stats(train_stats, test_stats, val_stats)
 
     def predict(self, data):
         return self.model.predict(data)
