@@ -72,7 +72,7 @@ up_model_file_prefixes = [
     # 'MDAMB231Up'
 ]
 
-ends_model_file_prefix = "VCAPBoth86"
+ends_model_file_prefix = "VCAP_Multi10"
 gene_count_data_limit = 978
 find_promiscuous = True
 most_promiscious_drug = ''
@@ -81,11 +81,11 @@ operation = "promiscuous"
 hit_score = 0
 plot_histograms = False
 save_histogram_data = False
-use_ends_model = False
+use_ends_model = True
 path_prefix = "saved_models/"
-zinc_file_name  = '/home/gwoo/Data/zinc/ZincCompounds_InStock_maccs.tab'
+# zinc_file_name  = '/home/gwoo/Data/zinc/ZincCompounds_InStock_maccs.tab'
 # zinc_file_name  = 'data/german_smiles_rdkit_maccs.csv'
-# zinc_file_name  = 'data/nathan_smiles_rdkit_maccs.csv'
+zinc_file_name  = 'data/nathan_smiles_rdkit_maccs.csv'
 # zinc_file_name  = 'data/smiles_rdkit_maccs.csv'
 
 class Top10():
@@ -172,7 +172,9 @@ def get_specific_score(num_pert_samples, up_samples, down_samples, flat_samples,
         flipped_down_predictions = np.fliplr(down_model_all_predictions)
         all_predictions = np.mean(np.array([up_model_all_predictions, flipped_down_predictions]), axis=0)
 
-    # ndprint(all_predictions[:, 1])
+    ndprint(all_predictions[:, 0])
+    ndprint(all_predictions[:, 1])
+    ndprint(all_predictions[:, 2])
     flat_predictions = all_predictions[:up_start - 1]
     up_predictions = all_predictions[up_start: down_start - 1]
     down_predictions = all_predictions[down_start:]
@@ -256,7 +258,7 @@ def get_specific_predictions(up_gene_ids, down_gene_ids, score_function, model, 
                 # print('flat gene id', gene_id)
                 flat_gene_features_list.append(gene_features)
                 gene_name_list.append(gene_symbol)
-        # print(gene_name_list)
+        print(gene_name_list)
         return up_gene_features_list, down_gene_features_list, flat_gene_features_list
 
     top10scores = Top10Float()
@@ -295,13 +297,12 @@ def get_specific_predictions(up_gene_ids, down_gene_ids, score_function, model, 
                 up_samples = get_samples(drug_features, up_gene_features_list)
                 down_samples = get_samples(drug_features, down_gene_features_list)
                 flat_samples = get_samples(drug_features, flat_gene_features_list)
-                # print('mol id', molecule_id)
+                print('mol id', molecule_id)
                 num_models = max(len(up_models), 1)
-                for i in range(0, num_models):
-                    up_models1 = [up_models[i]]
-                    down_models1 = [down_models[i]]
+
+                def get_scores(up_models1, down_models1):
                     pert_score, flat_score, total_score = score_function(num_pert_samples, up_samples, down_samples,
-                                                                             flat_samples, model, up_models1, down_models1)
+                                                                         flat_samples, model, up_models1, down_models1)
 
                     scores.append(total_score)
                     if top10scores.current_size < top10scores.max_size or total_score > top10scores.get_lowest_key_prefix():
@@ -311,6 +312,14 @@ def get_specific_predictions(up_gene_ids, down_gene_ids, score_function, model, 
                                   + " total score " + "{:0.4f}".format(total_score)
                         top10scores.add_item(total_score, message)
                         print(datetime.datetime.now(), message)
+
+                if use_ends_model:
+                    get_scores([], [])
+                else:
+                    for i in range(0, num_models):
+                        up_models1 = [up_models[i]]
+                        down_models1 = [down_models[i]]
+                        get_scores(up_models1, down_models1)
 
                 if save_histogram_data and drug_counter % 1000 == 0:
                     save_list(scores, 'scores', str(iteration))
