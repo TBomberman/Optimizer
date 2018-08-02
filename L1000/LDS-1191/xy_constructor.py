@@ -111,13 +111,9 @@ length = len(level_5_gctoo.col_metadata_df.index)
 # for target_cell_name in ['VCAP', 'HCC515', 'A549', 'HEPG2', 'MCF7', 'HEK293T', 'HT29', 'A375', 'HA1E', 'THP1', 'BT20', 'U937',
 #                          'MCF10A', 'HUH7', 'NKDBA', 'NOMO1', 'JURKAT', 'SKBR3', 'HS578T', 'MDAMB231']:
 #     for direction in ['Down', 'Up']:
-for bin in [10, 5]:
-    for target_cell_name in ['VCAP', 'PC3']:#, 'A549', 'MCF7', 'PC3']:
+for bin in [10]:
+    for target_cell_name in ['VCAP']:#, 'A549', 'MCF7', 'PC3']:
         for direction in ['Multi']:
-
-            model_file_prefix = target_cell_name + '_' + direction + str(bin)
-            print(model_file_prefix)
-
             cell_X = {}
             cell_Y = {}
             cell_Y_gene_ids = {}
@@ -221,90 +217,95 @@ for bin in [10, 5]:
 
             gene_cutoffs_down = {}
             gene_cutoffs_up = {}
-            percentile_down = 5 # for downregulation, use 95 for upregulation
-            percentile_up = 95
+            # percentile_down = 5 # for downregulation, use 95 for upregulation
+            for percentile_down in [10, 20]:
 
-            # use_global gene_specific_cutoffs:
-            prog_ctr = 0
-            for gene_id in lm_gene_entrez_ids:
-                row = level_5_gctoo.data_df.loc[gene_id, :].values
-                prog_ctr += 1
-                printProgressBar(prog_ctr, gene_count_data_limit, prefix='Storing percentile cutoffs')
-                gene_cutoffs_down[gene_id] = np.percentile(row, percentile_down)
-                gene_cutoffs_up[gene_id] = np.percentile(row, percentile_up)
+                model_file_prefix = target_cell_name + '_' + direction + str(bin) + 'b_p' + str(percentile_down)
+                print(model_file_prefix)
 
-            gc.collect()
-            cell_line_counter = 1
-            print(datetime.datetime.now(), "Gene count:", gene_count_data_limit, "\n")
-            try:
-                for cell_name in cell_name_to_id_dict:
-                    cell_id = cell_name_to_id_dict[cell_name][0]
-                    if cell_id not in cell_X:
-                        continue
-                    print(datetime.datetime.now(), "Converting dictionary values to np")
-                    npX = np.asarray(list(cell_X[cell_id].values()), dtype='float16')
-                    npY = np.asarray(list(cell_Y[cell_id].values()), dtype='float16')
-                    npY_gene_ids = np.asarray(cell_Y_gene_ids[cell_id])
+                percentile_up = 100 - percentile_down
 
-                    npY_class = np.zeros(len(npY), dtype=int)
+                # use_global gene_specific_cutoffs:
+                prog_ctr = 0
+                for gene_id in lm_gene_entrez_ids:
+                    row = level_5_gctoo.data_df.loc[gene_id, :].values
+                    prog_ctr += 1
+                    printProgressBar(prog_ctr, gene_count_data_limit, prefix='Storing percentile cutoffs')
+                    gene_cutoffs_down[gene_id] = np.percentile(row, percentile_down)
+                    gene_cutoffs_up[gene_id] = np.percentile(row, percentile_up)
 
-                    prog_ctr = 0
-                    combined_locations = []
-                    for gene_id in lm_gene_entrez_ids: # this section is for gene specific class cutoffs
-                        prog_ctr += 1
-                        printProgressBar(prog_ctr, gene_count_data_limit, prefix='Marking positive pertubations')
-                        class_cut_off_down = gene_cutoffs_down[gene_id]
-                        class_cut_off_up = gene_cutoffs_up[gene_id]
-                        gene_locations = np.where(npY_gene_ids == gene_id)
-                        down_locations = np.where(npY <= class_cut_off_down)
-                        up_locations = np.where(npY >= class_cut_off_up)
-                        if direction == 'Down':
-                            intersect = np.intersect1d(gene_locations, down_locations)
-                            npY_class[intersect] = 1
-                        elif direction == 'Up':
-                            intersect = np.intersect1d(gene_locations, up_locations)
-                            npY_class[intersect] = 1
-                        elif direction == 'Both':
-                            intersect = np.intersect1d(gene_locations, down_locations)
-                            combined_locations += intersect.tolist()
-                            intersect = np.intersect1d(gene_locations, up_locations)
-                            combined_locations += intersect.tolist()
-                            npY_class[intersect] = 1
-                        else: # direction = multi
-                            intersect = np.intersect1d(gene_locations, down_locations)
-                            gene_down_locations = intersect.tolist()
-                            combined_locations += gene_down_locations
-                            intersect = np.intersect1d(gene_locations, up_locations)
-                            gene_up_locations = intersect.tolist()
-                            combined_locations += gene_up_locations
-                            npY_class[gene_up_locations] = 2
-                            npY_class[gene_down_locations] = 1
+                gc.collect()
+                cell_line_counter = 1
+                print(datetime.datetime.now(), "Gene count:", gene_count_data_limit, "\n")
+                try:
+                    for cell_name in cell_name_to_id_dict:
+                        cell_id = cell_name_to_id_dict[cell_name][0]
+                        if cell_id not in cell_X:
+                            continue
+                        print(datetime.datetime.now(), "Converting dictionary values to np")
+                        npX = np.asarray(list(cell_X[cell_id].values()), dtype='float16')
+                        npY = np.asarray(list(cell_Y[cell_id].values()), dtype='float16')
+                        npY_gene_ids = np.asarray(cell_Y_gene_ids[cell_id])
 
-                    if direction == 'Both':
-                        npX = npX[combined_locations]
-                        npY_class = npY_class[combined_locations]
-                    print("Evaluating cell line", cell_line_counter, cell_name, "(Percentile ends:", percentile_down, ")")
+                        npY_class = np.zeros(len(npY), dtype=int)
 
-                    sample_size = len(npY_class)
+                        prog_ctr = 0
+                        combined_locations = []
+                        for gene_id in lm_gene_entrez_ids: # this section is for gene specific class cutoffs
+                            prog_ctr += 1
+                            printProgressBar(prog_ctr, gene_count_data_limit, prefix='Marking positive pertubations')
+                            class_cut_off_down = gene_cutoffs_down[gene_id]
+                            class_cut_off_up = gene_cutoffs_up[gene_id]
+                            gene_locations = np.where(npY_gene_ids == gene_id)
+                            down_locations = np.where(npY <= class_cut_off_down)
+                            up_locations = np.where(npY >= class_cut_off_up)
+                            if direction == 'Down':
+                                intersect = np.intersect1d(gene_locations, down_locations)
+                                npY_class[intersect] = 1
+                            elif direction == 'Up':
+                                intersect = np.intersect1d(gene_locations, up_locations)
+                                npY_class[intersect] = 1
+                            elif direction == 'Both':
+                                intersect = np.intersect1d(gene_locations, down_locations)
+                                combined_locations += intersect.tolist()
+                                intersect = np.intersect1d(gene_locations, up_locations)
+                                combined_locations += intersect.tolist()
+                                npY_class[intersect] = 1
+                            else: # direction = multi
+                                intersect = np.intersect1d(gene_locations, down_locations)
+                                gene_down_locations = intersect.tolist()
+                                combined_locations += gene_down_locations
+                                intersect = np.intersect1d(gene_locations, up_locations)
+                                gene_up_locations = intersect.tolist()
+                                combined_locations += gene_up_locations
+                                npY_class[gene_up_locations] = 2
+                                npY_class[gene_down_locations] = 1
 
-                    if sample_size < 300: # smaller sizes was giving y values of only one class
-                        continue
+                        if direction == 'Both':
+                            npX = npX[combined_locations]
+                            npY_class = npY_class[combined_locations]
+                        print("Evaluating cell line", cell_line_counter, cell_name, "(Percentile ends:", percentile_down, ")")
 
-                    print('Positive samples', np.sum(npY_class))
+                        sample_size = len(npY_class)
 
-                    num_drugs = cell_drugs_counts[cell_id]
-                    print("Sample Size:", sample_size, "Drugs tested:", num_drugs / gene_count_data_limit)
+                        if sample_size < 300: # smaller sizes was giving y values of only one class
+                            continue
 
-                    if save_data_to_file:
-                        prefix = "LDS-1191/saved_xy_data/"
-                        np.savez(prefix + cell_name + "npXEndsAllCutoffs", npX)
-                        np.savez(prefix + cell_name + "npY_classEndsAllCutoffs", npY_class)
+                        print('Positive samples', np.sum(npY_class))
 
-                    if use_optimizer:
-                        do_optimize(len(np.unique(npY_class)), npX, npY_class)
-                    else:
-                        model = train_model(npX, npY_class)
-                        save_model(model, model_file_prefix)
-            finally:
-                en.notify()
-                plt.show()
+                        num_drugs = cell_drugs_counts[cell_id]
+                        print("Sample Size:", sample_size, "Drugs tested:", num_drugs / gene_count_data_limit)
+
+                        if save_data_to_file:
+                            prefix = "LDS-1191/saved_xy_data/"
+                            np.savez(prefix + cell_name + "npXEndsAllCutoffs", npX)
+                            np.savez(prefix + cell_name + "npY_classEndsAllCutoffs", npY_class)
+
+                        if use_optimizer:
+                            do_optimize(len(np.unique(npY_class)), npX, npY_class)
+                        else:
+                            model = train_model(npX, npY_class)
+                            save_model(model, model_file_prefix)
+                finally:
+                    en.notify()
+                    plt.show()
