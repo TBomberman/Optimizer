@@ -23,9 +23,9 @@ print(datetime.datetime.now(), "Loading drug and gene features")
 drug_features_dict = get_feature_dict('data/smiles_rdkit_maccs.csv') #, use_int=True)
 cell_name_to_id_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/Metadata/Cell_Line_Metadata.txt', '\t', 2)
 experiments_dose_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/Metadata/GSE92742_Broad_LINCS_sig_info.txt', '\t', 0)
-keep_away_filename = '../keep_away.txt'
-keep_away_keys = load_csv(keep_away_filename)
-keep_away_keys = np.asarray(keep_away_keys).reshape((1000))
+cold_drugs_filename = '../cold_drugs.txt'
+cold_drugs_keys = load_csv(cold_drugs_filename)
+cold_drugs_keys = np.asarray(cold_drugs_keys).reshape((1000))
 
 # getting the gene ids
 gene_id_dict = get_gene_id_dict()
@@ -68,7 +68,7 @@ for i in range(length-1, -1, -1): # go backwards, assuming later experiments hav
     if drug_id not in drug_features_dict:
         continue
 
-    if drug_id not in keep_away_keys:
+    if drug_id not in cold_drugs_keys:
         continue
 
     # parse the dosage unit and value

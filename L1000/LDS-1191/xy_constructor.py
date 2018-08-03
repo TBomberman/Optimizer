@@ -76,20 +76,20 @@ experiments_dose_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/Met
 # set maccs keys aside
 import os.path
 print('remove 1k molecules for validation')
-keep_away_filename = 'keep_away.txt'
-if os.path.isfile(keep_away_filename):
-    keep_away_keys = load_csv(keep_away_filename)
+cold_drugs_filename = 'cold_drugs.txt'
+if os.path.isfile(cold_drugs_filename):
+    cold_drugs_keys = load_csv(cold_drugs_filename)
 else:
     n_maccs = len(drug_features_dict)
-    keep_away_indexes = random.sample(range(0, n_maccs), 1000)
+    cold_drugs_indexes = random.sample(range(0, n_maccs), 1000)
     keys = list(drug_features_dict.keys())
-    keep_away_file = open(keep_away_filename, 'w')
-    keep_away_keys = []
-    for i in keep_away_indexes:
+    cold_drugs_file = open(cold_drugs_filename, 'w')
+    cold_drugs_keys = []
+    for i in cold_drugs_indexes:
         key = keys[i]
-        keep_away_file.write("%s\n" % key)
-        keep_away_keys.append([key])
-for key in keep_away_keys:
+        cold_drugs_file.write("%s\n" % key)
+        cold_drugs_keys.append([key])
+for key in cold_drugs_keys:
     drug_features_dict.pop(key[0], None)
 drug_features_dict.pop("BRD-K56851771", None)
 
