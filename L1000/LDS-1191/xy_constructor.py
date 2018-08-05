@@ -4,7 +4,7 @@ import json
 import time
 import random
 import matplotlib.pyplot as plt
-from mlp_optimizer import do_optimize
+from ensemble_optimizer import do_optimize
 import numpy as np
 from L1000.data_loader import get_feature_dict, load_gene_expression_data, printProgressBar, load_csv, get_trimmed_feature_dict
 from L1000.gene_predictor import train_model, save_model
@@ -17,8 +17,8 @@ import helpers.email_notifier as en
 # set_session(tf.Session(config=config))
 
 start_time = time.time()
-gene_count_data_limit = 978
-use_optimizer = False
+gene_count_data_limit = 2 #978
+use_optimizer = True
 target_cell_name = 'VCAP'
 direction = 'Both' #'Down'
 model_file_prefix = target_cell_name + direction
@@ -112,8 +112,8 @@ length = len(level_5_gctoo.col_metadata_df.index)
 #                          'MCF10A', 'HUH7', 'NKDBA', 'NOMO1', 'JURKAT', 'SKBR3', 'HS578T', 'MDAMB231']:
 #     for direction in ['Down', 'Up']:
 for bin in [10]:
-    for target_cell_name in ['VCAP']:#, 'A549', 'MCF7', 'PC3']:
-        for direction in ['Multi']:
+    for target_cell_name in ['HT29', 'VCAP', 'MCF7']:#, 'A549', 'MCF7', 'PC3']:
+        for direction in ['Both']:
             cell_X = {}
             cell_Y = {}
             cell_Y_gene_ids = {}
@@ -218,7 +218,7 @@ for bin in [10]:
             gene_cutoffs_down = {}
             gene_cutoffs_up = {}
             # percentile_down = 5 # for downregulation, use 95 for upregulation
-            for percentile_down in [10, 20]:
+            for percentile_down in [10]:
 
                 model_file_prefix = target_cell_name + '_' + direction + str(bin) + 'b_p' + str(percentile_down)
                 print(model_file_prefix)

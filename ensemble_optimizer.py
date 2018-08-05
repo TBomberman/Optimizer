@@ -36,7 +36,7 @@ def do_optimize(nb_classes, data, labels):
     Y_test = y_test
     Y_val = y_val
 
-    model = MlpEnsemble()
+    model = MlpEnsemble(saved_models_path="'gpu1_ensemble_models/'")
     if use_fit:
         model.fit(X_train, Y_train, validation_data=(X_test, Y_test))
 

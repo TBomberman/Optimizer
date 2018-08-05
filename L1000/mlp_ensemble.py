@@ -9,7 +9,7 @@ import numpy as np
 import os
 
 class MlpEnsemble(Model):
-    def __init__(self, layers=None, name=None, n_estimators=20, patience=20, log_steps=5, dropout=0.2,
+    def __init__(self, layers=None, name=None, n_estimators=10, patience=10, log_steps=5, dropout=0.2,
                  input_activation='selu', hidden_activation='relu', output_activation='softmax', optimizer='adam',
                  saved_models_path='ensemble_models/'):
         self.patience = patience
