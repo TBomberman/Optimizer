@@ -4,7 +4,7 @@ import json
 import time
 import random
 import matplotlib.pyplot as plt
-from ensemble_optimizer import do_optimize
+from ensemble_optimizer import do_optimize, evaluate
 import numpy as np
 from L1000.data_loader import get_feature_dict, load_gene_expression_data, printProgressBar, load_csv, get_trimmed_feature_dict
 from L1000.gene_predictor import train_model, save_model
@@ -18,21 +18,22 @@ import helpers.email_notifier as en
 
 start_time = time.time()
 gene_count_data_limit = 978
-use_optimizer = True
+evaluate_type = "test_trained" #"use_optimizer" "train_and_save"
 target_cell_name = 'VCAP'
 direction = 'Both' #'Down'
 model_file_prefix = target_cell_name + direction
 save_data_to_file = False
 use_data_from_file = False
+test_cold = True
 
 if use_data_from_file:
     prefix = "LDS-1191/saved_xy_data/"
     npX = np.load(prefix + "PC3npX.npz")['arr_0'] # must be not balanced too because 70% of this is X_train.npz
     npY_class = np.load(prefix + "PC3npY_class.npz")['arr_0']
     try:
-        if use_optimizer:
+        if evaluate_type == "use_optimizer":
             do_optimize(2, npX, npY_class)
-        else:
+        elif evaluate_type == "train_and_save":
             model = train_model(npX, npY_class)
             save_model(model, model_file_prefix)
     finally:
@@ -75,7 +76,7 @@ experiments_dose_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/Met
 
 # set maccs keys aside
 import os.path
-print('remove 1k molecules for validation')
+print('remove cold drugs for validation')
 cold_drugs_filename = 'cold_drugs.txt'
 if os.path.isfile(cold_drugs_filename):
     cold_drugs_keys = load_csv(cold_drugs_filename)
@@ -90,9 +91,19 @@ else:
         key = keys[i]
         cold_drugs_file.write("%s\n" % key)
         cold_drugs_keys.append([key])
-for key in cold_drugs_keys:
-    drug_features_dict.pop(key[0], None)
-drug_features_dict.pop("BRD-K56851771", None)
+
+if test_cold:
+    keys_to_remove = []
+    for key in drug_features_dict.keys():
+        if [key] in cold_drugs_keys:
+            continue
+        keys_to_remove.append(key)
+    for key in keys_to_remove:
+        drug_features_dict.pop(key, None)
+else:
+    for key in cold_drugs_keys:
+        drug_features_dict.pop(key[0], None)
+    drug_features_dict.pop("BRD-K56851771", None)
 
 # getting the gene ids
 gene_id_dict = get_gene_id_dict()
@@ -113,8 +124,8 @@ length = len(level_5_gctoo.col_metadata_df.index)
 #                          'MCF10A', 'HUH7', 'NKDBA', 'NOMO1', 'JURKAT', 'SKBR3', 'HS578T', 'MDAMB231']:
 #     for direction in ['Down', 'Up']:
 for bin in [10]:
-    # for target_cell_name in ['HT29', 'VCAP', 'MCF7']:
-    for target_cell_name in ['PC3', 'A375', 'A549']:
+    for target_cell_name in ['HT29', 'VCAP', 'MCF7']:
+    # for target_cell_name in ['PC3', 'A375', 'A549']:
         for direction in ['Both']:
             cell_X = {}
             cell_Y = {}
@@ -303,11 +314,14 @@ for bin in [10]:
                             np.savez(prefix + cell_name + "npXEndsAllCutoffs", npX)
                             np.savez(prefix + cell_name + "npY_classEndsAllCutoffs", npY_class)
 
-                        if use_optimizer:
+                        if evaluate_type == "use_optimizer":
                             do_optimize(len(np.unique(npY_class)), npX, npY_class)
-                        else:
+                        elif evaluate_type == "train_and_save":
                             model = train_model(npX, npY_class)
                             save_model(model, model_file_prefix)
+                        elif evaluate_type == "test_trained":
+                            evaluate(len(np.unique(npY_class)), npX, npY_class)
+
                 finally:
                     en.notify()
                     plt.show()

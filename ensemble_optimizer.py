@@ -6,7 +6,7 @@ from L1000.mlp_ensemble import MlpEnsemble
 import numpy as np
 
 train_percentage = 0.7
-use_plot = False
+use_plot = True
 use_fit = True
 load_data = False
 save_data = False
@@ -67,4 +67,27 @@ def do_optimize(nb_classes, data, labels):
     if use_plot:
         plot_roc(Y_test[:,1], y_pred_test[:,1])
 
-# do_optimize(2, [], [])
+def evaluate(nb_classes, data, labels):
+    labels = np_utils.to_categorical(labels, nb_classes)
+    x_test = data
+    y_test = labels
+
+    model = MlpEnsemble(saved_models_path="'gpu7_ensemble_models/'", save_models=False)
+
+    score = model.evaluate(x_test, y_test)
+    print('Test score:', score[0])
+    print('Test accuracy:', score[1])
+
+    y_pred = model.predict_proba(x_test)
+    y_pred[np.where(y_pred >= 0.5)] = 1
+    y_pred[np.where(y_pred < 0.5)] = 0
+    acc = np.mean(y_pred == y_test)
+    print('My Test accuracy:', acc)
+
+    test_stats = all_stats(y_test[:, 1], y_pred[:, 1])
+
+    print('All stats columns | AUC | Recall | Specificity | Number of Samples | Precision | Max F Cutoff')
+    print('All stats test:', ['{:6.2f}'.format(val) for val in test_stats])
+
+    if use_plot:
+        plot_roc(y_test[:, 1], y_pred[:, 1])
