@@ -54,12 +54,13 @@ def get_stats():
     print('std', std)
 
     q5 = np.percentile(values, 5)
+    q10 = np.percentile(values, 10)
     q25 = np.percentile(values, 25)
     q50 = np.percentile(values, 50)
     q75 = np.percentile(values, 75)
     q95 = np.percentile(values, 95)
 
-    print("5% quantile: {}\n25% quantile: {}\n50% quantile: {}\n75% quantile: {}\n95% quantile: {}\n".format(q5, q25, q50, q75, q95))
+    print("5% quantile: {}\n10% quantile: {}\n25% quantile: {}\n50% quantile: {}\n75% quantile: {}\n95% quantile: {}\n".format(q5, q10, q25, q50, q75, q95))
 
 def get_histogram():
     values = get_all_perts()

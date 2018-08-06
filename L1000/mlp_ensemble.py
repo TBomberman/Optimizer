@@ -11,7 +11,7 @@ import os
 class MlpEnsemble(Model):
     def __init__(self, layers=None, name=None, n_estimators=10, patience=10, log_steps=5, dropout=0.2,
                  input_activation='selu', hidden_activation='relu', output_activation='softmax', optimizer='adam',
-                 saved_models_path='ensemble_models/'):
+                 saved_models_path='ensemble_models/', save_models=True):
         self.patience = patience
         self.dropout = dropout
         self.log_steps = log_steps
@@ -23,6 +23,9 @@ class MlpEnsemble(Model):
         # if models are saved, load them
         self.models = {}
         self.saved_models_path = saved_models_path
+        self.save_models = save_models
+        if save_models:
+            return
         for i in range(0, n_estimators):
             file_prefix = saved_models_path + "EnsembleModel" + str(i)
             file = Path(file_prefix + '.json')
@@ -66,7 +69,7 @@ class MlpEnsemble(Model):
 
     def fit(self, x=None, y=None, batch_size=2**12, epochs=10000, verbose=1, callbacks=None, validation_split=0.,
             validation_data=None, shuffle=True, class_weight=None, sample_weight=None, initial_epoch=0,
-            steps_per_epoch=None,validation_steps=None, save_models=True, **kwargs):
+            steps_per_epoch=None,validation_steps=None, **kwargs):
 
         history = History()
         early_stopping = EarlyStopping(monitor='val_loss', min_delta=0, patience=self.patience, verbose=1, mode='auto')
@@ -101,7 +104,7 @@ class MlpEnsemble(Model):
                       validation_data=(x[val_indices], y[val_indices]),
                       callbacks=[history, early_stopping, out_epoch])
             self.models[file_prefix] = model
-            if save_models:
+            if self.save_models:
                 self.save_model(model, file_prefix)
 
     def evaluate(self, x=None, y=None, batch_size=None, verbose=0, sample_weight=None, steps=None):

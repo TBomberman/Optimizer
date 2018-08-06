@@ -8,7 +8,7 @@ import numpy as np
 train_percentage = 0.7
 use_plot = False
 use_fit = True
-load_data = True
+load_data = False
 save_data = False
 
 def do_optimize(nb_classes, data, labels):
@@ -36,7 +36,7 @@ def do_optimize(nb_classes, data, labels):
     Y_test = y_test
     Y_val = y_val
 
-    model = MlpEnsemble(saved_models_path="'gpu1_ensemble_models/'")
+    model = MlpEnsemble(saved_models_path="'gpu6_ensemble_models/'")
     if use_fit:
         model.fit(X_train, Y_train, validation_data=(X_test, Y_test))
 

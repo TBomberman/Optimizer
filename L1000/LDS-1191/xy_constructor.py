@@ -17,7 +17,7 @@ import helpers.email_notifier as en
 # set_session(tf.Session(config=config))
 
 start_time = time.time()
-gene_count_data_limit = 2 #978
+gene_count_data_limit = 978
 use_optimizer = True
 target_cell_name = 'VCAP'
 direction = 'Both' #'Down'
@@ -81,7 +81,8 @@ if os.path.isfile(cold_drugs_filename):
     cold_drugs_keys = load_csv(cold_drugs_filename)
 else:
     n_maccs = len(drug_features_dict)
-    cold_drugs_indexes = random.sample(range(0, n_maccs), 1000)
+    perc20 = int(n_maccs * 0.2)
+    cold_drugs_indexes = random.sample(range(0, n_maccs), perc20)
     keys = list(drug_features_dict.keys())
     cold_drugs_file = open(cold_drugs_filename, 'w')
     cold_drugs_keys = []
@@ -112,7 +113,8 @@ length = len(level_5_gctoo.col_metadata_df.index)
 #                          'MCF10A', 'HUH7', 'NKDBA', 'NOMO1', 'JURKAT', 'SKBR3', 'HS578T', 'MDAMB231']:
 #     for direction in ['Down', 'Up']:
 for bin in [10]:
-    for target_cell_name in ['HT29', 'VCAP', 'MCF7']:#, 'A549', 'MCF7', 'PC3']:
+    # for target_cell_name in ['HT29', 'VCAP', 'MCF7']:
+    for target_cell_name in ['PC3', 'A375', 'A549']:
         for direction in ['Both']:
             cell_X = {}
             cell_Y = {}
