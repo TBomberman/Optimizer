@@ -510,7 +510,7 @@ def scatter2D_plot(x,y,flag="",file=None,show=None,outliers=False):
 #>>>>>>> other
     legend(loc="upper left",prop={'size':14},scatterpoints=1,numpoints=2)
     #grid(True,alpha=0.3)
-    savefig(file + '_' + flag +'_plot.pdf',format='pdf')
+    # savefig(file + '_' + flag +'_plot.pdf',format='pdf')
 
 def auc_plot(x,y,flag,file=None,cutoff=None,show=None,linestyle='rx-.',include_baseline=True,equal_aspect=True):
     """ Method that generates a plot of the ROC curve

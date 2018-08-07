@@ -4,7 +4,8 @@ import json
 import time
 import random
 import matplotlib.pyplot as plt
-from ensemble_optimizer import do_optimize, evaluate
+# from ensemble_optimizer import do_optimize, evaluate
+from mlp_optimizer import do_optimize
 import numpy as np
 from L1000.data_loader import get_feature_dict, load_gene_expression_data, printProgressBar, load_csv, get_trimmed_feature_dict
 from L1000.gene_predictor import train_model, save_model
@@ -18,7 +19,7 @@ import helpers.email_notifier as en
 
 start_time = time.time()
 gene_count_data_limit = 978
-evaluate_type = "test_trained" #"use_optimizer" "train_and_save"
+evaluate_type = "use_optimizer" #"use_optimizer" "train_and_save" "test_trained"
 target_cell_name = 'VCAP'
 direction = 'Both' #'Down'
 model_file_prefix = target_cell_name + direction
@@ -119,12 +120,13 @@ print("Loading gene expressions from gctx")
 level_5_gctoo = load_gene_expression_data("/home/gwoo/Data/L1000/LDS-1191/Data/GSE92742_Broad_LINCS_Level5_COMPZ.MODZ_n473647x12328.gctx", lm_gene_entrez_ids)
 
 length = len(level_5_gctoo.col_metadata_df.index)
+# length = 10000
 
 # for target_cell_name in ['VCAP', 'HCC515', 'A549', 'HEPG2', 'MCF7', 'HEK293T', 'HT29', 'A375', 'HA1E', 'THP1', 'BT20', 'U937',
 #                          'MCF10A', 'HUH7', 'NKDBA', 'NOMO1', 'JURKAT', 'SKBR3', 'HS578T', 'MDAMB231']:
 #     for direction in ['Down', 'Up']:
 for bin in [10]:
-    for target_cell_name in ['HT29', 'VCAP']:
+    for target_cell_name in ['HT29']: #, 'VCAP']:
     # for target_cell_name in ['MCF7', 'A549']:
     # for target_cell_name in ['PC3', 'A375']:
         for direction in ['Both']:
@@ -232,7 +234,7 @@ for bin in [10]:
             gene_cutoffs_down = {}
             gene_cutoffs_up = {}
             # percentile_down = 5 # for downregulation, use 95 for upregulation
-            for percentile_down in [10]:
+            for percentile_down in [50]:
 
                 model_file_prefix = target_cell_name + '_' + direction + str(bin) + 'b_p' + str(percentile_down)
                 print(model_file_prefix)
@@ -296,8 +298,9 @@ for bin in [10]:
                                 npY_class[gene_down_locations] = 1
 
                         if direction == 'Both':
-                            npX = npX[combined_locations]
-                            npY_class = npY_class[combined_locations]
+                            # npX = npX[combined_locations]
+                            # npY_class = npY_class[combined_locations]
+                            npY_class = npY
                         print("Evaluating cell line", cell_line_counter, cell_name, "(Percentile ends:", percentile_down, ")")
 
                         sample_size = len(npY_class)
@@ -320,8 +323,8 @@ for bin in [10]:
                         elif evaluate_type == "train_and_save":
                             model = train_model(npX, npY_class)
                             save_model(model, model_file_prefix)
-                        elif evaluate_type == "test_trained":
-                            evaluate(len(np.unique(npY_class)), npX, npY_class, model_file_prefix)
+                        # elif evaluate_type == "test_trained":
+                            # evaluate(len(np.unique(npY_class)), npX, npY_class, model_file_prefix)
 
                 finally:
                     en.notify()

@@ -10,7 +10,7 @@ from keras.regularizers import l1, l1_l2, l2
 from sklearn.model_selection import train_test_split
 from helpers.plot_roc import plot_roc
 import keras_enums as enums
-from helpers.utilities import all_stats
+from helpers.utilities import all_stats, scatter2D_plot
 from helpers.callbacks import NEpochLogger
 from keras.utils import plot_model
 
@@ -21,7 +21,7 @@ batch_size = 2**12
 nb_epoch = 10000 #1000 cutoff 1 #3000 cutoff  2 and
 regularizer = l1 # l1 beats the other 2
 lammy = 0
-use_plot = False
+use_plot = True
 train_percentage = 0.7
 patience = 10
 
@@ -36,8 +36,8 @@ def regularizer(lammy):
 def do_optimize(nb_classes, data, labels):
     n = len(labels)
     d = data.shape[1]
-    if nb_classes > 1:
-        labels = np_utils.to_categorical(labels, nb_classes)
+    # if nb_classes > 1:
+    #     labels = np_utils.to_categorical(labels, nb_classes)
 
     train_size = int(train_percentage * n)
     print("Train size:", train_size)
@@ -62,9 +62,9 @@ def do_optimize(nb_classes, data, labels):
         # 8: 'relu', 9: 'softsign'
         activation_input = enums.activation_functions[1]
         activation = enums.activation_functions[8]
-        activation_output = enums.activation_functions[5]
+        # activation_output = enums.activation_functions[5]
         # usign rmse single output
-        # activation_output = enums.activation_functions[2]
+        activation_output = enums.activation_functions[3]
 
         model = Sequential()
         print('Patience', patience)
@@ -76,14 +76,15 @@ def do_optimize(nb_classes, data, labels):
 
         add_dense_dropout(layer_count, neuron_count, model, activation)
 
-        model.add(Dense(nb_classes, activity_regularizer=regularizer(lammy)))
+        # model.add(Dense(nb_classes, activity_regularizer=regularizer(lammy)))
+        model.add(Dense(1, activity_regularizer=regularizer(lammy))) #regression
         # model.add(Activation('softmax'))
         model.add(Activation(activation_output))
         # model.summary() # too much verbage
 
         # multi_model = multi_gpu_model(model, gpus=6)
-        model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
-        # model.compile(loss='mean_squared_error', optimizer=optimizer, metrics=['accuracy'])
+        # model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
+        model.compile(loss='mean_squared_error', optimizer=optimizer, metrics=['mse'])
 
         history = History()
         early_stopping = EarlyStopping(monitor='val_loss', min_delta=0, patience=patience, verbose=1, mode='auto')
@@ -112,45 +113,55 @@ def do_optimize(nb_classes, data, labels):
             print('All stats val:', ['{:6.2f}'.format(val) for val in val_stats])
             print('Total:', ['{:6.2f}'.format(val) for val in [train_stats[0] + test_stats[0] + val_stats[0]]])
 
-        if nb_classes > 2:
-            for class_index in range(0, nb_classes):
-                print('class', class_index, 'stats')
-                train_stats = all_stats(Y_train[:, class_index], y_pred_train[:, class_index])
-                val_stats = all_stats(Y_val[:, class_index], y_pred_val[:, class_index])
-                test_stats = all_stats(Y_test[:, class_index], y_pred_test[:, class_index])
-                print_stats(train_stats, test_stats, val_stats)
-        elif nb_classes == 2:
-            train_stats = all_stats(Y_train[:, 1], y_pred_train[:, 1])
-            val_stats = all_stats(Y_val[:, 1], y_pred_val[:, 1] )
-            test_stats = all_stats(Y_test[:, 1], y_pred_test[:, 1], val_stats[-1])
-            print_stats(train_stats, test_stats, val_stats)
-        else:
-            train_stats = all_stats(Y_train, y_pred_train)
-            val_stats = all_stats(Y_val, y_pred_val)
-            test_stats = all_stats(Y_test, y_pred_test, val_stats[-1])
-            print_stats(train_stats, test_stats, val_stats)
+        # if nb_classes > 2:
+        #     for class_index in range(0, nb_classes):
+        #         print('class', class_index, 'stats')
+        #         train_stats = all_stats(Y_train[:, class_index], y_pred_train[:, class_index])
+        #         val_stats = all_stats(Y_val[:, class_index], y_pred_val[:, class_index])
+        #         test_stats = all_stats(Y_test[:, class_index], y_pred_test[:, class_index])
+        #         print_stats(train_stats, test_stats, val_stats)
+        # elif nb_classes == 2:
+        #     train_stats = all_stats(Y_train[:, 1], y_pred_train[:, 1])
+        #     val_stats = all_stats(Y_val[:, 1], y_pred_val[:, 1] )
+        #     test_stats = all_stats(Y_test[:, 1], y_pred_test[:, 1], val_stats[-1])
+        #     print_stats(train_stats, test_stats, val_stats)
+        # else:
+        y_pred_train = np.reshape(y_pred_train, (-1))
+        train_stats = all_stats(Y_train, y_pred_train)
+        y_pred_val = np.reshape(y_pred_val, (-1))
+        val_stats = all_stats(Y_val, y_pred_val)
+        y_pred_test = np.reshape(y_pred_test, (-1))
+        test_stats = all_stats(Y_test, y_pred_test) #, val_stats[-1])
+        print_stats(train_stats, test_stats, val_stats)
 
         # print(history.history.keys())
         # summarize history for loss
 
         if use_plot:
-            plot_roc(Y_test[:,0], y_pred_test[:,0])
-            # plt.scatter(Y_train, y_score_train)
+            # plot_roc(Y_test[:,0], y_pred_test[:,0])
+            scatter2D_plot(Y_train, y_pred_train)
+            # plt.scatter(Y_train, y_pred_train)
             # plt.draw()
+            # plt.show()
+
+            scatter2D_plot(y_test, y_pred_test)
+            # plt.scatter(y_test, y_pred_test)
+            # plt.draw()
+            # plt.show()
 
             # plot
             # nth = int(nb_epoch *0.05)
-            nth = 1
-            five_ploss = history.history['loss'][0::nth]
-            five_pvloss = history.history['val_loss'][0::nth]
-            plt.figure()
-            plt.plot(five_ploss)
-            plt.plot(five_pvloss)
-            plt.title('model loss')
-            plt.ylabel('loss')
-            plt.xlabel('epoch')
-            plt.legend(['train', 'test'], loc='upper left')
-            plt.draw()
+            # nth = 1
+            # five_ploss = history.history['loss'][0::nth]
+            # five_pvloss = history.history['val_loss'][0::nth]
+            # plt.figure()
+            # plt.plot(five_ploss)
+            # plt.plot(five_pvloss)
+            # plt.title('model loss')
+            # plt.ylabel('loss')
+            # plt.xlabel('epoch')
+            # plt.legend(['train', 'test'], loc='upper left')
+            # plt.draw()
 
 
 def add_dense_dropout(count, neuron_count, model, activation):
