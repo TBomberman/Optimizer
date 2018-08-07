@@ -36,7 +36,7 @@ def do_optimize(nb_classes, data, labels):
     Y_test = y_test
     Y_val = y_val
 
-    model = MlpEnsemble(saved_models_path="'gpu6_ensemble_models/'")
+    model = MlpEnsemble(saved_models_path='ensemble_models/')
     if use_fit:
         model.fit(X_train, Y_train, validation_data=(X_test, Y_test))
 
@@ -67,12 +67,14 @@ def do_optimize(nb_classes, data, labels):
     if use_plot:
         plot_roc(Y_test[:,1], y_pred_test[:,1])
 
-def evaluate(nb_classes, data, labels):
+def evaluate(nb_classes, data, labels, file_prefix):
+    saved_models_path = file_prefix + '_ensemble_models/'
+
     labels = np_utils.to_categorical(labels, nb_classes)
     x_test = data
     y_test = labels
 
-    model = MlpEnsemble(saved_models_path="'gpu7_ensemble_models/'", save_models=False)
+    model = MlpEnsemble(saved_models_path=saved_models_path, save_models=False)
 
     score = model.evaluate(x_test, y_test)
     print('Test score:', score[0])

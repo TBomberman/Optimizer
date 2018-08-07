@@ -124,8 +124,9 @@ length = len(level_5_gctoo.col_metadata_df.index)
 #                          'MCF10A', 'HUH7', 'NKDBA', 'NOMO1', 'JURKAT', 'SKBR3', 'HS578T', 'MDAMB231']:
 #     for direction in ['Down', 'Up']:
 for bin in [10]:
-    for target_cell_name in ['HT29', 'VCAP', 'MCF7']:
-    # for target_cell_name in ['PC3', 'A375', 'A549']:
+    for target_cell_name in ['HT29', 'VCAP']:
+    # for target_cell_name in ['MCF7', 'A549']:
+    # for target_cell_name in ['PC3', 'A375']:
         for direction in ['Both']:
             cell_X = {}
             cell_Y = {}
@@ -320,7 +321,7 @@ for bin in [10]:
                             model = train_model(npX, npY_class)
                             save_model(model, model_file_prefix)
                         elif evaluate_type == "test_trained":
-                            evaluate(len(np.unique(npY_class)), npX, npY_class)
+                            evaluate(len(np.unique(npY_class)), npX, npY_class, model_file_prefix)
 
                 finally:
                     en.notify()

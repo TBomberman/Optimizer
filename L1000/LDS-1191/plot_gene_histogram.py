@@ -101,6 +101,16 @@ def get_drug_counts_per_cell_line():
         experiment_data = experiments_dose_dict[col_name_key]
         drug_id = experiment_data[0]
 
+        # parse the dosage unit and value
+        dose_unit = experiment_data[5]
+        if dose_unit != 'µM':  # standardize dose amounts
+            # column counts: -666 17071, % 2833, uL 238987, uM 205066, ng 1439, ng / uL 2633, ng / mL 5625
+            continue
+        dose_amt = float(experiment_data[4])
+        bin = 10
+        if dose_amt < bin - 0.1 or dose_amt > bin + 0.1:  # only use the 5 mm bin
+            continue
+
         if cell_name not in cell_line_perts:
             cell_line_perts[cell_name] = {}
 
@@ -112,5 +122,5 @@ def get_drug_counts_per_cell_line():
     for cell_name in cell_line_perts:
         print(cell_name, 'drug count', len(cell_line_perts[cell_name]))
 
-# get_drug_counts_per_cell_line()
-get_stats()
+get_drug_counts_per_cell_line()
+# get_stats()
