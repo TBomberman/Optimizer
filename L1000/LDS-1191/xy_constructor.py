@@ -4,8 +4,8 @@ import json
 import time
 import random
 import matplotlib.pyplot as plt
-# from ensemble_optimizer import do_optimize, evaluate
-from mlp_optimizer import do_optimize
+from ensemble_optimizer import do_optimize, evaluate
+# from mlp_optimizer import do_optimize
 import numpy as np
 from L1000.data_loader import get_feature_dict, load_gene_expression_data, printProgressBar, load_csv, get_trimmed_feature_dict
 from L1000.gene_predictor import train_model, save_model
@@ -120,15 +120,15 @@ print("Loading gene expressions from gctx")
 level_5_gctoo = load_gene_expression_data("/home/gwoo/Data/L1000/LDS-1191/Data/GSE92742_Broad_LINCS_Level5_COMPZ.MODZ_n473647x12328.gctx", lm_gene_entrez_ids)
 
 length = len(level_5_gctoo.col_metadata_df.index)
-# length = 10000
+# length = 20000
 
 # for target_cell_name in ['VCAP', 'HCC515', 'A549', 'HEPG2', 'MCF7', 'HEK293T', 'HT29', 'A375', 'HA1E', 'THP1', 'BT20', 'U937',
 #                          'MCF10A', 'HUH7', 'NKDBA', 'NOMO1', 'JURKAT', 'SKBR3', 'HS578T', 'MDAMB231']:
 #     for direction in ['Down', 'Up']:
 for bin in [10]:
-    for target_cell_name in ['HT29']: #, 'VCAP']:
-    # for target_cell_name in ['MCF7', 'A549']:
-    # for target_cell_name in ['PC3', 'A375']:
+    # for target_cell_name in ['A549', 'VCAP']:
+    for target_cell_name in ['MCF7', 'A375', 'HT29']:
+    # for target_cell_name in ['PC3']: #, 'A375']:
         for direction in ['Both']:
             cell_X = {}
             cell_Y = {}
@@ -261,41 +261,41 @@ for bin in [10]:
                         print(datetime.datetime.now(), "Converting dictionary values to np")
                         npX = np.asarray(list(cell_X[cell_id].values()), dtype='float16')
                         npY = np.asarray(list(cell_Y[cell_id].values()), dtype='float16')
-                        npY_gene_ids = np.asarray(cell_Y_gene_ids[cell_id])
-
-                        npY_class = np.zeros(len(npY), dtype=int)
-
-                        prog_ctr = 0
-                        combined_locations = []
-                        for gene_id in lm_gene_entrez_ids: # this section is for gene specific class cutoffs
-                            prog_ctr += 1
-                            printProgressBar(prog_ctr, gene_count_data_limit, prefix='Marking positive pertubations')
-                            class_cut_off_down = gene_cutoffs_down[gene_id]
-                            class_cut_off_up = gene_cutoffs_up[gene_id]
-                            gene_locations = np.where(npY_gene_ids == gene_id)
-                            down_locations = np.where(npY <= class_cut_off_down)
-                            up_locations = np.where(npY >= class_cut_off_up)
-                            if direction == 'Down':
-                                intersect = np.intersect1d(gene_locations, down_locations)
-                                npY_class[intersect] = 1
-                            elif direction == 'Up':
-                                intersect = np.intersect1d(gene_locations, up_locations)
-                                npY_class[intersect] = 1
-                            elif direction == 'Both':
-                                intersect = np.intersect1d(gene_locations, down_locations)
-                                combined_locations += intersect.tolist()
-                                intersect = np.intersect1d(gene_locations, up_locations)
-                                combined_locations += intersect.tolist()
-                                npY_class[intersect] = 1
-                            else: # direction = multi
-                                intersect = np.intersect1d(gene_locations, down_locations)
-                                gene_down_locations = intersect.tolist()
-                                combined_locations += gene_down_locations
-                                intersect = np.intersect1d(gene_locations, up_locations)
-                                gene_up_locations = intersect.tolist()
-                                combined_locations += gene_up_locations
-                                npY_class[gene_up_locations] = 2
-                                npY_class[gene_down_locations] = 1
+                        # npY_gene_ids = np.asarray(cell_Y_gene_ids[cell_id])
+                        #
+                        # npY_class = np.zeros(len(npY), dtype=int)
+                        #
+                        # prog_ctr = 0
+                        # combined_locations = []
+                        # for gene_id in lm_gene_entrez_ids: # this section is for gene specific class cutoffs
+                        #     prog_ctr += 1
+                        #     printProgressBar(prog_ctr, gene_count_data_limit, prefix='Marking positive pertubations')
+                        #     class_cut_off_down = gene_cutoffs_down[gene_id]
+                        #     class_cut_off_up = gene_cutoffs_up[gene_id]
+                        #     gene_locations = np.where(npY_gene_ids == gene_id)
+                        #     down_locations = np.where(npY <= class_cut_off_down)
+                        #     up_locations = np.where(npY >= class_cut_off_up)
+                        #     if direction == 'Down':
+                        #         intersect = np.intersect1d(gene_locations, down_locations)
+                        #         npY_class[intersect] = 1
+                        #     elif direction == 'Up':
+                        #         intersect = np.intersect1d(gene_locations, up_locations)
+                        #         npY_class[intersect] = 1
+                        #     elif direction == 'Both':
+                        #         intersect = np.intersect1d(gene_locations, down_locations)
+                        #         combined_locations += intersect.tolist()
+                        #         intersect = np.intersect1d(gene_locations, up_locations)
+                        #         combined_locations += intersect.tolist()
+                        #         npY_class[intersect] = 1
+                        #     else: # direction = multi
+                        #         intersect = np.intersect1d(gene_locations, down_locations)
+                        #         gene_down_locations = intersect.tolist()
+                        #         combined_locations += gene_down_locations
+                        #         intersect = np.intersect1d(gene_locations, up_locations)
+                        #         gene_up_locations = intersect.tolist()
+                        #         combined_locations += gene_up_locations
+                        #         npY_class[gene_up_locations] = 2
+                        #         npY_class[gene_down_locations] = 1
 
                         if direction == 'Both':
                             # npX = npX[combined_locations]
@@ -319,12 +319,12 @@ for bin in [10]:
                             np.savez(prefix + cell_name + "npY_classEndsAllCutoffs", npY_class)
 
                         if evaluate_type == "use_optimizer":
-                            do_optimize(len(np.unique(npY_class)), npX, npY_class)
+                            do_optimize(len(np.unique(npY_class)), npX, npY_class, model_file_prefix)
                         elif evaluate_type == "train_and_save":
                             model = train_model(npX, npY_class)
                             save_model(model, model_file_prefix)
-                        # elif evaluate_type == "test_trained":
-                            # evaluate(len(np.unique(npY_class)), npX, npY_class, model_file_prefix)
+                        elif evaluate_type == "test_trained":
+                            evaluate(len(np.unique(npY_class)), npX, npY_class, model_file_prefix)
 
                 finally:
                     en.notify()

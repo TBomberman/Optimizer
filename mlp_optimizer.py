@@ -23,7 +23,7 @@ regularizer = l1 # l1 beats the other 2
 lammy = 0
 use_plot = True
 train_percentage = 0.7
-patience = 10
+patience = 5
 
 # uncomment this to disable regularizer
 def regularizer(lammy):
@@ -33,7 +33,16 @@ def regularizer(lammy):
 # np.random.seed(1337)
 # random.seed(1337)
 
-def do_optimize(nb_classes, data, labels):
+def save_model(model, file_prefix):
+    # serialize model to JSON
+    model_json = model.to_json()
+    with open(file_prefix + ".json", "w") as json_file:
+        json_file.write(model_json)
+    # serialize weights to HDF5
+    model.save_weights(file_prefix + ".h5")
+    print("Saved model", file_prefix)
+
+def do_optimize(nb_classes, data, labels, model_file_prefix=None):
     n = len(labels)
     d = data.shape[1]
     # if nb_classes > 1:
@@ -91,7 +100,7 @@ def do_optimize(nb_classes, data, labels):
         out_epoch = NEpochLogger(display=5)
         model.fit(X_train, Y_train, batch_size=batch_size, epochs=nb_epoch,
                   verbose=0, validation_data=(X_test, Y_test), callbacks=[history, early_stopping, out_epoch])
-
+        save_model(model, model_file_prefix)
         score = model.evaluate(X_test, Y_test, verbose=0)
 
         print('Test score:', score[0])
@@ -140,28 +149,21 @@ def do_optimize(nb_classes, data, labels):
         if use_plot:
             # plot_roc(Y_test[:,0], y_pred_test[:,0])
             scatter2D_plot(Y_train, y_pred_train)
-            # plt.scatter(Y_train, y_pred_train)
-            # plt.draw()
-            # plt.show()
-
             scatter2D_plot(y_test, y_pred_test)
-            # plt.scatter(y_test, y_pred_test)
-            # plt.draw()
-            # plt.show()
 
             # plot
             # nth = int(nb_epoch *0.05)
-            # nth = 1
-            # five_ploss = history.history['loss'][0::nth]
-            # five_pvloss = history.history['val_loss'][0::nth]
-            # plt.figure()
-            # plt.plot(five_ploss)
-            # plt.plot(five_pvloss)
-            # plt.title('model loss')
-            # plt.ylabel('loss')
-            # plt.xlabel('epoch')
-            # plt.legend(['train', 'test'], loc='upper left')
-            # plt.draw()
+            nth = 1
+            five_ploss = history.history['loss'][0::nth]
+            five_pvloss = history.history['val_loss'][0::nth]
+            plt.figure()
+            plt.plot(five_ploss)
+            plt.plot(five_pvloss)
+            plt.title('model loss')
+            plt.ylabel('loss')
+            plt.xlabel('epoch')
+            plt.legend(['train', 'test'], loc='upper left')
+            plt.draw()
 
 
 def add_dense_dropout(count, neuron_count, model, activation):

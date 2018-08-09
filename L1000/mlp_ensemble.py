@@ -10,7 +10,7 @@ import os
 
 class MlpEnsemble(Model):
     def __init__(self, layers=None, name=None, n_estimators=10, patience=10, log_steps=5, dropout=0.2,
-                 input_activation='selu', hidden_activation='relu', output_activation='softmax', optimizer='adam',
+                 input_activation='selu', hidden_activation='relu', output_activation='linear', optimizer='adam',
                  saved_models_path='ensemble_models/', save_models=True):
         self.patience = patience
         self.dropout = dropout
@@ -62,9 +62,10 @@ class MlpEnsemble(Model):
         model.add(Dense(n_neuron))
         model.add(Activation(self.hidden_activation))
         model.add(Dropout(self.dropout))
-        model.add(Dense(2))
+        model.add(Dense(1))
         model.add(Activation(self.output_activation))
-        model.compile(loss='categorical_crossentropy', optimizer=self.optimizer)
+        # model.compile(loss='categorical_crossentropy', optimizer=self.optimizer)
+        model.compile(loss='mean_squared_error', optimizer=self.optimizer) #, metrics=['mse'])
         return model
 
     def fit(self, x=None, y=None, batch_size=2**12, epochs=10000, verbose=1, callbacks=None, validation_split=0.,
