@@ -62,7 +62,7 @@ class MlpEnsemble(Model):
         model.add(Dense(n_neuron))
         model.add(Activation(self.hidden_activation))
         model.add(Dropout(self.dropout))
-        model.add(Dense(2))
+        model.add(Dense(3))
         model.add(Activation(self.output_activation))
         model.compile(loss='categorical_crossentropy', optimizer=self.optimizer)
         return model

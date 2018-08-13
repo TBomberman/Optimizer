@@ -191,8 +191,8 @@ y_pred = model.predict(npX)
 
 def print_stats(val_stats):
     print('All stats columns | AUC | Recall | Specificity | Number of Samples | Precision | Max F Cutoff')
-    print('All stats val:', ['{:6.2f}'.format(val) for val in val_stats])
-    print('Total:', ['{:6.2f}'.format(val) for val in [val_stats[0]]])
+    print('All stats val:', ['{:6.3f}'.format(val) for val in val_stats])
+    print('Total:', ['{:6.3f}'.format(val) for val in [val_stats[0]]])
 
 for class_index in range(0, nb_classes):
     print('class', class_index, 'stats')

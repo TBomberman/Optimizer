@@ -5,6 +5,7 @@ import time
 import random
 import matplotlib.pyplot as plt
 from ensemble_optimizer import do_optimize, evaluate
+# from mlp_optimizer import do_optimize
 import numpy as np
 from L1000.data_loader import get_feature_dict, load_gene_expression_data, printProgressBar, load_csv, get_trimmed_feature_dict
 from L1000.gene_predictor import train_model, save_model
@@ -20,6 +21,9 @@ start_time = time.time()
 gene_count_data_limit = 978
 evaluate_type = "test_trained" #"use_optimizer" "train_and_save"
 target_cell_name = 'VCAP'
+# target_cell_names = ['A549', 'VCAP']
+# target_cell_names = ['MCF7', 'A375', 'HT29']:
+# target_cell_names = ['PC3', 'A375']
 direction = 'Both' #'Down'
 model_file_prefix = target_cell_name + direction
 save_data_to_file = False
@@ -119,14 +123,13 @@ print("Loading gene expressions from gctx")
 level_5_gctoo = load_gene_expression_data("/home/gwoo/Data/L1000/LDS-1191/Data/GSE92742_Broad_LINCS_Level5_COMPZ.MODZ_n473647x12328.gctx", lm_gene_entrez_ids)
 
 length = len(level_5_gctoo.col_metadata_df.index)
+# length = 15000
 
 # for target_cell_name in ['VCAP', 'HCC515', 'A549', 'HEPG2', 'MCF7', 'HEK293T', 'HT29', 'A375', 'HA1E', 'THP1', 'BT20', 'U937',
 #                          'MCF10A', 'HUH7', 'NKDBA', 'NOMO1', 'JURKAT', 'SKBR3', 'HS578T', 'MDAMB231']:
 #     for direction in ['Down', 'Up']:
 for bin in [10]:
-    for target_cell_name in ['HT29', 'VCAP']:
-    # for target_cell_name in ['MCF7', 'A549']:
-    # for target_cell_name in ['PC3', 'A375']:
+    for target_cell_name in target_cell_names:
         for direction in ['Both']:
             cell_X = {}
             cell_Y = {}
@@ -316,7 +319,7 @@ for bin in [10]:
                             np.savez(prefix + cell_name + "npY_classEndsAllCutoffs", npY_class)
 
                         if evaluate_type == "use_optimizer":
-                            do_optimize(len(np.unique(npY_class)), npX, npY_class)
+                            do_optimize(len(np.unique(npY_class)), npX, npY_class, model_file_prefix)
                         elif evaluate_type == "train_and_save":
                             model = train_model(npX, npY_class)
                             save_model(model, model_file_prefix)

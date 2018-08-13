@@ -69,10 +69,10 @@ class Gene_Predictor():
         def print_stats(train_stats, test_stats, val_stats):
             print('Hidden layers: 2, Neurons per layer:', neuron_count)
             print('All stats columns | AUC | Recall | Specificity | Number of Samples | Precision | Max F Cutoff')
-            print('All stats train:', ['{:6.2f}'.format(val) for val in train_stats])
-            print('All stats test:', ['{:6.2f}'.format(val) for val in test_stats])
-            print('All stats val:', ['{:6.2f}'.format(val) for val in val_stats])
-            print('Total:', ['{:6.2f}'.format(val) for val in [train_stats[0] + test_stats[0] + val_stats[0]]])
+            print('All stats train:', ['{:6.3f}'.format(val) for val in train_stats])
+            print('All stats test:', ['{:6.3f}'.format(val) for val in test_stats])
+            print('All stats val:', ['{:6.3f}'.format(val) for val in val_stats])
+            print('Total:', ['{:6.3f}'.format(val) for val in [train_stats[0] + test_stats[0] + val_stats[0]]])
 
         if nb_classes > 2:
             for class_index in range(0, nb_classes):

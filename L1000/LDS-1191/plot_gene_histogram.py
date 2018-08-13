@@ -58,9 +58,10 @@ def get_stats():
     q25 = np.percentile(values, 25)
     q50 = np.percentile(values, 50)
     q75 = np.percentile(values, 75)
+    q90 = np.percentile(values, 90)
     q95 = np.percentile(values, 95)
 
-    print("5% quantile: {}\n10% quantile: {}\n25% quantile: {}\n50% quantile: {}\n75% quantile: {}\n95% quantile: {}\n".format(q5, q10, q25, q50, q75, q95))
+    print("5% quantile: {}\n10% quantile: {}\n25% quantile: {}\n50% quantile: {}\n75% quantile: {}\n90% quantile: {}\n95% quantile: {}\n".format(q5, q10, q25, q50, q75, q90, q95))
 
 def get_histogram():
     values = get_all_perts()
@@ -122,5 +123,20 @@ def get_drug_counts_per_cell_line():
     for cell_name in cell_line_perts:
         print(cell_name, 'drug count', len(cell_line_perts[cell_name]))
 
-get_drug_counts_per_cell_line()
+def plot_normal():
+    import matplotlib.pyplot as plt
+    import numpy as np
+    import matplotlib.mlab as mlab
+    import math
+
+    mu = 0
+    variance = 1
+    sigma = math.sqrt(variance)
+    x = np.linspace(mu - 3 * sigma, mu + 3 * sigma, 100)
+    plt.plot(x, mlab.normpdf(x, mu, sigma))
+    plt.title("3 Class Thresholds")
+    plt.show()
+
+# get_drug_counts_per_cell_line()
 # get_stats()
+plot_normal()

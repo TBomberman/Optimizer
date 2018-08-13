@@ -10,7 +10,7 @@ from keras.regularizers import l1, l1_l2, l2
 from sklearn.model_selection import train_test_split
 from helpers.plot_roc import plot_roc
 import keras_enums as enums
-from helpers.utilities import all_stats
+from helpers.utilities import all_stats, scatter2D_plot
 from helpers.callbacks import NEpochLogger
 from keras.utils import plot_model
 
@@ -23,7 +23,7 @@ regularizer = l1 # l1 beats the other 2
 lammy = 0
 use_plot = False
 train_percentage = 0.7
-patience = 10
+patience = 5
 
 # uncomment this to disable regularizer
 def regularizer(lammy):
@@ -33,7 +33,16 @@ def regularizer(lammy):
 # np.random.seed(1337)
 # random.seed(1337)
 
-def do_optimize(nb_classes, data, labels):
+def save_model(model, file_prefix):
+    # serialize model to JSON
+    model_json = model.to_json()
+    with open(file_prefix + ".json", "w") as json_file:
+        json_file.write(model_json)
+    # serialize weights to HDF5
+    model.save_weights(file_prefix + ".h5")
+    print("Saved model", file_prefix)
+
+def do_optimize(nb_classes, data, labels, model_file_prefix=None):
     n = len(labels)
     d = data.shape[1]
     if nb_classes > 1:
@@ -83,14 +92,14 @@ def do_optimize(nb_classes, data, labels):
 
         # multi_model = multi_gpu_model(model, gpus=6)
         model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
-        # model.compile(loss='mean_squared_error', optimizer=optimizer, metrics=['accuracy'])
+        # model.compile(loss='mean_squared_error', optimizer=optimizer, metrics=['mse'])
 
         history = History()
         early_stopping = EarlyStopping(monitor='val_loss', min_delta=0, patience=patience, verbose=1, mode='auto')
         out_epoch = NEpochLogger(display=5)
         model.fit(X_train, Y_train, batch_size=batch_size, epochs=nb_epoch,
                   verbose=0, validation_data=(X_test, Y_test), callbacks=[history, early_stopping, out_epoch])
-
+        # save_model(model, model_file_prefix)
         score = model.evaluate(X_test, Y_test, verbose=0)
 
         print('Test score:', score[0])
@@ -107,10 +116,10 @@ def do_optimize(nb_classes, data, labels):
             layer_count + 1, neuron_count, hyperparam)
             print(print_out)
             print('All stats columns | AUC | Recall | Specificity | Number of Samples | Precision | Max F Cutoff')
-            print('All stats train:', ['{:6.2f}'.format(val) for val in train_stats])
-            print('All stats test:', ['{:6.2f}'.format(val) for val in test_stats])
-            print('All stats val:', ['{:6.2f}'.format(val) for val in val_stats])
-            print('Total:', ['{:6.2f}'.format(val) for val in [train_stats[0] + test_stats[0] + val_stats[0]]])
+            print('All stats train:', ['{:6.3f}'.format(val) for val in train_stats])
+            print('All stats test:', ['{:6.3f}'.format(val) for val in test_stats])
+            print('All stats val:', ['{:6.3f}'.format(val) for val in val_stats])
+            print('Total:', ['{:6.3f}'.format(val) for val in [train_stats[0] + test_stats[0] + val_stats[0]]])
 
         if nb_classes > 2:
             for class_index in range(0, nb_classes):
