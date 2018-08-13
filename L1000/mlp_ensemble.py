@@ -41,7 +41,8 @@ class MlpEnsemble(Model):
         # load weights into new model
         loaded_model.load_weights(file_prefix + '.h5')
         print("Loaded model", file_prefix, "from disk")
-        loaded_model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+        # loaded_model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+        loaded_model.compile(loss='mean_squared_error', optimizer='adam' , metrics=['mse'])
         return loaded_model
 
     def save_model(self, model, file_prefix):

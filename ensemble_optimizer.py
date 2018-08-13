@@ -7,7 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 train_percentage = 0.7
-use_plot = True
+use_plot = False
 use_fit = True
 load_data = False
 save_data = False
@@ -67,10 +67,10 @@ def do_optimize(nb_classes, data, labels, model_file_prefix=None):
     # test_stats = all_stats(Y_test[:, 1], y_pred_test[:, 1], val_stats[-1])
 
     print('All stats columns | AUC | Recall | Specificity | Number of Samples | Precision | Max F Cutoff')
-    print('All stats train:', ['{:6.2f}'.format(val) for val in train_stats])
-    print('All stats test:', ['{:6.2f}'.format(val) for val in test_stats])
-    print('All stats val:', ['{:6.2f}'.format(val) for val in val_stats])
-    print('Total:', ['{:6.2f}'.format(val) for val in [train_stats[0] + test_stats[0] + val_stats[0]]])
+    print('All stats train:', ['{:6.3f}'.format(val) for val in train_stats])
+    print('All stats test:', ['{:6.3f}'.format(val) for val in test_stats])
+    print('All stats val:', ['{:6.3f}'.format(val) for val in val_stats])
+    print('Total:', ['{:6.3f}'.format(val) for val in [train_stats[0] + test_stats[0] + val_stats[0]]])
 
     if use_plot:
         # plot_roc(Y_test[:,0], y_pred_test[:,0])
@@ -80,7 +80,7 @@ def do_optimize(nb_classes, data, labels, model_file_prefix=None):
 def evaluate(nb_classes, data, labels, file_prefix):
     saved_models_path = file_prefix + '_ensemble_models/'
 
-    labels = np_utils.to_categorical(labels, nb_classes)
+    # labels = np_utils.to_categorical(labels, nb_classes)
     x_test = data
     y_test = labels
 
@@ -91,15 +91,18 @@ def evaluate(nb_classes, data, labels, file_prefix):
     print('Test accuracy:', score[1])
 
     y_pred = model.predict_proba(x_test)
-    y_pred[np.where(y_pred >= 0.5)] = 1
-    y_pred[np.where(y_pred < 0.5)] = 0
-    acc = np.mean(y_pred == y_test)
-    print('My Test accuracy:', acc)
+    # y_pred[np.where(y_pred >= 0.5)] = 1
+    # y_pred[np.where(y_pred < 0.5)] = 0
+    # acc = np.mean(y_pred == y_test)
+    # print('My Test accuracy:', acc)
 
-    test_stats = all_stats(y_test[:, 1], y_pred[:, 1])
+    # test_stats = all_stats(y_test[:, 1], y_pred[:, 1])
+    y_pred = np.reshape(y_pred, (-1))
+    test_stats = all_stats(y_test, y_pred)
 
     print('All stats columns | AUC | Recall | Specificity | Number of Samples | Precision | Max F Cutoff')
-    print('All stats test:', ['{:6.2f}'.format(val) for val in test_stats])
+    print('All stats test:', ['{:6.3f}'.format(val) for val in test_stats])
 
     if use_plot:
-        plot_roc(y_test[:, 1], y_pred[:, 1])
+        scatter2D_plot(y_test, y_pred)
+        # plot_roc(y_test[:, 1], y_pred[:, 1])
