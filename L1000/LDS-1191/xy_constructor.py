@@ -4,8 +4,8 @@ import json
 import time
 import random
 import matplotlib.pyplot as plt
-from ensemble_optimizer import do_optimize, evaluate
-# from mlp_optimizer import do_optimize
+# from ensemble_optimizer import do_optimize, evaluate
+from mlp_optimizer import do_optimize
 import numpy as np
 from L1000.data_loader import get_feature_dict, load_gene_expression_data, printProgressBar, load_csv, get_trimmed_feature_dict
 from L1000.gene_predictor import train_model, save_model
@@ -19,17 +19,19 @@ import helpers.email_notifier as en
 
 start_time = time.time()
 gene_count_data_limit = 978
-evaluate_type = "test_trained" #"use_optimizer" "train_and_save" "test_trained"
+evaluate_type = "use_optimizer" #"use_optimizer" "train_and_save" "test_trained"
 # for target_cell_name_i in ['PC3']:
     # for target_cell_name_i in ['MCF7', 'A375', 'HT29']:
     # for target_cell_name_i in ['PC3']: #, 'A375']:
-target_cell_names = ['VCAP']
+target_cell_names = ['PC3', 'VCAP']
+# target_cell_names = ['HT29', 'A375', 'MCF7', 'A549']
 target_cell_name = 'A549'
 direction = 'Both' #'Down'
 model_file_prefix = target_cell_name + direction
 save_data_to_file = False
 use_data_from_file = False
-test_cold = True
+test_cold = False
+data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/saved_regression_models/"
 
 if use_data_from_file:
     prefix = "LDS-1191/saved_xy_data/"
@@ -97,18 +99,18 @@ else:
         cold_drugs_file.write("%s\n" % key)
         cold_drugs_keys.append([key])
 
-if test_cold:
-    keys_to_remove = []
-    for key in drug_features_dict.keys():
-        if [key] in cold_drugs_keys:
-            continue
-        keys_to_remove.append(key)
-    for key in keys_to_remove:
-        drug_features_dict.pop(key, None)
-else:
-    for key in cold_drugs_keys:
-        drug_features_dict.pop(key[0], None)
-    drug_features_dict.pop("BRD-K56851771", None)
+# if test_cold:
+#     keys_to_remove = []
+#     for key in drug_features_dict.keys():
+#         if [key] in cold_drugs_keys:
+#             continue
+#         keys_to_remove.append(key)
+#     for key in keys_to_remove:
+#         drug_features_dict.pop(key, None)
+# else:
+#     for key in cold_drugs_keys:
+#         drug_features_dict.pop(key[0], None)
+#     drug_features_dict.pop("BRD-K56851771", None)
 
 # getting the gene ids
 gene_id_dict = get_gene_id_dict()
@@ -241,7 +243,7 @@ for bin in [10]:
             # percentile_down = 5 # for downregulation, use 95 for upregulation
             for percentile_down in [50]:
 
-                model_file_prefix = target_cell_name_i + '_' + direction + str(bin) + 'b_p' + str(percentile_down)
+                model_file_prefix = data_folder_path + target_cell_name_i + '_' + direction + str(bin) + 'b_p' + str(percentile_down)
                 print(model_file_prefix)
 
                 percentile_up = 100 - percentile_down
@@ -328,8 +330,8 @@ for bin in [10]:
                         elif evaluate_type == "train_and_save":
                             model = train_model(npX, npY_class)
                             save_model(model, model_file_prefix)
-                        elif evaluate_type == "test_trained":
-                            evaluate(len(np.unique(npY_class)), npX, npY_class, model_file_prefix)
+                        # elif evaluate_type == "test_trained":
+                        #     evaluate(len(np.unique(npY_class)), npX, npY_class, model_file_prefix)
 
                 finally:
                     en.notify()

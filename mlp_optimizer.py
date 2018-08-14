@@ -21,7 +21,7 @@ batch_size = 2**12
 nb_epoch = 10000 #1000 cutoff 1 #3000 cutoff  2 and
 regularizer = l1 # l1 beats the other 2
 lammy = 0
-use_plot = True
+use_plot = False
 train_percentage = 0.7
 patience = 5
 
