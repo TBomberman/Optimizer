@@ -19,13 +19,17 @@ import helpers.email_notifier as en
 
 start_time = time.time()
 gene_count_data_limit = 978
-evaluate_type = "use_optimizer" #"use_optimizer" "train_and_save" "test_trained"
-target_cell_name = 'PC3'
+evaluate_type = "test_trained" #"use_optimizer" "train_and_save" "test_trained"
+# for target_cell_name_i in ['PC3']:
+    # for target_cell_name_i in ['MCF7', 'A375', 'HT29']:
+    # for target_cell_name_i in ['PC3']: #, 'A375']:
+target_cell_names = ['VCAP']
+target_cell_name = 'A549'
 direction = 'Both' #'Down'
 model_file_prefix = target_cell_name + direction
 save_data_to_file = False
 use_data_from_file = False
-test_cold = False
+test_cold = True
 
 if use_data_from_file:
     prefix = "LDS-1191/saved_xy_data/"
@@ -129,7 +133,7 @@ for bin in [10]:
     # for target_cell_name_i in ['A549', 'VCAP']:
     # for target_cell_name_i in ['MCF7', 'A375', 'HT29']:
     # for target_cell_name_i in ['PC3']: #, 'A375']:
-    for target_cell_name_i in [target_cell_name]:
+    for target_cell_name_i in target_cell_names:
         for direction in ['Both']:
             cell_X = {}
             cell_Y = {}
