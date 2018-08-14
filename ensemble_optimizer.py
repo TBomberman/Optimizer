@@ -80,12 +80,6 @@ def do_optimize(nb_classes, data, labels, model_file_prefix=None):
         test_stats = all_stats(Y_test, y_pred_test, val_stats[-1])
         print_stats(train_stats, test_stats, val_stats)
 
-    print('All stats columns | AUC | Recall | Specificity | Number of Samples | Precision | Max F Cutoff')
-    print('All stats train:', ['{:6.3f}'.format(val) for val in train_stats])
-    print('All stats test:', ['{:6.3f}'.format(val) for val in test_stats])
-    print('All stats val:', ['{:6.3f}'.format(val) for val in val_stats])
-    print('Total:', ['{:6.3f}'.format(val) for val in [train_stats[0] + test_stats[0] + val_stats[0]]])
-
     if use_plot:
         if nb_classes > 2:
             for class_index in range(0, nb_classes):
@@ -117,11 +111,11 @@ def evaluate(nb_classes, data, labels, file_prefix):
     # print('My Test accuracy:', acc)
 
     def print_stats(test, pred):
-        test_stats = all_stats(test[:, 1], pred[:, 1])
+        test_stats = all_stats(test, pred)
         print('All stats columns | AUC | Recall | Specificity | Number of Samples | Precision | Max F Cutoff')
         print('All stats test:', ['{:6.3f}'.format(val) for val in test_stats])
         if use_plot:
-            plot_roc(test[:, class_index], pred[:, class_index])
+            plot_roc(test, pred)
 
     if nb_classes > 2:
         for class_index in range(0, nb_classes):

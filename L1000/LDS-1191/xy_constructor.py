@@ -19,16 +19,17 @@ import helpers.email_notifier as en
 
 start_time = time.time()
 gene_count_data_limit = 978
-evaluate_type = "test_trained" #"use_optimizer" "train_and_save"
+evaluate_type = "use_optimizer" #"use_optimizer" "train_and_save" "test_trained"
 target_cell_name = 'VCAP'
-# target_cell_names = ['A549', 'VCAP']
-# target_cell_names = ['MCF7', 'A375', 'HT29']:
-# target_cell_names = ['PC3', 'A375']
+# target_cell_names = ['HT29', 'PC3']
+# target_cell_names = ['MCF7', 'A375']
+target_cell_names = ['VCAP', 'A549']
 direction = 'Both' #'Down'
 model_file_prefix = target_cell_name + direction
 save_data_to_file = False
 use_data_from_file = False
-test_cold = True
+test_cold = False
+data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/"
 
 if use_data_from_file:
     prefix = "LDS-1191/saved_xy_data/"
@@ -130,7 +131,7 @@ length = len(level_5_gctoo.col_metadata_df.index)
 #     for direction in ['Down', 'Up']:
 for bin in [10]:
     for target_cell_name in target_cell_names:
-        for direction in ['Both']:
+        for direction in ['Multi']: # 'Multi' 'Both' 'Up' 'Down'
             cell_X = {}
             cell_Y = {}
             cell_Y_gene_ids = {}
@@ -237,7 +238,7 @@ for bin in [10]:
             # percentile_down = 5 # for downregulation, use 95 for upregulation
             for percentile_down in [10]:
 
-                model_file_prefix = target_cell_name + '_' + direction + str(bin) + 'b_p' + str(percentile_down)
+                model_file_prefix = data_folder_path + target_cell_name + '_' + direction + str(bin) + 'b_p' + str(percentile_down)
                 print(model_file_prefix)
 
                 percentile_up = 100 - percentile_down
