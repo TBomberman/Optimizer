@@ -42,7 +42,7 @@ def save_model(model, file_prefix):
     model.save_weights(file_prefix + ".h5")
     print("Saved model", file_prefix)
 
-def do_optimize(nb_classes, data, labels, model_file_prefix=None):
+def do_optimize(nb_classes, data, labels, model_file_prefix=None, X_test=None, y_test=None):
     n = len(labels)
     d = data.shape[1]
     # if nb_classes > 1:
@@ -51,7 +51,9 @@ def do_optimize(nb_classes, data, labels, model_file_prefix=None):
     train_size = int(train_percentage * n)
     print("Train size:", train_size)
     test_size = int((1-train_percentage) * n)
-    X_train, X_test, y_train, y_test = train_test_split(data, labels, train_size=train_size, test_size=test_size)
+    X_train = data
+    y_train = labels
+    # X_train, X_test, y_train, y_test = train_test_split(data, labels, train_size=train_size, test_size=test_size)
     X_val, X_test, y_val, y_test = train_test_split(X_test, y_test, train_size=0.5, test_size=0.5)
     Y_train = y_train
     Y_test = y_test
