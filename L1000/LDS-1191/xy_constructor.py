@@ -133,6 +133,7 @@ for target_cell_name in target_cell_names:
     for bin in [10]:
         for direction in ['Multi']: # 'Multi' 'Both' 'Up' 'Down'
             cell_X = {}
+            cell_cold_ids = {}
             cell_Y = {}
             cell_Y_gene_ids = {}
             cell_drugs_counts = {}
@@ -215,6 +216,7 @@ for target_cell_name in target_cell_names:
 
                     if cell_id not in cell_X:
                         cell_X[cell_id] = {}
+                        cell_cold_ids[cell_id] = {}
                         cell_Y[cell_id] = {}
                         cell_drugs_counts[cell_id] = 0
                         cell_Y_gene_ids[cell_id] = []
@@ -224,8 +226,10 @@ for target_cell_name in target_cell_names:
 
                     if gene_count_data_limit > 1:
                         cell_X[cell_id][repeat_key] = drug_features + gene_features_dict[gene_symbol]# + more_drug_features + prot_features_dict[gene_symbol]
+                        cell_cold_ids[cell_id][repeat_key] = drug_id
                     else:
                         cell_X[cell_id][repeat_key] = drug_features
+                        cell_cold_ids[cell_id][repeat_key] = drug_id
                     cell_Y[cell_id][repeat_key] = pert
                     cell_Y_gene_ids[cell_id].append(gene_id)
                     cell_drugs_counts[cell_id] += 1
@@ -238,7 +242,8 @@ for target_cell_name in target_cell_names:
             # percentile_down = 5 # for downregulation, use 95 for upregulation
             for percentile_down in [10]:
 
-                model_file_prefix = data_folder_path + target_cell_name + '_' + direction + str(bin) + 'b_p' + str(percentile_down)
+                model_file_prefix = data_folder_path + target_cell_name + '_' + direction + str(bin) + 'b_p' + \
+                                    str(percentile_down) + '_cold'
                 print(model_file_prefix)
 
                 percentile_up = 100 - percentile_down
@@ -262,6 +267,7 @@ for target_cell_name in target_cell_names:
                             continue
                         print(datetime.datetime.now(), "Converting dictionary values to np")
                         npX = np.asarray(list(cell_X[cell_id].values()), dtype='float16')
+                        cold_ids = list(cell_cold_ids[cell_id].values())
                         npY = np.asarray(list(cell_Y[cell_id].values()), dtype='float16')
                         npY_gene_ids = np.asarray(cell_Y_gene_ids[cell_id])
 
@@ -301,6 +307,7 @@ for target_cell_name in target_cell_names:
 
                         if direction == 'Both':
                             npX = npX[combined_locations]
+                            cold_ids = cold_ids[combined_locations]
                             npY_class = npY_class[combined_locations]
                         print("Evaluating cell line", cell_line_counter, cell_name, "(Percentile ends:", percentile_down, ")")
 
@@ -320,7 +327,7 @@ for target_cell_name in target_cell_names:
                             np.savez(prefix + cell_name + "npY_classEndsAllCutoffs", npY_class)
 
                         if evaluate_type == "use_optimizer":
-                            do_optimize(len(np.unique(npY_class)), npX, npY_class, model_file_prefix)
+                            do_optimize(len(np.unique(npY_class)), npX, npY_class, model_file_prefix, cold_ids)
                         elif evaluate_type == "train_and_save":
                             model = train_model(npX, npY_class)
                             save_model(model, model_file_prefix)

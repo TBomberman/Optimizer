@@ -11,7 +11,7 @@ import os
 class MlpEnsemble(Model):
     def __init__(self, layers=None, name=None, n_estimators=10, patience=10, log_steps=5, dropout=0.2,
                  input_activation='selu', hidden_activation='relu', output_activation='softmax', optimizer='adam',
-                 saved_models_path='ensemble_models/', save_models=True, x_drug_ids=None, x_gene_ids=None):
+                 saved_models_path='ensemble_models/', save_models=True, x_cold_ids=None):
         self.patience = patience
         self.dropout = dropout
         self.log_steps = log_steps
@@ -24,7 +24,7 @@ class MlpEnsemble(Model):
         self.models = {}
         self.saved_models_path = saved_models_path
         self.save_models = save_models
-        self.drug_ids = x_drug_ids
+        self.x_cold_ids = x_cold_ids
         if save_models:
             return
         for i in range(0, n_estimators):
@@ -77,30 +77,38 @@ class MlpEnsemble(Model):
         print('Patience', self.patience)
         out_epoch = NEpochLogger(display=self.log_steps)
         self.d = x.shape[1]
-        samples_size = len(y)
-        validation_size = int(samples_size / self.n_estimators)
+        n = len(y)
+
+        ids = np.array(list(set(self.x_cold_ids)))
+        n_ids = len(ids)
+        validation_size = int(n_ids / self.n_estimators)
 
         # split the data into n_estimators sets
         # create array of n_estimator models
         # fit each model with each set
         # add option to save each model
-        indices = []
+        val_id_indices = []
         for i in range(0, self.n_estimators):
             val_start = i * validation_size
             val_end = val_start + validation_size
-            indices.append(list(range(val_start, val_end)))
+            val_id_indices.append(list(range(val_start, val_end)))
 
         for i in range(0, self.n_estimators):
             print('cross iteration', i)
-            val_indices = indices[i]
-            train_indices = []
-            for j in range(0, self.n_estimators):
-                if j != i:
-                    train_indices = train_indices + indices[j]
+            val_id_indices_i = val_id_indices[i]
             print('got indices')
             file_prefix = self.saved_models_path + "EnsembleModel" + str(i)
             model = self.build_model(self.d)
             print('begin fit')
+            train_indices = []
+            val_indices = []
+            val_ids = ids[val_id_indices_i]
+            for i in range(0, n):
+                if self.x_cold_ids[i] in val_ids:
+                    val_indices.append(i)
+                else:
+                    train_indices.append(i)
+
             model.fit(x[train_indices], y[train_indices], batch_size=batch_size, epochs=epochs, verbose=0,
                       validation_data=(x[val_indices], y[val_indices]),
                       callbacks=[history, early_stopping, out_epoch])

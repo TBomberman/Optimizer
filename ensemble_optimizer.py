@@ -12,13 +12,12 @@ use_fit = True
 load_data = False
 save_data = False
 
-def do_optimize(nb_classes, data, labels, model_file_prefix=None, drug_ids=None, gene_ids=None):
+def do_optimize(nb_classes, data, labels, model_file_prefix=None, cold_ids=None):
     n = len(labels)
     labels = np_utils.to_categorical(labels, nb_classes)
     print("Train size:", n)
 
-    model = MlpEnsemble(saved_models_path=model_file_prefix + '_ensemble_models/', patience=5, x_drug_ids=drug_ids,
-                        x_gene_ids=gene_ids)
+    model = MlpEnsemble(saved_models_path=model_file_prefix + '_ensemble_models/', patience=5, x_cold_ids=cold_ids)
     if use_fit:
         model.fit(data, labels)
 
