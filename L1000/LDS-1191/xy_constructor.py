@@ -21,14 +21,14 @@ start_time = time.time()
 gene_count_data_limit = 978
 evaluate_type = "use_optimizer" #"use_optimizer" "train_and_save" "test_trained"
 target_cell_name = 'VCAP'
-# target_cell_names = ['HT29', 'PC3']
+target_cell_names = ['PC3', 'HT29']
 # target_cell_names = ['MCF7', 'A375']
-target_cell_names = ['VCAP', 'A549']
-direction = 'Both' #'Down'
+# target_cell_names = ['VCAP', 'A549']
+direction = 'Multi' #'Down'
 model_file_prefix = target_cell_name + direction
 save_data_to_file = False
 use_data_from_file = False
-test_cold = False
+test_blind = False
 data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/"
 
 if use_data_from_file:
@@ -79,34 +79,33 @@ experiments_dose_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/Met
 #     float16_dict[key] = [float(i) for i in prot_features_dict[key]]
 # prot_features_dict = float16_dict
 
-# set maccs keys aside
+# set 1000 blind maccs keys aside
 import os.path
-print('remove cold drugs for validation')
-cold_drugs_filename = 'cold_drugs.txt'
-if os.path.isfile(cold_drugs_filename):
-    cold_drugs_keys = load_csv(cold_drugs_filename)
+print('remove blind drugs for validation')
+blind_drugs_filename = 'blind_drugs.txt'
+if os.path.isfile(blind_drugs_filename):
+    blind_drugs_keys = load_csv(blind_drugs_filename)
 else:
     n_maccs = len(drug_features_dict)
-    perc20 = int(n_maccs * 0.2)
-    cold_drugs_indexes = random.sample(range(0, n_maccs), perc20)
+    blind_drugs_indexes = random.sample(range(0, n_maccs), 1000)
     keys = list(drug_features_dict.keys())
-    cold_drugs_file = open(cold_drugs_filename, 'w')
-    cold_drugs_keys = []
-    for i in cold_drugs_indexes:
+    blind_drugs_file = open(blind_drugs_filename, 'w')
+    blind_drugs_keys = []
+    for i in blind_drugs_indexes:
         key = keys[i]
-        cold_drugs_file.write("%s\n" % key)
-        cold_drugs_keys.append([key])
+        blind_drugs_file.write("%s\n" % key)
+        blind_drugs_keys.append([key])
 
-if test_cold:
+if test_blind:
     keys_to_remove = []
     for key in drug_features_dict.keys():
-        if [key] in cold_drugs_keys:
+        if [key] in blind_drugs_keys:
             continue
         keys_to_remove.append(key)
     for key in keys_to_remove:
         drug_features_dict.pop(key, None)
 else:
-    for key in cold_drugs_keys:
+    for key in blind_drugs_keys:
         drug_features_dict.pop(key[0], None)
     drug_features_dict.pop("BRD-K56851771", None)
 
@@ -129,8 +128,9 @@ length = len(level_5_gctoo.col_metadata_df.index)
 # for target_cell_name in ['VCAP', 'HCC515', 'A549', 'HEPG2', 'MCF7', 'HEK293T', 'HT29', 'A375', 'HA1E', 'THP1', 'BT20', 'U937',
 #                          'MCF10A', 'HUH7', 'NKDBA', 'NOMO1', 'JURKAT', 'SKBR3', 'HS578T', 'MDAMB231']:
 #     for direction in ['Down', 'Up']:
-for bin in [10]:
-    for target_cell_name in target_cell_names:
+
+for target_cell_name in target_cell_names:
+    for bin in [10]:
         for direction in ['Multi']: # 'Multi' 'Both' 'Up' 'Down'
             cell_X = {}
             cell_Y = {}

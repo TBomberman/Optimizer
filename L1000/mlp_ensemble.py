@@ -106,6 +106,10 @@ class MlpEnsemble(Model):
             self.models[file_prefix] = model
             if self.save_models:
                 self.save_model(model, file_prefix)
+                y_prob = model.predict_proba(x[val_indices])
+                np.savez(file_prefix + "_x_val", x[val_indices])
+                np.savez(file_prefix + "_y_val", y[val_indices])
+                np.savez(file_prefix + "_y_pred", y_prob)
 
     def evaluate(self, x=None, y=None, batch_size=None, verbose=0, sample_weight=None, steps=None):
         sum_scores = 0
