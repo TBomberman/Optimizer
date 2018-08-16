@@ -11,7 +11,7 @@ import os
 class MlpEnsemble(Model):
     def __init__(self, layers=None, name=None, n_estimators=10, patience=10, log_steps=5, dropout=0.2,
                  input_activation='selu', hidden_activation='relu', output_activation='softmax', optimizer='adam',
-                 saved_models_path='ensemble_models/', save_models=True):
+                 saved_models_path='ensemble_models/', save_models=True, x_drug_ids=None, x_gene_ids=None):
         self.patience = patience
         self.dropout = dropout
         self.log_steps = log_steps
@@ -24,6 +24,7 @@ class MlpEnsemble(Model):
         self.models = {}
         self.saved_models_path = saved_models_path
         self.save_models = save_models
+        self.drug_ids = x_drug_ids
         if save_models:
             return
         for i in range(0, n_estimators):
@@ -142,4 +143,3 @@ class MlpEnsemble(Model):
             y_probs.append(y_prob)
         y_probs = np.asarray(y_probs)
         return np.mean(y_probs, axis=0)
-
