@@ -34,7 +34,7 @@ save_data_to_file = False
 use_data_from_file = True
 test_blind = False
 load_data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/load_data/"
-data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/x10/cold/"
+data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/x10/warm/"
 
 if use_data_from_file:
     for target_cell_name in target_cell_names:
@@ -60,8 +60,7 @@ if use_data_from_file:
 
                 try:
                     if evaluate_type == "use_optimizer":
-                        do_optimize(len(np.unique(npY_class)), npX[indexes], npY_class[indexes], model_file_prefix, cold_ids[indexes])
-                        # do_optimize(len(np.unique(npY_class)), npX[indexes], npY_class[indexes], model_file_prefix + '_warm')
+                        do_optimize(len(np.unique(npY_class)), npX[indexes], npY_class[indexes], model_file_prefix)
                     elif evaluate_type == "train_and_save":
                         model = train_model(npX, npY_class)
                         save_model(model, model_file_prefix)

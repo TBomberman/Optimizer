@@ -79,38 +79,33 @@ class MlpEnsemble(Model):
         self.d = x.shape[1]
         n = len(y)
 
-        ids = np.array(list(set(self.x_cold_ids)))
-        n_ids = len(ids)
-        validation_size = int(n_ids / self.n_estimators)
+        # ids = np.array(list(set(self.x_cold_ids)))
+        # n_ids = len(ids)
+        validation_size = int(n / self.n_estimators)
 
         # split the data into n_estimators sets
         # create array of n_estimator models
         # fit each model with each set
         # add option to save each model
-        val_id_indices = []
+        val_indices = []
         for i in range(0, self.n_estimators):
             val_start = i * validation_size
             val_end = val_start + validation_size
-            val_id_indices.append(list(range(val_start, val_end)))
+            val_indices.append(list(range(val_start, val_end)))
 
         for i in range(0, self.n_estimators):
             print('cross iteration', i)
-            val_id_indices_i = val_id_indices[i]
             print('got indices')
             file_prefix = self.saved_models_path + "EnsembleModel" + str(i)
             model = self.build_model(self.d)
             print('begin fit')
             train_indices = []
-            val_indices = []
-            val_ids = ids[val_id_indices_i]
-            for i in range(0, n):
-                if self.x_cold_ids[i] in val_ids:
-                    val_indices.append(i)
-                else:
-                    train_indices.append(i)
+            for j in range(0, self.n_estimators):
+                if j != i:
+                    train_indices = train_indices + val_indices[j]
 
             model.fit(x[train_indices], y[train_indices], batch_size=batch_size, epochs=epochs, verbose=0,
-                      validation_data=(x[val_indices], y[val_indices]),
+                      validation_data=(x[val_indices[i]], y[val_indices[i]]),
                       callbacks=[history, early_stopping, out_epoch])
             self.models[file_prefix] = model
             if self.save_models:
