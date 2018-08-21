@@ -6,7 +6,7 @@ from L1000.mlp_ensemble import MlpEnsemble
 import numpy as np
 import matplotlib.pyplot as plt
 
-train_percentage = 0.7
+train_percentage = 0.9999999999999999
 use_plot = False
 use_fit = True
 load_data = False
@@ -15,11 +15,24 @@ save_data = False
 def do_optimize(nb_classes, data, labels, model_file_prefix=None, cold_ids=None):
     n = len(labels)
     labels = np_utils.to_categorical(labels, nb_classes)
-    print("Train size:", n)
+
+    train_size = int(train_percentage * n)
+    test_size = int((1-train_percentage) * n)
+    X_train, X_test, y_train, y_test = train_test_split(data, labels, train_size=train_size, test_size=test_size)
+    print('train samples', len(labels))
+
+    if save_data:
+        np.savez("X_train", X_train)
+        np.savez("X_test", X_test)
+        np.savez("y_train", y_train)
+        np.savez("y_test", y_test)
+
+    X_val, X_test, y_val, y_test = train_test_split(X_test, y_test, train_size=0.5, test_size=0.5)
+    Y_test = y_test
 
     model = MlpEnsemble(saved_models_path=model_file_prefix + '_ensemble_models/', patience=5, x_cold_ids=cold_ids)
     if use_fit:
-        model.fit(data, labels)
+        model.fit(data, labels, validation_data=(X_test, Y_test))
 
 def evaluate(nb_classes, data, labels, file_prefix):
     saved_models_path = file_prefix + '_ensemble_models/'

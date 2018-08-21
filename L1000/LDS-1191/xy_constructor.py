@@ -9,6 +9,8 @@ from ensemble_optimizer import do_optimize, evaluate
 import numpy as np
 from L1000.data_loader import get_feature_dict, load_gene_expression_data, printProgressBar, load_csv, get_trimmed_feature_dict
 from L1000.gene_predictor import train_model, save_model
+from sklearn.model_selection import train_test_split
+import os
 
 import helpers.email_notifier as en
 # import tensorflow as tf
@@ -21,30 +23,52 @@ start_time = time.time()
 gene_count_data_limit = 978
 evaluate_type = "use_optimizer" #"use_optimizer" "train_and_save" "test_trained"
 target_cell_name = 'VCAP'
-target_cell_names = ['PC3', 'HT29']
+# target_cell_names = ['PC3', 'HT29']
 # target_cell_names = ['MCF7', 'A375']
 # target_cell_names = ['VCAP', 'A549']
+target_cell_names = ['HT29']
+os.environ["CUDA_VISIBLE_DEVICES"] = "7"
 direction = 'Multi' #'Down'
 model_file_prefix = target_cell_name + direction
 save_data_to_file = False
-use_data_from_file = False
+use_data_from_file = True
 test_blind = False
-data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/"
+load_data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/load_data/"
+data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/x10/cold/"
 
 if use_data_from_file:
-    prefix = "LDS-1191/saved_xy_data/"
-    npX = np.load(prefix + "PC3npX.npz")['arr_0'] # must be not balanced too because 70% of this is X_train.npz
-    npY_class = np.load(prefix + "PC3npY_class.npz")['arr_0']
-    try:
-        if evaluate_type == "use_optimizer":
-            do_optimize(2, npX, npY_class)
-        elif evaluate_type == "train_and_save":
-            model = train_model(npX, npY_class)
-            save_model(model, model_file_prefix)
-    finally:
-        en.notify()
-        plt.show()
-        quit()
+    for target_cell_name in target_cell_names:
+        for bin in [10]:
+            for percentile_down in [10]:
+                file_suffix = target_cell_name + '_' + direction + str(bin) + 'b_p' + str(percentile_down)
+                model_file_prefix = data_folder_path + str(datetime.datetime.now()) + '_' + file_suffix
+                print('load location', load_data_folder_path)
+                print('save location', model_file_prefix)
+                npX = np.load(load_data_folder_path + file_suffix + "_npX.npz")['arr_0'] # must be not balanced too because 70% of this is X_train.npz
+                npY_class = np.load(load_data_folder_path + file_suffix + "_npY_class.npz")['arr_0']
+                cold_ids = np.load(load_data_folder_path + file_suffix + "_cold_ids.npz")['arr_0']
+
+                def balance_class_0(npy, percentile):
+                    length = len(npy)
+                    class_0_keep_size = int(length * percentile / 100)
+                    class_0_indexes = np.where(npy == 0)
+                    class_1_indexes = np.where(npy == 1)
+                    class_2_indexes = np.where(npy == 2)
+                    wanted0 = train_test_split(class_0_indexes[0], class_0_indexes[0], train_size=class_0_keep_size)
+                    return np.concatenate((wanted0[0], class_1_indexes[0], class_2_indexes[0]))
+                indexes = balance_class_0(npY_class, percentile_down)
+
+                try:
+                    if evaluate_type == "use_optimizer":
+                        do_optimize(len(np.unique(npY_class)), npX[indexes], npY_class[indexes], model_file_prefix, cold_ids[indexes])
+                        # do_optimize(len(np.unique(npY_class)), npX[indexes], npY_class[indexes], model_file_prefix + '_warm')
+                    elif evaluate_type == "train_and_save":
+                        model = train_model(npX, npY_class)
+                        save_model(model, model_file_prefix)
+                finally:
+                    en.notify()
+                    plt.show()
+                    quit()
 
 def find_nth(haystack, needle, n):
     start = haystack.find(needle)
