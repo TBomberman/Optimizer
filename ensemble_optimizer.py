@@ -32,7 +32,7 @@ def do_optimize(nb_classes, data, labels, model_file_prefix=None, cold_ids=None)
 
     model = MlpEnsemble(saved_models_path=model_file_prefix + '_ensemble_models/', patience=5, x_cold_ids=cold_ids)
     if use_fit:
-        model.fit(data, labels, validation_data=(X_test, Y_test))
+        model.fit(X_train, y_train, validation_data=(X_test, Y_test))
 
 def evaluate(nb_classes, data, labels, file_prefix):
     saved_models_path = file_prefix + '_ensemble_models/'
