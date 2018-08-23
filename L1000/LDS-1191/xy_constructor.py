@@ -4,8 +4,7 @@ import json
 import time
 import random
 import matplotlib.pyplot as plt
-from ensemble_optimizer import do_optimize, evaluate
-# from mlp_optimizer import do_optimize
+from x10_optimizer import do_optimize
 import numpy as np
 from L1000.data_loader import get_feature_dict, load_gene_expression_data, printProgressBar, load_csv, get_trimmed_feature_dict
 from L1000.gene_predictor import train_model, save_model
@@ -33,7 +32,7 @@ model_file_prefix = target_cell_name + direction
 save_data_to_file = False
 use_data_from_file = True
 test_blind = False
-load_data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/load_data/"
+load_data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/load_data/gap/"
 data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/x10/warm/"
 
 if use_data_from_file:
@@ -154,208 +153,217 @@ length = len(level_5_gctoo.col_metadata_df.index)
 for target_cell_name in target_cell_names:
     for bin in [10]:
         for direction in ['Multi']: # 'Multi' 'Both' 'Up' 'Down'
-            cell_X = {}
-            cell_cold_ids = {}
-            cell_Y = {}
-            cell_Y_gene_ids = {}
-            cell_drugs_counts = {}
-            repeat_X = {}
+            for gap_factor in [0.1]:
+                cell_X = {}
+                cell_cold_ids = {}
+                cell_Y = {}
+                cell_Y_gene_ids = {}
+                cell_drugs_counts = {}
+                repeat_X = {}
 
-            # For every experiment
-            print("Loading experiments")
-            for i in range(length-1, -1, -1): # go backwards, assuming later experiments have stronger perturbation
-                printProgressBar(length - i, length, prefix='Load experiments progress')
-                X = []
-                Y = []
+                # For every experiment
+                print("Loading experiments")
+                for i in range(length-1, -1, -1): # go backwards, assuming later experiments have stronger perturbation
+                    printProgressBar(length - i, length, prefix='Load experiments progress')
+                    X = []
+                    Y = []
 
-                col_name = level_5_gctoo.col_metadata_df.index[i]
-                column = level_5_gctoo.data_df[col_name]
+                    col_name = level_5_gctoo.col_metadata_df.index[i]
+                    column = level_5_gctoo.data_df[col_name]
 
-                # parse the time
-                start = col_name.rfind("_")
-                end = find_nth(col_name, ":", 1)
-                exposure_time = col_name[start + 1:end]
-                if exposure_time != "24H": # column counts: 6h 95219, 24h 109287, 48h 58, 144h 1
-                    continue
-
-                # get drug features
-                col_name_key = col_name[2:-1]
-                if col_name_key not in experiments_dose_dict:
-                    continue
-                experiment_data = experiments_dose_dict[col_name_key]
-                drug_id = experiment_data[0]
-                if drug_id not in drug_features_dict:
-                    continue
-                drug_features = drug_features_dict[drug_id]
-                # if drug_id not in drug_desc_dict:
-                #     continue
-                # more_drug_features = drug_desc_dict[drug_id]
-
-                # parse the dosage unit and value
-                dose_unit = experiment_data[5]
-                if dose_unit != 'µM': # standardize dose amounts
-                    # column counts: -666 17071, % 2833, uL 238987, uM 205066, ng 1439, ng / uL 2633, ng / mL 5625
-                    continue
-                dose_amt = float(experiment_data[4])
-                if dose_amt < bin - 0.1 or dose_amt > bin + 0.1: # only use the 5 mm bin
-                    continue
-
-                # if dose_amt == 0:
-                #     if experiment_data[6] == '1 nM':
-                #         dose_amt = 0.001
-                #     else:
-                #         print("Omitting 0 dose.\n")
-                #         continue
-
-                # parse the cell name
-                start = find_nth(col_name, "_", 1)
-                end = find_nth(col_name, "_", 2)
-                cell_name = col_name[start + 1:end]
-                if cell_name != target_cell_name:
-                    continue
-
-                if cell_name not in cell_name_to_id_dict:
-                    continue
-                cell_id = cell_name_to_id_dict[cell_name][0]
-
-                for gene_id in lm_gene_entrez_ids:
-                    gene_symbol = gene_id_dict[gene_id]
-
-                    if gene_symbol not in gene_features_dict:
+                    # parse the time
+                    start = col_name.rfind("_")
+                    end = find_nth(col_name, ":", 1)
+                    exposure_time = col_name[start + 1:end]
+                    if exposure_time != "24H": # column counts: 6h 95219, 24h 109287, 48h 58, 144h 1
                         continue
 
-                    # if gene_symbol not in prot_features_dict:
+                    # get drug features
+                    col_name_key = col_name[2:-1]
+                    if col_name_key not in experiments_dose_dict:
+                        continue
+                    experiment_data = experiments_dose_dict[col_name_key]
+                    drug_id = experiment_data[0]
+                    if drug_id not in drug_features_dict:
+                        continue
+                    drug_features = drug_features_dict[drug_id]
+                    # if drug_id not in drug_desc_dict:
                     #     continue
+                    # more_drug_features = drug_desc_dict[drug_id]
 
-                    pert = column[gene_id].astype('float16')
-                    # pert_conc_ratio = abs(pert / dose_amt)
-                    abspert = abs(pert)
-
-                    repeat_key = drug_id + "_" + cell_id + "_" + gene_id
-                    if repeat_key in repeat_X and abspert <= repeat_X[repeat_key]:
-                    # if repeat_key in repeat_X and dose_amt <= repeat_X[repeat_key]:
+                    # parse the dosage unit and value
+                    dose_unit = experiment_data[5]
+                    if dose_unit != 'µM': # standardize dose amounts
+                        # column counts: -666 17071, % 2833, uL 238987, uM 205066, ng 1439, ng / uL 2633, ng / mL 5625
+                        continue
+                    dose_amt = float(experiment_data[4])
+                    if dose_amt < bin - 0.1 or dose_amt > bin + 0.1: # only use the 5 mm bin
                         continue
 
-                    if cell_id not in cell_X:
-                        cell_X[cell_id] = {}
-                        cell_cold_ids[cell_id] = {}
-                        cell_Y[cell_id] = {}
-                        cell_drugs_counts[cell_id] = 0
-                        cell_Y_gene_ids[cell_id] = []
+                    # if dose_amt == 0:
+                    #     if experiment_data[6] == '1 nM':
+                    #         dose_amt = 0.001
+                    #     else:
+                    #         print("Omitting 0 dose.\n")
+                    #         continue
 
-                    # repeat_X[repeat_key] = pert_conc_ratio
-                    repeat_X[repeat_key] = abspert
+                    # parse the cell name
+                    start = find_nth(col_name, "_", 1)
+                    end = find_nth(col_name, "_", 2)
+                    cell_name = col_name[start + 1:end]
+                    if cell_name != target_cell_name:
+                        continue
 
-                    if gene_count_data_limit > 1:
-                        cell_X[cell_id][repeat_key] = drug_features + gene_features_dict[gene_symbol]# + more_drug_features + prot_features_dict[gene_symbol]
-                        cell_cold_ids[cell_id][repeat_key] = drug_id
-                    else:
-                        cell_X[cell_id][repeat_key] = drug_features
-                        cell_cold_ids[cell_id][repeat_key] = drug_id
-                    cell_Y[cell_id][repeat_key] = pert
-                    cell_Y_gene_ids[cell_id].append(gene_id)
-                    cell_drugs_counts[cell_id] += 1
+                    if cell_name not in cell_name_to_id_dict:
+                        continue
+                    cell_id = cell_name_to_id_dict[cell_name][0]
 
-            elapsed_time = time.time() - start_time
-            print(datetime.datetime.now(), "Time to load data:", elapsed_time)
+                    for gene_id in lm_gene_entrez_ids:
+                        gene_symbol = gene_id_dict[gene_id]
 
-            gene_cutoffs_down = {}
-            gene_cutoffs_up = {}
-            # percentile_down = 5 # for downregulation, use 95 for upregulation
-            for percentile_down in [10]:
+                        if gene_symbol not in gene_features_dict:
+                            continue
 
-                model_file_prefix = data_folder_path + target_cell_name + '_' + direction + str(bin) + 'b_p' + \
-                                    str(percentile_down) + '_cold'
-                print(model_file_prefix)
+                        # if gene_symbol not in prot_features_dict:
+                        #     continue
 
-                percentile_up = 100 - percentile_down
+                        pert = column[gene_id].astype('float16')
+                        # pert_conc_ratio = abs(pert / dose_amt)
+                        abspert = abs(pert)
 
-                # use_global gene_specific_cutoffs:
-                prog_ctr = 0
-                for gene_id in lm_gene_entrez_ids:
-                    row = level_5_gctoo.data_df.loc[gene_id, :].values
-                    prog_ctr += 1
-                    printProgressBar(prog_ctr, gene_count_data_limit, prefix='Storing percentile cutoffs')
-                    gene_cutoffs_down[gene_id] = np.percentile(row, percentile_down)
-                    gene_cutoffs_up[gene_id] = np.percentile(row, percentile_up)
+                        repeat_key = drug_id + "_" + cell_id + "_" + gene_id
+                        if repeat_key in repeat_X and abspert <= repeat_X[repeat_key]:
+                        # if repeat_key in repeat_X and dose_amt <= repeat_X[repeat_key]:
+                            continue
 
-                gc.collect()
-                cell_line_counter = 1
-                print(datetime.datetime.now(), "Gene count:", gene_count_data_limit, "\n")
-                try:
-                    for cell_name in cell_name_to_id_dict:
-                        cell_id = cell_name_to_id_dict[cell_name][0]
                         if cell_id not in cell_X:
-                            continue
-                        print(datetime.datetime.now(), "Converting dictionary values to np")
-                        npX = np.asarray(list(cell_X[cell_id].values()), dtype='float16')
-                        cold_ids = list(cell_cold_ids[cell_id].values())
-                        npY = np.asarray(list(cell_Y[cell_id].values()), dtype='float16')
-                        npY_gene_ids = np.asarray(cell_Y_gene_ids[cell_id])
+                            cell_X[cell_id] = {}
+                            cell_cold_ids[cell_id] = {}
+                            cell_Y[cell_id] = {}
+                            cell_drugs_counts[cell_id] = 0
+                            cell_Y_gene_ids[cell_id] = []
 
-                        npY_class = np.zeros(len(npY), dtype=int)
+                        # repeat_X[repeat_key] = pert_conc_ratio
+                        repeat_X[repeat_key] = abspert
 
-                        prog_ctr = 0
-                        combined_locations = []
-                        for gene_id in lm_gene_entrez_ids: # this section is for gene specific class cutoffs
-                            prog_ctr += 1
-                            printProgressBar(prog_ctr, gene_count_data_limit, prefix='Marking positive pertubations')
-                            class_cut_off_down = gene_cutoffs_down[gene_id]
-                            class_cut_off_up = gene_cutoffs_up[gene_id]
-                            gene_locations = np.where(npY_gene_ids == gene_id)
-                            down_locations = np.where(npY <= class_cut_off_down)
-                            up_locations = np.where(npY >= class_cut_off_up)
-                            if direction == 'Down':
-                                intersect = np.intersect1d(gene_locations, down_locations)
-                                npY_class[intersect] = 1
-                            elif direction == 'Up':
-                                intersect = np.intersect1d(gene_locations, up_locations)
-                                npY_class[intersect] = 1
-                            elif direction == 'Both':
-                                intersect = np.intersect1d(gene_locations, down_locations)
-                                combined_locations += intersect.tolist()
-                                intersect = np.intersect1d(gene_locations, up_locations)
-                                combined_locations += intersect.tolist()
-                                npY_class[intersect] = 1
-                            else: # direction = multi
-                                intersect = np.intersect1d(gene_locations, down_locations)
-                                gene_down_locations = intersect.tolist()
-                                combined_locations += gene_down_locations
-                                intersect = np.intersect1d(gene_locations, up_locations)
-                                gene_up_locations = intersect.tolist()
-                                combined_locations += gene_up_locations
-                                npY_class[gene_up_locations] = 2
-                                npY_class[gene_down_locations] = 1
+                        if gene_count_data_limit > 1:
+                            cell_X[cell_id][repeat_key] = drug_features + gene_features_dict[gene_symbol]# + more_drug_features + prot_features_dict[gene_symbol]
+                            cell_cold_ids[cell_id][repeat_key] = drug_id
+                        else:
+                            cell_X[cell_id][repeat_key] = drug_features
+                            cell_cold_ids[cell_id][repeat_key] = drug_id
+                        cell_Y[cell_id][repeat_key] = pert
+                        cell_Y_gene_ids[cell_id].append(gene_id)
+                        cell_drugs_counts[cell_id] += 1
 
-                        if direction == 'Both':
-                            npX = npX[combined_locations]
-                            cold_ids = cold_ids[combined_locations]
-                            npY_class = npY_class[combined_locations]
-                        print("Evaluating cell line", cell_line_counter, cell_name, "(Percentile ends:", percentile_down, ")")
+                elapsed_time = time.time() - start_time
+                print(datetime.datetime.now(), "Time to load data:", elapsed_time)
 
-                        sample_size = len(npY_class)
+                gene_cutoffs_down = {}
+                gene_cutoffs_up = {}
+                # percentile_down = 5 # for downregulation, use 95 for upregulation
+                for percentile_down in [10]:
 
-                        if sample_size < 300: # smaller sizes was giving y values of only one class
-                            continue
+                    model_file_prefix = load_data_folder_path + target_cell_name + '_' + direction + str(bin) + 'b_p' + \
+                                        str(percentile_down)
+                    print(model_file_prefix)
 
-                        print('Positive samples', np.sum(npY_class))
+                    percentile_up = 100 - percentile_down
 
-                        num_drugs = cell_drugs_counts[cell_id]
-                        print("Sample Size:", sample_size, "Drugs tested:", num_drugs / gene_count_data_limit)
+                    # use_global gene_specific_cutoffs:
+                    prog_ctr = 0
+                    for gene_id in lm_gene_entrez_ids:
+                        row = level_5_gctoo.data_df.loc[gene_id, :].values
+                        prog_ctr += 1
+                        printProgressBar(prog_ctr, gene_count_data_limit, prefix='Storing percentile cutoffs')
+                        gene_cutoffs_down[gene_id] = np.percentile(row, percentile_down)
+                        gene_cutoffs_up[gene_id] = np.percentile(row, percentile_up)
 
-                        if save_data_to_file:
-                            prefix = "LDS-1191/saved_xy_data/"
-                            np.savez(prefix + cell_name + "npXEndsAllCutoffs", npX)
-                            np.savez(prefix + cell_name + "npY_classEndsAllCutoffs", npY_class)
+                    gc.collect()
+                    cell_line_counter = 1
+                    print(datetime.datetime.now(), "Gene count:", gene_count_data_limit, "\n")
+                    try:
+                        for cell_name in cell_name_to_id_dict:
+                            cell_id = cell_name_to_id_dict[cell_name][0]
+                            if cell_id not in cell_X:
+                                continue
+                            print(datetime.datetime.now(), "Converting dictionary values to np")
+                            npX = np.asarray(list(cell_X[cell_id].values()), dtype='float16')
+                            cold_ids = list(cell_cold_ids[cell_id].values())
+                            npY = np.asarray(list(cell_Y[cell_id].values()), dtype='float16')
+                            npY_gene_ids = np.asarray(cell_Y_gene_ids[cell_id])
 
-                        if evaluate_type == "use_optimizer":
-                            do_optimize(len(np.unique(npY_class)), npX, npY_class, model_file_prefix, cold_ids)
-                        elif evaluate_type == "train_and_save":
-                            model = train_model(npX, npY_class)
-                            save_model(model, model_file_prefix)
-                        elif evaluate_type == "test_trained":
-                            evaluate(len(np.unique(npY_class)), npX, npY_class, model_file_prefix)
+                            npY_class = np.zeros(len(npY), dtype=int)
 
-                finally:
-                    en.notify()
-                    plt.show()
+                            prog_ctr = 0
+                            combined_locations = []
+                            for gene_id in lm_gene_entrez_ids: # this section is for gene specific class cutoffs
+                                prog_ctr += 1
+                                printProgressBar(prog_ctr, gene_count_data_limit, prefix='Marking positive pertubations')
+                                class_cut_off_down = gene_cutoffs_down[gene_id]
+                                class_cut_off_up = gene_cutoffs_up[gene_id]
+                                gene_locations = np.where(npY_gene_ids == gene_id)
+                                down_threshold = class_cut_off_down - gap_factor * class_cut_off_down
+                                up_threshold = class_cut_off_up + gap_factor * class_cut_off_up
+                                mid_threshold_bottom = class_cut_off_down + gap_factor * class_cut_off_down
+                                mid_threshold_top = class_cut_off_up - gap_factor * class_cut_off_up
+                                down_locations = np.where(npY <= down_threshold)
+                                up_locations = np.where(npY >= up_threshold)
+                                mid_locations = np.where((npY >= mid_threshold_bottom) & (npY <= mid_threshold_top))
+                                if direction == 'Down':
+                                    intersect = np.intersect1d(gene_locations, down_locations)
+                                    npY_class[intersect] = 1
+                                elif direction == 'Up':
+                                    intersect = np.intersect1d(gene_locations, up_locations)
+                                    npY_class[intersect] = 1
+                                elif direction == 'Both':
+                                    intersect = np.intersect1d(gene_locations, down_locations)
+                                    combined_locations += intersect.tolist()
+                                    intersect = np.intersect1d(gene_locations, up_locations)
+                                    combined_locations += intersect.tolist()
+                                    npY_class[intersect] = 1
+                                else: # direction = multi
+                                    intersect = np.intersect1d(gene_locations, down_locations)
+                                    gene_down_locations = intersect.tolist()
+                                    combined_locations += gene_down_locations
+                                    intersect = np.intersect1d(gene_locations, up_locations)
+                                    gene_up_locations = intersect.tolist()
+                                    combined_locations += gene_up_locations
+                                    intersect = np.intersect1d(gene_locations, mid_locations)
+                                    mid_locations = intersect.tolist()
+                                    combined_locations += mid_locations
+                                    npY_class[gene_up_locations] = 2
+                                    npY_class[gene_down_locations] = 1
+
+                            if direction == 'Both' or direction == 'Multi':
+                                npX = npX[combined_locations]
+                                cold_ids = [cold_ids[ci] for ci in combined_locations]
+                                npY_class = npY_class[combined_locations]
+                            print("Evaluating cell line", cell_line_counter, cell_name, "(Percentile ends:", percentile_down, ")")
+
+                            sample_size = len(npY_class)
+
+                            if sample_size < 300: # smaller sizes was giving y values of only one class
+                                continue
+
+                            print('Positive samples', np.sum(npY_class))
+
+                            num_drugs = cell_drugs_counts[cell_id]
+                            print("Sample Size:", sample_size, "Drugs tested:", num_drugs / gene_count_data_limit)
+
+                            if save_data_to_file:
+                                np.savez(model_file_prefix + "_npX", npX)
+                                np.savez(model_file_prefix + "_npY_class", npY_class)
+                                np.savez(model_file_prefix + "_cold_ids", cold_ids)
+
+                            if evaluate_type == "use_optimizer":
+                                do_optimize(len(np.unique(npY_class)), npX, npY_class, model_file_prefix, cold_ids)
+                            elif evaluate_type == "train_and_save":
+                                model = train_model(npX, npY_class)
+                                save_model(model, model_file_prefix)
+                            elif evaluate_type == "test_trained":
+                                evaluate(len(np.unique(npY_class)), npX, npY_class, model_file_prefix)
+
+                    finally:
+                        en.notify()
+                        plt.show()
