@@ -7,6 +7,7 @@ from pathlib import Path
 import numpy as np
 import os
 from helpers.utilities import all_stats
+import sklearn.metrics as metrics
 
 class MlpX10(Model):
     def __init__(self, layers=None, name=None, n_estimators=10, patience=10, log_steps=5, dropout=0.2,
@@ -123,7 +124,17 @@ class MlpX10(Model):
                 print('All stats train:', ['{:6.3f}'.format(val) for val in train_stats])
                 print('All stats val:', ['{:6.3f}'.format(val) for val in val_stats])
 
-            if i == 1:
+            if i == 0:
+                y_pred = np.argmax(y_pred_train, axis=1)
+                y_true = np.argmax(y[train_indices], axis=1)
+                target_names = [0, 1, 2]
+                cm = metrics.confusion_matrix(y_true, y_pred, labels=target_names)
+                cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+                accs = cm.diagonal()
+                print("Train Accuracy class 0", accs[0])
+                print("Train Accuracy class 1", accs[1])
+                print("Trani Accuracy class 2", accs[2])
+
                 for class_index in range(0, 3):
                     print('class', class_index, 'stats')
                     train_stats = all_stats(y[train_indices][:, class_index], y_pred_train[:, class_index])
