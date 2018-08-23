@@ -6,6 +6,7 @@ from helpers.callbacks import NEpochLogger
 from pathlib import Path
 import numpy as np
 import os
+from helpers.utilities import all_stats
 
 class MlpX10(Model):
     def __init__(self, layers=None, name=None, n_estimators=10, patience=10, log_steps=5, dropout=0.2,
@@ -113,3 +114,19 @@ class MlpX10(Model):
                 np.savez(file_prefix + "_x_val", x[val_indices[i]])
                 np.savez(file_prefix + "_y_val", y[val_indices[i]])
                 np.savez(file_prefix + "_y_pred", y_prob)
+
+            y_pred_train = model.predict_proba(x[train_indices])
+            y_pred_val = model.predict_proba(x[val_indices[i]])
+
+            def print_stats(train_stats, val_stats):
+                print('All stats columns | AUC | Recall | Specificity | Number of Samples | Precision | Max F Cutoff')
+                print('All stats train:', ['{:6.3f}'.format(val) for val in train_stats])
+                print('All stats val:', ['{:6.3f}'.format(val) for val in val_stats])
+
+            if i == 1:
+                for class_index in range(0, 3):
+                    print('class', class_index, 'stats')
+                    train_stats = all_stats(y[train_indices][:, class_index], y_pred_train[:, class_index])
+                    val_stats = all_stats(y[val_indices[i]][:, class_index], y_pred_val[:, class_index])
+                    print_stats(train_stats, val_stats)
+
