@@ -5,6 +5,7 @@ from helpers.utilities import all_stats, scatter2D_plot
 from L1000.mlp_ensemble import MlpEnsemble
 import numpy as np
 import matplotlib.pyplot as plt
+import sklearn.metrics as metrics
 
 train_percentage = 0.7
 use_plot = False
@@ -13,11 +14,6 @@ load_data = False
 save_data = False
 
 def do_optimize(nb_classes, data, labels, model_file_prefix=None):
-    path_prefix = 'L1000/LDS-1191/saved_xy_data/'
-    if load_data:
-        data = np.load(path_prefix + "PC3npXEndsAllCutoffs.npz")['arr_0'] # not balanced
-        labels = np.load(path_prefix + "PC3npY_classEndsAllCutoffs.npz")['arr_0']
-
     n = len(labels)
     labels = np_utils.to_categorical(labels, nb_classes)
 
@@ -25,12 +21,6 @@ def do_optimize(nb_classes, data, labels, model_file_prefix=None):
     print("Train size:", train_size)
     test_size = int((1-train_percentage) * n)
     X_train, X_test, y_train, y_test = train_test_split(data, labels, train_size=train_size, test_size=test_size)
-
-    if save_data:
-        np.savez("X_train", X_train)
-        np.savez("X_test", X_test)
-        np.savez("y_train", y_train)
-        np.savez("y_test", y_test)
 
     X_val, X_test, y_val, y_test = train_test_split(X_test, y_test, train_size=0.5, test_size=0.5)
     Y_train = y_train
@@ -45,15 +35,14 @@ def do_optimize(nb_classes, data, labels, model_file_prefix=None):
     print('Test score:', score[0])
     print('Test accuracy:', score[1])
 
-    y_pred = model.predict_proba(X_test)
-    y_pred[np.where(y_pred >= 0.5)] = 1
-    y_pred[np.where(y_pred < 0.5)] = 0
-    acc = np.mean(y_pred == Y_test)
-    print('My Test accuracy:', acc)
-
     y_pred_train = model.predict_proba(X_train)
     y_pred_test = model.predict_proba(X_test)
     y_pred_val = model.predict_proba(X_val)
+
+    y_prob = model.predict_proba(X_val)
+    np.savez(model_file_prefix + "_x_val", X_val)
+    np.savez(model_file_prefix + "_y_val", Y_val)
+    np.savez(model_file_prefix + "_y_pred", y_prob)
 
     def print_stats(train_stats, test_stats, val_stats):
         print('All stats columns | AUC | Recall | Specificity | Number of Samples | Precision | Max F Cutoff')
@@ -62,7 +51,25 @@ def do_optimize(nb_classes, data, labels, model_file_prefix=None):
         print('All stats val:', ['{:6.3f}'.format(val) for val in val_stats])
         print('Total:', ['{:6.3f}'.format(val) for val in [train_stats[0] + test_stats[0] + val_stats[0]]])
 
+    def print_acc(text, Y_train, y_pred_train):
+        y_pred = np.argmax(y_pred_train, axis=1)
+        y_true = np.argmax(Y_train, axis=1)
+        target_names = [0, 1, 2]
+        cm = metrics.confusion_matrix(y_true, y_pred, labels=target_names)
+        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+        accs = cm.diagonal()
+        print(text, "Accuracy class 0", accs[0])
+        print(text, "Accuracy class 1", accs[1])
+        print(text, "Accuracy class 2", accs[2])
+
+        report = metrics.classification_report(y_true, y_pred)
+        print("Report", report)
+
     if nb_classes > 2:
+        print_acc("Train", Y_train, y_pred_train)
+        print_acc("Test", Y_test, y_pred_test)
+        print_acc("Val", Y_val, y_pred_val)
+
         for class_index in range(0, nb_classes):
             print('class', class_index, 'stats')
             train_stats = all_stats(Y_train[:, class_index], y_pred_train[:, class_index])

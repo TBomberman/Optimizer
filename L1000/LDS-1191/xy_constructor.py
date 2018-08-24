@@ -40,10 +40,9 @@ if use_data_from_file:
     for target_cell_name in target_cell_names:
         for bin in [10]:
             for percentile_down in [10]:
-                for gap_factor in  [0.1]:
-                    file_suffix = target_cell_name + '_' + direction + str(bin) + 'b_p' + str(percentile_down)
-                                  # + \
-                                  # '_' + str(int(gap_factor*100)) + 'g'
+                for gap_factor in gap_factors:
+                    file_suffix = target_cell_name + '_' + direction + str(bin) + 'b_p' + str(percentile_down) + \
+                                  '_' + str(int(gap_factor*100)) + 'g'
 
                     model_file_prefix = data_folder_path + str(datetime.datetime.now()) + '_' + file_suffix
                     print('load location', load_data_folder_path)
