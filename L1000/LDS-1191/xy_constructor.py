@@ -4,7 +4,7 @@ import json
 import time
 import random
 import matplotlib.pyplot as plt
-from x10_optimizer import do_optimize
+from ensemble_optimizer import do_optimize
 import numpy as np
 from L1000.data_loader import get_feature_dict, load_gene_expression_data, printProgressBar, load_csv, get_trimmed_feature_dict
 from L1000.gene_predictor import train_model, save_model

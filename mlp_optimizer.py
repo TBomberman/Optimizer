@@ -43,6 +43,7 @@ def save_model(model, file_prefix):
     print("Saved model", file_prefix)
 
 def do_optimize(nb_classes, data, labels, model_file_prefix=None):
+    rtn_model = None
     n = len(labels)
     d = data.shape[1]
     if nb_classes > 1:
@@ -161,6 +162,9 @@ def do_optimize(nb_classes, data, labels, model_file_prefix=None):
             plt.legend(['train', 'test'], loc='upper left')
             plt.draw()
 
+        rtn_model = model
+
+    return rtn_model
 
 def add_dense_dropout(count, neuron_count, model, activation):
     for x in range(0, count):
