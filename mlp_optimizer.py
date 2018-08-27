@@ -99,7 +99,8 @@ def do_optimize(nb_classes, data, labels, model_file_prefix=None):
         early_stopping = EarlyStopping(monitor='val_loss', min_delta=0, patience=patience, verbose=1, mode='auto')
         out_epoch = NEpochLogger(display=5)
         model.fit(X_train, Y_train, batch_size=batch_size, epochs=nb_epoch,
-                  verbose=0, validation_data=(X_test, Y_test), callbacks=[history, early_stopping, out_epoch])
+                  verbose=0, validation_data=(X_test, Y_test), callbacks=[history, early_stopping, out_epoch],
+                  class_weight='auto')
         # save_model(model, model_file_prefix)
         score = model.evaluate(X_test, Y_test, verbose=0)
 

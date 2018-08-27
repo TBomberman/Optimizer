@@ -102,7 +102,7 @@ class MlpEnsemble(Model):
             print('begin fit')
             model.fit(x[train_indices], y[train_indices], batch_size=batch_size, epochs=epochs, verbose=0,
                       validation_data=(x[val_indices], y[val_indices]),
-                      callbacks=[history, early_stopping, out_epoch])
+                      callbacks=[history, early_stopping, out_epoch], class_weight=class_weight)
             self.models[file_prefix] = model
             if self.save_models:
                 self.save_model(model, file_prefix)

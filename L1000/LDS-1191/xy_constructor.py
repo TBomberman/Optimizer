@@ -51,20 +51,9 @@ if use_data_from_file:
                     npY_class = np.load(load_data_folder_path + file_suffix + "_npY_class.npz")['arr_0']
                     cold_ids = np.load(load_data_folder_path + file_suffix + "_cold_ids.npz")['arr_0']
 
-                    def balance_class_0(npy, percentile):
-                        length = len(npy)
-                        class_0_keep_size = int(length * percentile / 100)
-                        class_0_indexes = np.where(npy == 0)
-                        class_1_indexes = np.where(npy == 1)
-                        class_2_indexes = np.where(npy == 2)
-                        wanted0 = train_test_split(class_0_indexes[0], class_0_indexes[0], train_size=class_0_keep_size)
-                        return np.concatenate((wanted0[0], class_1_indexes[0], class_2_indexes[0]))
-                    indexes = balance_class_0(npY_class, percentile_down)
-                    np.random.shuffle(indexes)
-
                     try:
                         if evaluate_type == "use_optimizer":
-                            do_optimize(len(np.unique(npY_class)), npX[indexes], npY_class[indexes], model_file_prefix)
+                            do_optimize(len(np.unique(npY_class)), npX, npY_class, model_file_prefix)
                         elif evaluate_type == "train_and_save":
                             model = train_model(npX, npY_class)
                             save_model(model, model_file_prefix)
