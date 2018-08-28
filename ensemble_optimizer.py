@@ -29,7 +29,7 @@ def do_optimize(nb_classes, data, labels, model_file_prefix=None):
 
     model = MlpEnsemble(saved_models_path=model_file_prefix + '_ensemble_models/', patience=5)
     if use_fit:
-        model.fit(X_train, Y_train, validation_data=(X_test, Y_test), class_weight='auto')
+        model.fit(X_train, Y_train, validation_data=(X_test, Y_test))
 
     score = model.evaluate(X_test, Y_test)
     print('Test score:', score[0])

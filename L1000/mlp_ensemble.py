@@ -7,6 +7,8 @@ from helpers.callbacks import NEpochLogger
 from pathlib import Path
 import numpy as np
 import os
+from L1000.three_model_ensemble import ThreeModelEnsemble
+from sklearn.model_selection import train_test_split
 
 class MlpEnsemble(Model):
     def __init__(self, layers=None, name=None, n_estimators=10, patience=10, log_steps=5, dropout=0.2,
@@ -53,18 +55,19 @@ class MlpEnsemble(Model):
         model.save_weights(file_prefix + ".h5")
         print("Saved model", file_prefix, "to disk")
 
-    def build_model(self, d):
+    def build_model(self, d, i):
         n_neuron = int(d)
-        model = Sequential()
-        model.add(Dense(n_neuron, input_shape=(n_neuron,)))
-        model.add(Activation(self.input_activation))
-        model.add(Dropout(self.dropout))
-        model.add(Dense(n_neuron))
-        model.add(Activation(self.hidden_activation))
-        model.add(Dropout(self.dropout))
-        model.add(Dense(3))
-        model.add(Activation(self.output_activation))
-        model.compile(loss='categorical_crossentropy', optimizer=self.optimizer)
+        model = ThreeModelEnsemble(saved_models_path=self.saved_models_path + '_' + str(i) + '/', patience=5)
+        # model = Sequential()
+        # model.add(Dense(n_neuron, input_shape=(n_neuron,)))
+        # model.add(Activation(self.input_activation))
+        # model.add(Dropout(self.dropout))
+        # model.add(Dense(n_neuron))
+        # model.add(Activation(self.hidden_activation))
+        # model.add(Dropout(self.dropout))
+        # model.add(Dense(3))
+        # model.add(Activation(self.output_activation))
+        # model.compile(loss='categorical_crossentropy', optimizer=self.optimizer)
         return model
 
     def fit(self, x=None, y=None, batch_size=2**12, epochs=10000, verbose=1, callbacks=None, validation_split=0.,
@@ -84,28 +87,24 @@ class MlpEnsemble(Model):
         # fit each model with each set
         # add option to save each model
         indices = []
-        for i in range(0, self.n_estimators):
-            val_start = i * validation_size
-            val_end = val_start + validation_size
-            indices.append(list(range(val_start, val_end)))
+        class_0_indexes = np.where(y[:,0] == 1)
+        class_1_indexes = np.where(y[:,1] == 1)
+        class_2_indexes = np.where(y[:,2] == 1)
+        avg_n = int((len(class_1_indexes[0]) + len(class_2_indexes[0]))/2)
 
         for i in range(0, self.n_estimators):
             print('cross iteration', i)
-            val_indices = indices[i]
-            train_indices = []
-            for j in range(0, self.n_estimators):
-                if j != i:
-                    train_indices = train_indices + indices[j]
-            print('got indices')
+
+            balanced_class_0_indexes = np.random.choice(class_0_indexes[:][0], avg_n, replace=False)
+            all_indexes = np.concatenate((balanced_class_0_indexes, class_1_indexes[0], class_2_indexes[0]), axis=0)
             file_prefix = self.saved_models_path + "EnsembleModel" + str(i)
-            model = self.build_model(self.d)
+            model = self.build_model(self.d, i)
             print('begin fit')
-            model.fit(x[train_indices], y[train_indices], batch_size=batch_size, epochs=epochs, verbose=0,
-                      validation_data=(x[val_indices], y[val_indices]),
-                      callbacks=[history, early_stopping, out_epoch], class_weight=class_weight)
+            model.fit(x[all_indexes], y[all_indexes], batch_size=batch_size, epochs=epochs, verbose=0,
+                      callbacks=[history, early_stopping, out_epoch])
             self.models[file_prefix] = model
-            if self.save_models:
-                self.save_model(model, file_prefix)
+            # if self.save_models:
+            #     self.save_model(model, file_prefix)
 
     def evaluate(self, x=None, y=None, batch_size=None, verbose=0, sample_weight=None, steps=None):
         sum_scores = 0
