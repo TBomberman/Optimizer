@@ -95,6 +95,7 @@ class ThreeModelEnsemble(MlpEnsemble):
         avg_score = sum_scores / 3
 
         y_pred = self.predict_proba(x)
+        # standardize, with and without
         y = np.argmax(y, axis=1)
         y_pred = np.argmax(y_pred, axis=1)
         acc = metrics.accuracy_score(y, y_pred)
