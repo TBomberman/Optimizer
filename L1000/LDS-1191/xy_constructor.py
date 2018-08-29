@@ -32,34 +32,40 @@ use_data_from_file = True
 test_blind = False
 load_data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/load_data/gap/"
 data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/1vsall/warm/"
-# gap_factors = [0.8, 0.9]#, 0.6, 0.7, 0.8, 0.9]
+gap_factors = [0.0] #, 0.6, 0.7, 0.8, 0.9]
 # gap_factors = [0.9, 0.6, 0.5, 0.2, 0.1]
-gap_factors = [0.8, 0.7, 0.4, 0.3, 0.0]
+# gap_factors = [0.8, 0.7, 0.4, 0.3, 0.0]
+# class_weights = [0.01, 0.05]
+# class_weights = [0.02, 0.06, 0.09]
+# class_weights = [0.03, 0.07]
+class_weights = [0.03]
 
 if use_data_from_file:
     for target_cell_name in target_cell_names:
         for bin in [10]:
             for percentile_down in [10]:
                 for gap_factor in gap_factors:
-                    file_suffix = target_cell_name + '_' + direction + str(bin) + 'b_p' + str(percentile_down) + \
-                                  '_' + str(int(gap_factor*100)) + 'g'
+                    for class_0_weight in class_weights:
+                        file_suffix = target_cell_name + '_' + direction + str(bin) + 'b_p' + str(percentile_down) + \
+                                      '_' + str(int(gap_factor*100)) + 'g'
 
-                    model_file_prefix = data_folder_path + str(datetime.datetime.now()) + '_' + file_suffix
-                    print('load location', load_data_folder_path)
-                    print('save location', model_file_prefix)
-                    npX = np.load(load_data_folder_path + file_suffix + "_npX.npz")['arr_0'] # must be not balanced too because 70% of this is X_train.npz
-                    npY_class = np.load(load_data_folder_path + file_suffix + "_npY_class.npz")['arr_0']
-                    cold_ids = np.load(load_data_folder_path + file_suffix + "_cold_ids.npz")['arr_0']
+                        model_file_prefix = data_folder_path + str(datetime.datetime.now()) + '_' + file_suffix + \
+                                            '_' + str(int(class_0_weight*100)) + 'c'
+                        print('load location', load_data_folder_path)
+                        print('save location', model_file_prefix)
+                        npX = np.load(load_data_folder_path + file_suffix + "_npX.npz")['arr_0'] # must be not balanced too because 70% of this is X_train.npz
+                        npY_class = np.load(load_data_folder_path + file_suffix + "_npY_class.npz")['arr_0']
+                        cold_ids = np.load(load_data_folder_path + file_suffix + "_cold_ids.npz")['arr_0']
 
-                    try:
-                        if evaluate_type == "use_optimizer":
-                            do_optimize(len(np.unique(npY_class)), npX, npY_class, model_file_prefix)
-                        elif evaluate_type == "train_and_save":
-                            model = train_model(npX, npY_class)
-                            save_model(model, model_file_prefix)
-                    finally:
-                        en.notify()
-                        plt.show()
+                        try:
+                            if evaluate_type == "use_optimizer":
+                                do_optimize(len(np.unique(npY_class)), npX, npY_class, model_file_prefix, class_0_weight)
+                            elif evaluate_type == "train_and_save":
+                                model = train_model(npX, npY_class)
+                                save_model(model, model_file_prefix)
+                        finally:
+                            en.notify()
+                            plt.show()
     quit()
 
 def find_nth(haystack, needle, n):

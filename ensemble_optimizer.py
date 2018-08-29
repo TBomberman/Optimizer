@@ -2,7 +2,7 @@ from keras.utils import np_utils
 from sklearn.model_selection import train_test_split
 from helpers.plot_roc import plot_roc
 from helpers.utilities import all_stats, scatter2D_plot
-from L1000.mlp_ensemble import MlpEnsemble
+from L1000.three_model_ensemble import ThreeModelEnsemble
 import numpy as np
 import matplotlib.pyplot as plt
 import sklearn.metrics as metrics
@@ -13,23 +13,36 @@ use_fit = True
 load_data = False
 save_data = False
 
-def do_optimize(nb_classes, data, labels, model_file_prefix=None):
+def do_optimize(nb_classes, data, labels, model_file_prefix=None, class_0_weight=0.03):
     n = len(labels)
     labels = np_utils.to_categorical(labels, nb_classes)
 
-    train_size = int(train_percentage * n)
-    print("Train size:", train_size)
-    test_size = int((1-train_percentage) * n)
-    X_train, X_test, y_train, y_test = train_test_split(data, labels, train_size=train_size, test_size=test_size)
+    # class_0_indexes = np.where(labels[:, 0] == 1)
+    # class_1_indexes = np.where(labels[:, 1] == 1)
+    # class_2_indexes = np.where(labels[:, 2] == 1)
+    # avg_n = int((len(class_1_indexes[0]) + len(class_2_indexes[0])) / 2)
+    # balanced_class_0_indexes = np.random.choice(class_0_indexes[:][0], avg_n, replace=False)
+    # all_indexes = np.concatenate((balanced_class_0_indexes, class_1_indexes[0], class_2_indexes[0]), axis=0)
+
+    # train_size = int(train_percentage * n)
+    # print("Train size:", train_size)
+    # test_size = int((1-train_percentage) * n)
+    X_train, X_test, y_train, y_test = train_test_split(data, labels, train_size=train_percentage, test_size=1-train_percentage)
 
     X_val, X_test, y_val, y_test = train_test_split(X_test, y_test, train_size=0.5, test_size=0.5)
     Y_train = y_train
     Y_test = y_test
     Y_val = y_val
 
-    model = MlpEnsemble(saved_models_path=model_file_prefix + '_ensemble_models/', patience=5)
+    model = ThreeModelEnsemble(saved_models_path=model_file_prefix + '_ensemble_models/', patience=5)
+    class_1_weight = (1-class_0_weight)/2
+    class_weight = {
+        0: class_0_weight,
+        1: class_1_weight,
+        2: class_1_weight
+    }
     if use_fit:
-        model.fit(X_train, Y_train, validation_data=(X_test, Y_test))
+        model.fit(X_train, Y_train, validation_data=(X_test, Y_test), class_weight=class_weight)
 
     score = model.evaluate(X_test, Y_test)
     print('Test score:', score[0])
@@ -105,7 +118,7 @@ def evaluate(nb_classes, data, labels, file_prefix):
     x_test = data
     y_test = labels
 
-    model = MlpEnsemble(saved_models_path=saved_models_path, save_models=False)
+    model = ThreeModelEnsemble(saved_models_path=saved_models_path, save_models=False)
 
     score = model.evaluate(x_test, y_test)
     print('Test score:', score[0])

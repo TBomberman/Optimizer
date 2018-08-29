@@ -42,7 +42,7 @@ def save_model(model, file_prefix):
     model.save_weights(file_prefix + ".h5")
     print("Saved model", file_prefix)
 
-def do_optimize(nb_classes, data, labels, model_file_prefix=None):
+def do_optimize(nb_classes, data, labels, model_file_prefix=None, pos_class_weight=None):
     rtn_model = None
     n = len(labels)
     d = data.shape[1]
@@ -98,8 +98,11 @@ def do_optimize(nb_classes, data, labels, model_file_prefix=None):
         history = History()
         early_stopping = EarlyStopping(monitor='val_loss', min_delta=0, patience=patience, verbose=1, mode='auto')
         out_epoch = NEpochLogger(display=5)
+        class_weight = { 1: pos_class_weight, 0: 1-pos_class_weight}
+
         model.fit(X_train, Y_train, batch_size=batch_size, epochs=nb_epoch,
-                  verbose=0, validation_data=(X_test, Y_test), callbacks=[history, early_stopping, out_epoch])
+                  verbose=0, validation_data=(X_test, Y_test), callbacks=[history, early_stopping, out_epoch],
+                  class_weight=class_weight)
         # save_model(model, model_file_prefix)
         score = model.evaluate(X_test, Y_test, verbose=0)
 
@@ -203,8 +206,8 @@ def get_model(neuron_count, nb_classes, hyperparam=0):
     # model.compile(loss='mean_squared_error', optimizer=optimizer, metrics=['accuracy'])
     return model
 
-def plot_model():
-    model = get_model(1402, 2)
+def my_plot_model():
+    model = get_model(1274, 2)
     plot_model(model, to_file='model.png', show_shapes=True, show_layer_names=False)
 
-# plot_model()
+my_plot_model()

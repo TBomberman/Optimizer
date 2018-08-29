@@ -73,17 +73,17 @@ class ThreeModelEnsemble():
         down_model_y = y[:,1]
         stable_model_y = y[:,0]
 
-        def train(direction, x, y):
+        def train(direction, x, y, pos_class_weight):
             print('training', direction)
-            model = do_optimize(2, x, y)
+            model = do_optimize(2, x, y, pos_class_weight=pos_class_weight)
             file_prefix = self.saved_models_path + "1vsAll" + direction
             if self.save_models:
                 self.save_model(model, file_prefix)
             return model
 
-        self.up_model = train("Up", x, up_model_y)
-        self.down_model = train("Down", x, down_model_y)
-        self.stable_model = train("Stable", x, stable_model_y)
+        self.up_model = train("Up", x, up_model_y, class_weight[2])
+        self.down_model = train("Down", x, down_model_y, class_weight[1])
+        self.stable_model = train("Stable", x, stable_model_y, class_weight[0])
 
     def evaluate(self, x=None, y=None, batch_size=None, verbose=0, sample_weight=None, steps=None):
         up_model_y = y[:, 2]
