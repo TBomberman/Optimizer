@@ -24,14 +24,14 @@ evaluate_type = "use_optimizer" #"use_optimizer" "train_and_save" "test_trained"
 # target_cell_names = ['PC3', 'HT29']
 # target_cell_names = ['MCF7', 'A375']
 # target_cell_names = ['VCAP', 'A549']
-target_cell_names = ['HT29']
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+target_cell_names = ['A549']
+os.environ["CUDA_VISIBLE_DEVICES"] = "4"
 direction = 'Multi' #'Down'
-save_data_to_file = True
-use_data_from_file = False
+save_data_to_file = False
+use_data_from_file = True
 test_blind = False
-load_data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/load_data/nogap/"
-data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/1vsall/warm/"
+load_data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/load_data/nogapnoblind/"
+data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/1vsall/nogapnoblind/"
 gap_factors = [0.0] #, 0.6, 0.7, 0.8, 0.9]
 # gap_factors = [0.9, 0.6, 0.5, 0.2, 0.1]
 # gap_factors = [0.8, 0.7, 0.4, 0.3, 0.0]
@@ -59,7 +59,7 @@ if use_data_from_file:
 
                         try:
                             if evaluate_type == "use_optimizer":
-                                do_optimize(len(np.unique(npY_class)), npX, npY_class, model_file_prefix, class_0_weight)
+                                do_optimize(len(np.unique(npY_class)), npX, npY_class, model_file_prefix, class_0_weight, cold_ids)
                             elif evaluate_type == "train_and_save":
                                 model = train_model(npX, npY_class)
                                 save_model(model, model_file_prefix)
@@ -118,18 +118,18 @@ else:
         blind_drugs_file.write("%s\n" % key)
         blind_drugs_keys.append([key])
 
-if test_blind:
-    keys_to_remove = []
-    for key in drug_features_dict.keys():
-        if [key] in blind_drugs_keys:
-            continue
-        keys_to_remove.append(key)
-    for key in keys_to_remove:
-        drug_features_dict.pop(key, None)
-else:
-    for key in blind_drugs_keys:
-        drug_features_dict.pop(key[0], None)
-    drug_features_dict.pop("BRD-K56851771", None)
+# if test_blind:
+#     keys_to_remove = []
+#     for key in drug_features_dict.keys():
+#         if [key] in blind_drugs_keys:
+#             continue
+#         keys_to_remove.append(key)
+#     for key in keys_to_remove:
+#         drug_features_dict.pop(key, None)
+# else:
+#     for key in blind_drugs_keys:
+#         drug_features_dict.pop(key[0], None)
+#     drug_features_dict.pop("BRD-K56851771", None)
 
 # getting the gene ids
 gene_id_dict = get_gene_id_dict()
@@ -357,11 +357,11 @@ for target_cell_name in target_cell_names:
                                 np.savez(model_file_prefix + "_npY_class", npY_class_save)
                                 np.savez(model_file_prefix + "_cold_ids", cold_ids_save)
 
-                            # if evaluate_type == "use_optimizer":
-                            #     do_optimize(len(np.unique(npY_class)), npX, npY_class, model_file_prefix, cold_ids)
-                            # elif evaluate_type == "train_and_save":
-                            #     model = train_model(npX, npY_class)
-                            #     save_model(model, model_file_prefix)
+                            if evaluate_type == "use_optimizer":
+                                do_optimize(len(np.unique(npY_class)), npX, npY_class, model_file_prefix + 'test', 0.03, cold_ids)
+                            elif evaluate_type == "train_and_save":
+                                model = train_model(npX, npY_class)
+                                save_model(model, model_file_prefix)
                             # elif evaluate_type == "test_trained":
                             #     evaluate(len(np.unique(npY_class)), npX, npY_class, model_file_prefix)
 
