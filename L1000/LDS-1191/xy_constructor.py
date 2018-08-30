@@ -25,12 +25,12 @@ evaluate_type = "use_optimizer" #"use_optimizer" "train_and_save" "test_trained"
 # target_cell_names = ['MCF7', 'A375']
 # target_cell_names = ['VCAP', 'A549']
 target_cell_names = ['HT29']
-os.environ["CUDA_VISIBLE_DEVICES"] = "7"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 direction = 'Multi' #'Down'
-save_data_to_file = False
-use_data_from_file = True
+save_data_to_file = True
+use_data_from_file = False
 test_blind = False
-load_data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/load_data/gap/"
+load_data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/load_data/nogap/"
 data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/1vsall/warm/"
 gap_factors = [0.0] #, 0.6, 0.7, 0.8, 0.9]
 # gap_factors = [0.9, 0.6, 0.5, 0.2, 0.1]
@@ -155,7 +155,8 @@ for target_cell_name in target_cell_names:
     for bin in [10]:
         for direction in ['Multi']: # 'Multi' 'Both' 'Up' 'Down'
             cell_X = {}
-            cell_cold_ids = {}
+            cell_cold_ids = {} # basically just storing the ids of each sample so you can know which drug or gene it
+            # refers to
             cell_Y = {}
             cell_Y_gene_ids = {}
             cell_drugs_counts = {}
@@ -309,7 +310,7 @@ for target_cell_name in target_cell_names:
                                 mid_threshold_top = class_cut_off_up - abs(gap_factor * class_cut_off_up)
                                 down_locations = np.where(npY <= down_threshold)
                                 up_locations = np.where(npY >= up_threshold)
-                                mid_locations = np.where((npY >= mid_threshold_bottom) & (npY <= mid_threshold_top))
+                                mid_locations = np.where((npY > mid_threshold_bottom) & (npY < mid_threshold_top))
                                 if direction == 'Down':
                                     intersect = np.intersect1d(gene_locations, down_locations)
                                     npY_class[intersect] = 1
