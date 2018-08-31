@@ -24,14 +24,14 @@ evaluate_type = "use_optimizer" #"use_optimizer" "train_and_save" "test_trained"
 # target_cell_names = ['PC3', 'HT29']
 # target_cell_names = ['MCF7', 'A375']
 # target_cell_names = ['VCAP', 'A549']
-target_cell_names = ['A549']
+target_cell_names = ['VCAP']
 os.environ["CUDA_VISIBLE_DEVICES"] = "4"
 direction = 'Multi' #'Down'
 save_data_to_file = False
 use_data_from_file = True
 test_blind = False
-load_data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/load_data/nogapnoblind/"
-data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/1vsall/nogapnoblind/"
+load_data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/load_data/nogapnoblind/spearman/"
+data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/1vsall/nogapnoblind/spearman"
 gap_factors = [0.0] #, 0.6, 0.7, 0.8, 0.9]
 # gap_factors = [0.9, 0.6, 0.5, 0.2, 0.1]
 # gap_factors = [0.8, 0.7, 0.4, 0.3, 0.0]
@@ -56,10 +56,12 @@ if use_data_from_file:
                         npX = np.load(load_data_folder_path + file_suffix + "_npX.npz")['arr_0'] # must be not balanced too because 70% of this is X_train.npz
                         npY_class = np.load(load_data_folder_path + file_suffix + "_npY_class.npz")['arr_0']
                         cold_ids = np.load(load_data_folder_path + file_suffix + "_cold_ids.npz")['arr_0']
+                        npY = np.load(load_data_folder_path + file_suffix + "_npY_float.npz")['arr_0']
 
                         try:
                             if evaluate_type == "use_optimizer":
-                                do_optimize(len(np.unique(npY_class)), npX, npY_class, model_file_prefix, class_0_weight, cold_ids)
+                                do_optimize(len(np.unique(npY_class)), npX, npY_class, model_file_prefix, class_0_weight,
+                                            cold_ids, labels_float=npY)
                             elif evaluate_type == "train_and_save":
                                 model = train_model(npX, npY_class)
                                 save_model(model, model_file_prefix)
@@ -337,9 +339,10 @@ for target_cell_name in target_cell_names:
                                     npY_class[gene_down_locations] = 1
 
                             if direction == 'Both' or direction == 'Multi':
-                                npX_save = npX[combined_locations]
+                                npX = npX[combined_locations]
                                 cold_ids_save = [cold_ids[ci] for ci in combined_locations]
                                 npY_class_save = npY_class[combined_locations]
+                                npY = npY[combined_locations]
                             print("Evaluating cell line", cell_line_counter, cell_name, "(Percentile ends:", percentile_down, ")")
 
                             sample_size = len(npY_class_save)
@@ -353,12 +356,13 @@ for target_cell_name in target_cell_names:
                             print("Sample Size:", sample_size, "Drugs tested:", num_drugs / gene_count_data_limit)
 
                             if save_data_to_file:
-                                np.savez(model_file_prefix + "_npX", npX_save)
+                                np.savez(model_file_prefix + "_npX", npX)
                                 np.savez(model_file_prefix + "_npY_class", npY_class_save)
                                 np.savez(model_file_prefix + "_cold_ids", cold_ids_save)
+                                np.savez(model_file_prefix + "_npY_float", npY)
 
                             if evaluate_type == "use_optimizer":
-                                do_optimize(len(np.unique(npY_class)), npX, npY_class, model_file_prefix + 'test', 0.03, cold_ids)
+                                do_optimize(len(np.unique(npY_class)), npX, npY_class, model_file_prefix + 'test', 0.03, cold_ids, labels_float=npY)
                             elif evaluate_type == "train_and_save":
                                 model = train_model(npX, npY_class)
                                 save_model(model, model_file_prefix)

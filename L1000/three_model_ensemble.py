@@ -15,7 +15,7 @@ from keras.utils import np_utils
 
 class ThreeModelEnsemble():
 
-    def __init__(self, layers=None, name=None, patience=1, log_steps=5, dropout=0.2,
+    def __init__(self, layers=None, name=None, patience=5, log_steps=5, dropout=0.2,
                  input_activation='selu', hidden_activation='relu', output_activation='softmax', optimizer='adam',
                  saved_models_path='ensemble_models/3model/', save_models=True, train_percentage=0.7):
         self.patience = patience
