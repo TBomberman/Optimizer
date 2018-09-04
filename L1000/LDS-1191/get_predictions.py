@@ -330,245 +330,248 @@ def get_specific_predictions(up_gene_ids, down_gene_ids, score_function, model, 
         if save_histogram_data:
             save_list(scores, 'scores', str(iteration))
 
-try:
-    germans_up_genes = []
-    germans_down_genes = ['6657']
-    up_models = []
-    down_models = []
-    model = None
-    if use_ends_model:
-        model = load_model_from_file_prefix(path_prefix + ends_model_file_prefix)
-    else:
-        for i in range(0, len(down_model_file_prefixes)):
-            up_models.append(load_model_from_file_prefix(path_prefix + up_model_file_prefixes[i]))
-            down_models.append(load_model_from_file_prefix(path_prefix + down_model_file_prefixes[i]))
+def screen_compounds():
+    try:
+        germans_up_genes = []
+        germans_down_genes = ['6657']
+        up_models = []
+        down_models = []
+        model = None
+        if use_ends_model:
+            model = load_model_from_file_prefix(path_prefix + ends_model_file_prefix)
+        else:
+            for i in range(0, len(down_model_file_prefixes)):
+                up_models.append(load_model_from_file_prefix(path_prefix + up_model_file_prefixes[i]))
+                down_models.append(load_model_from_file_prefix(path_prefix + down_model_file_prefixes[i]))
 
-    get_specific_predictions( germans_up_genes, germans_down_genes, get_specific_score_concensus, model, up_models,
-                             down_models)
-finally:
-    en.notify("Predicting Done")
-    quit()
+        get_specific_predictions( germans_up_genes, germans_down_genes, get_specific_score_concensus, model, up_models,
+                                 down_models)
+    finally:
+        en.notify("Predicting Done")
+        quit()
 
-over_expressed_genes = []
-under_expressed_genes = []
+    over_expressed_genes = []
+    under_expressed_genes = []
 
-with open("data/pca_misexpressed_lm_genes.csv", "r") as csv_file:
-    reader = csv.reader(csv_file, dialect='excel', delimiter=',')
-    next(reader)
-    for row in reader:
-        if row[0] != '':
-            over_expressed_genes.append(row[0])
-        if row[1] != '':
-            under_expressed_genes.append(row[1])
-mis_expressed_genes = over_expressed_genes + under_expressed_genes
-
-if use_ends_model:
-    ends_model = load_model_from_file_prefix(path_prefix + ends_model_file_prefix)
-    down_model = None
-    up_model = None
-else:
-    down_model = load_model_from_file_prefix(path_prefix + down_model_file_prefixes[0])
-    up_model = load_model_from_file_prefix(path_prefix + up_model_file_prefixes[0])
-    ends_model = None
-
-# load gene fingerprints to test
-gene_features_dict = get_feature_dict('data/gene_go_fingerprint.csv', use_int=True)
-lm_gene_entrez_ids_list = load_csv('data/genes_by_var.csv')[:gene_count_data_limit]
-print('gene expressions loaded. rows:  ' + str(len(lm_gene_entrez_ids_list)))
-lm_gene_entrez_ids = []
-for sublist in lm_gene_entrez_ids_list :
-    for item in sublist:
-        lm_gene_entrez_ids.append(item)
-
-top10s = {}
-top10down = Top10()
-top10up = Top10()
-top10all = Top10()
-down_counts = []
-up_counts = []
-all_counts = []
-
-def calculate_perturbations(model, samples, class_value, top10_list, molecule_id, direction_str, misexp_str='',
-                            gene_list=[]):
-    # predict the batch
-    predictions = model.predict(samples)
-    regulate_counter = 0
-    gene_list_str = ''
-    gene_counter = 0
-    for prediction in predictions:
-        probability = prediction[class_value]
-        threshold = (0.99 if use_ends_model else 0.5)
-        if probability > threshold:
-            regulate_counter += 1
-            if len(gene_list) > gene_counter:
-                gene_list_str += str(gene_list[gene_counter]) + " "
-        gene_counter += 1
-
-    if top10_list.current_size <= 0 or regulate_counter > top10_list.get_lowest_key_prefix():
-        message = "Compound " + str(molecule_id) + " " + direction_str + "regulates " +  str(regulate_counter) + " " + \
-                  misexp_str + " genes."
-        message += gene_list_str
-        top10_list.add_item(regulate_counter, message)
-        print(datetime.datetime.now(), message)
-
-    return regulate_counter
-
-def plot_histograms_func(down_counts, up_counts, all_counts):
-    plt.figure()
-    plt.title('Histogram of Downregulations')
-    plt.ylabel('# of compounds')
-    plt.xlabel('# of genes perturbated')
-    plt.hist(down_counts, bins=100)
-    plt.draw()
-
-    plt.figure()
-    plt.title('Histogram of Upregulations')
-    plt.ylabel('# of compounds')
-    plt.xlabel('# of genes perturbated')
-    plt.hist(up_counts, bins=100)
-    plt.draw()
-
-    plt.figure()
-    plt.title('Histogram of Number of Compounds vs Total Regulated Genes')
-    plt.ylabel('# of compounds')
-    plt.xlabel('# of genes perturbated')
-    plt.hist(all_counts, bins=100)
-    plt.draw()
-    plt.show()
-
-try:
-    iteration = 0
-    n_drugs = 500000
-    n_gpus = 1
-    batch_size = int(n_drugs / n_gpus)
-    start = iteration * batch_size
-    end = start + batch_size - 1
-    print('iteration', iteration)
-
-    with open(zinc_file_name , "r") as csv_file:
-        reader = csv.reader(csv_file, dialect='excel', delimiter=',' )
+    with open("data/pca_misexpressed_lm_genes.csv", "r") as csv_file:
+        reader = csv.reader(csv_file, dialect='excel', delimiter=',')
         next(reader)
-        drug_counter = 0
-
-        num_genes = len(lm_gene_entrez_ids)
-        gene_features_list = []
-        for gene_id in lm_gene_entrez_ids:
-            gene_symbol = gene_id_dict[gene_id]
-            if gene_symbol not in gene_features_dict:
-                continue
-            gene_features = gene_features_dict[gene_symbol]
-            gene_features_list.append(gene_features)
-
-        num_over_genes = len(over_expressed_genes)
-        over_expressed_gene_features_list = []
-        for gene_id in over_expressed_genes:
-            gene_symbol = gene_id_dict[gene_id]
-            if gene_symbol not in gene_features_dict:
-                continue
-            gene_features = gene_features_dict[gene_symbol]
-            over_expressed_gene_features_list.append(gene_features)
-
         for row in reader:
+            if row[0] != '':
+                over_expressed_genes.append(row[0])
+            if row[1] != '':
+                under_expressed_genes.append(row[1])
+    mis_expressed_genes = over_expressed_genes + under_expressed_genes
 
-            if save_histogram_data:
-                if drug_counter < start:
+    if use_ends_model:
+        ends_model = load_model_from_file_prefix(path_prefix + ends_model_file_prefix)
+        down_model = None
+        up_model = None
+    else:
+        down_model = load_model_from_file_prefix(path_prefix + down_model_file_prefixes[0])
+        up_model = load_model_from_file_prefix(path_prefix + up_model_file_prefixes[0])
+        ends_model = None
+
+    # load gene fingerprints to test
+    gene_features_dict = get_feature_dict('data/gene_go_fingerprint.csv', use_int=True)
+    lm_gene_entrez_ids_list = load_csv('data/genes_by_var.csv')[:gene_count_data_limit]
+    print('gene expressions loaded. rows:  ' + str(len(lm_gene_entrez_ids_list)))
+    lm_gene_entrez_ids = []
+    for sublist in lm_gene_entrez_ids_list :
+        for item in sublist:
+            lm_gene_entrez_ids.append(item)
+
+    top10s = {}
+    top10down = Top10()
+    top10up = Top10()
+    top10all = Top10()
+    down_counts = []
+    up_counts = []
+    all_counts = []
+
+    def calculate_perturbations(model, samples, class_value, top10_list, molecule_id, direction_str, misexp_str='',
+                                gene_list=[]):
+        # predict the batch
+        predictions = model.predict(samples)
+        regulate_counter = 0
+        gene_list_str = ''
+        gene_counter = 0
+        for prediction in predictions:
+            probability = prediction[class_value]
+            threshold = (0.99 if use_ends_model else 0.5)
+            if probability > threshold:
+                regulate_counter += 1
+                if len(gene_list) > gene_counter:
+                    gene_list_str += str(gene_list[gene_counter]) + " "
+            gene_counter += 1
+
+        if top10_list.current_size <= 0 or regulate_counter > top10_list.get_lowest_key_prefix():
+            message = "Compound " + str(molecule_id) + " " + direction_str + "regulates " +  str(regulate_counter) + " " + \
+                      misexp_str + " genes."
+            message += gene_list_str
+            top10_list.add_item(regulate_counter, message)
+            print(datetime.datetime.now(), message)
+
+        return regulate_counter
+
+    def plot_histograms_func(down_counts, up_counts, all_counts):
+        plt.figure()
+        plt.title('Histogram of Downregulations')
+        plt.ylabel('# of compounds')
+        plt.xlabel('# of genes perturbated')
+        plt.hist(down_counts, bins=100)
+        plt.draw()
+
+        plt.figure()
+        plt.title('Histogram of Upregulations')
+        plt.ylabel('# of compounds')
+        plt.xlabel('# of genes perturbated')
+        plt.hist(up_counts, bins=100)
+        plt.draw()
+
+        plt.figure()
+        plt.title('Histogram of Number of Compounds vs Total Regulated Genes')
+        plt.ylabel('# of compounds')
+        plt.xlabel('# of genes perturbated')
+        plt.hist(all_counts, bins=100)
+        plt.draw()
+        plt.show()
+
+    try:
+        iteration = 0
+        n_drugs = 500000
+        n_gpus = 1
+        batch_size = int(n_drugs / n_gpus)
+        start = iteration * batch_size
+        end = start + batch_size - 1
+        print('iteration', iteration)
+
+        with open(zinc_file_name , "r") as csv_file:
+            reader = csv.reader(csv_file, dialect='excel', delimiter=',' )
+            next(reader)
+            drug_counter = 0
+
+            num_genes = len(lm_gene_entrez_ids)
+            gene_features_list = []
+            for gene_id in lm_gene_entrez_ids:
+                gene_symbol = gene_id_dict[gene_id]
+                if gene_symbol not in gene_features_dict:
+                    continue
+                gene_features = gene_features_dict[gene_symbol]
+                gene_features_list.append(gene_features)
+
+            num_over_genes = len(over_expressed_genes)
+            over_expressed_gene_features_list = []
+            for gene_id in over_expressed_genes:
+                gene_symbol = gene_id_dict[gene_id]
+                if gene_symbol not in gene_features_dict:
+                    continue
+                gene_features = gene_features_dict[gene_symbol]
+                over_expressed_gene_features_list.append(gene_features)
+
+            for row in reader:
+
+                if save_histogram_data:
+                    if drug_counter < start:
+                        drug_counter += 1
+                        continue
+                    if drug_counter > end:
+                        break
+
+                molecule_id = row[0]
+                if drug_counter % 10000 == 0:
+                    print(datetime.datetime.now(), "Evaluating molecule #", drug_counter)
+                drug_features = []
+                try:
+                    for value in row[1:]:
+                        drug_features.append(int(value))
+                except:
                     drug_counter += 1
                     continue
-                if drug_counter > end:
-                    break
 
-            molecule_id = row[0]
-            if drug_counter % 10000 == 0:
-                print(datetime.datetime.now(), "Evaluating molecule #", drug_counter)
-            drug_features = []
-            try:
-                for value in row[1:]:
-                    drug_features.append(int(value))
-            except:
+                # if drug_counter % 100 == 0 and plot_histograms:
+                #     plot_histograms_func(down_counts, up_counts, all_counts)
+
+                if operation == "counter":
+                    # hits / (non hits + hits + missed )
+
+                    # get the batch of samples
+                    samples_batch = np.array([], dtype="f2")
+                    for gene_features in over_expressed_gene_features_list:
+                        samples_batch = np.append(samples_batch, np.asarray(drug_features + gene_features))
+                    samples_batch = samples_batch.reshape([num_over_genes, -1])
+                    downregulate_count = calculate_perturbations(down_model, samples_batch, 0, top10down, molecule_id,
+                                                                 "down", "overexpressed", over_expressed_genes)
+
+                    samples_batch = np.array([], dtype="f2")
+                    num_under_genes = len(under_expressed_genes)
+                    for gene_id in under_expressed_genes:
+                        gene_symbol = gene_id_dict[gene_id]
+                        if gene_symbol not in gene_features_dict:
+                            continue
+                        gene_features = gene_features_dict[gene_symbol]
+                        samples_batch = np.append(samples_batch, np.asarray(drug_features + gene_features))
+                    samples_batch = samples_batch.reshape([num_under_genes, -1])
+                    upregulate_count = calculate_perturbations(up_model, samples_batch, 1, top10up, molecule_id,
+                                                               "up", "underexpressed", under_expressed_genes)
+                    allregulate_count = downregulate_count + upregulate_count
+                    if top10all.current_size == 0 or \
+                            (top10all.current_size > 0 and allregulate_count > top10all.get_lowest_key_prefix()):
+                        message = "Compound " + str(molecule_id) + " downregulates " + str(downregulate_count) + \
+                                  " overexpressed genes and upregulates " + str(upregulate_count) + \
+                                  " underexpressed genes. Total: " + str(allregulate_count)
+                        top10all.add_item(allregulate_count, message)
+                        print(datetime.datetime.now(), message)
+
+                elif operation == "promiscuous":
+                    # get the batch of samples
+                    samples_batch = np.array([], dtype="f2")
+                    for gene_features in gene_features_list:
+                        samples_batch = np.append(samples_batch, np.asarray(drug_features + gene_features))
+                    samples_batch = samples_batch.reshape([num_genes, -1])
+
+                    if use_ends_model:
+                        downregulate_count = calculate_perturbations(ends_model, samples_batch, 0, top10down, molecule_id, "down")
+                        upregulate_count = calculate_perturbations(ends_model, samples_batch, 1, top10up, molecule_id, "up")
+                    else:
+                        downregulate_count = calculate_perturbations(down_model, samples_batch, 0, top10down, molecule_id, "down")
+                        upregulate_count = calculate_perturbations(up_model, samples_batch, 1, top10up, molecule_id, "up")
+
+                    allregulate_count = downregulate_count + upregulate_count
+                    if top10all.current_size == 0 or (top10all.current_size > 0 and allregulate_count > top10all.get_lowest_key_prefix()):
+                        message = "Compound " + str(molecule_id) + " downregulates " + str(downregulate_count) + \
+                                  " genes and upregulates " + str(upregulate_count) + " genes. Total: " + str(allregulate_count)
+                        top10all.add_item(allregulate_count, message)
+                        print(datetime.datetime.now(), message)
+                    # else:
+                    #     prediction_counter = 0
+                    #     for prediction in predictions:
+                    #         down_probability = prediction[0]
+                    #         if down_probability > 0.5:
+                    #             gene_symbol = gene_id_dict[lm_gene_entrez_ids[prediction_counter % num_genes]]
+                    #             message = gene_symbol + " " + str(down_probability) + " Found compound " + str(molecule_id) \
+                    #                       + " that downregulates " + gene_symbol + " " + str(down_probability)
+                    #             if gene_symbol not in top10s:
+                    #                 top10s[gene_symbol] = Top10()
+                    #                 top10s[gene_symbol].add_item(down_probability, message)
+                    #                 print(message)
+                    #             else:
+                    #                 if down_probability > top10s[gene_symbol].get_lowest_key():
+                    #                     top10s[gene_symbol].add_item(down_probability, message)
+                    #                     print(message)
+                    #         prediction_counter += 1
+                down_counts.append(downregulate_count)
+                up_counts.append(upregulate_count)
+                all_counts.append(allregulate_count)
                 drug_counter += 1
-                continue
 
-            # if drug_counter % 100 == 0 and plot_histograms:
-            #     plot_histograms_func(down_counts, up_counts, all_counts)
+        if save_histogram_data:
+            save_list(down_counts, 'down', str(iteration))
+            save_list(up_counts, 'up', str(iteration))
+            save_list(all_counts, 'all', str(iteration))
 
-            if operation == "counter":
-                # hits / (non hits + hits + missed )
+    finally:
+        en.notify("Predicting Done")
+        plt.show()
 
-                # get the batch of samples
-                samples_batch = np.array([], dtype="f2")
-                for gene_features in over_expressed_gene_features_list:
-                    samples_batch = np.append(samples_batch, np.asarray(drug_features + gene_features))
-                samples_batch = samples_batch.reshape([num_over_genes, -1])
-                downregulate_count = calculate_perturbations(down_model, samples_batch, 0, top10down, molecule_id,
-                                                             "down", "overexpressed", over_expressed_genes)
-
-                samples_batch = np.array([], dtype="f2")
-                num_under_genes = len(under_expressed_genes)
-                for gene_id in under_expressed_genes:
-                    gene_symbol = gene_id_dict[gene_id]
-                    if gene_symbol not in gene_features_dict:
-                        continue
-                    gene_features = gene_features_dict[gene_symbol]
-                    samples_batch = np.append(samples_batch, np.asarray(drug_features + gene_features))
-                samples_batch = samples_batch.reshape([num_under_genes, -1])
-                upregulate_count = calculate_perturbations(up_model, samples_batch, 1, top10up, molecule_id,
-                                                           "up", "underexpressed", under_expressed_genes)
-                allregulate_count = downregulate_count + upregulate_count
-                if top10all.current_size == 0 or \
-                        (top10all.current_size > 0 and allregulate_count > top10all.get_lowest_key_prefix()):
-                    message = "Compound " + str(molecule_id) + " downregulates " + str(downregulate_count) + \
-                              " overexpressed genes and upregulates " + str(upregulate_count) + \
-                              " underexpressed genes. Total: " + str(allregulate_count)
-                    top10all.add_item(allregulate_count, message)
-                    print(datetime.datetime.now(), message)
-
-            elif operation == "promiscuous":
-                # get the batch of samples
-                samples_batch = np.array([], dtype="f2")
-                for gene_features in gene_features_list:
-                    samples_batch = np.append(samples_batch, np.asarray(drug_features + gene_features))
-                samples_batch = samples_batch.reshape([num_genes, -1])
-
-                if use_ends_model:
-                    downregulate_count = calculate_perturbations(ends_model, samples_batch, 0, top10down, molecule_id, "down")
-                    upregulate_count = calculate_perturbations(ends_model, samples_batch, 1, top10up, molecule_id, "up")
-                else:
-                    downregulate_count = calculate_perturbations(down_model, samples_batch, 0, top10down, molecule_id, "down")
-                    upregulate_count = calculate_perturbations(up_model, samples_batch, 1, top10up, molecule_id, "up")
-
-                allregulate_count = downregulate_count + upregulate_count
-                if top10all.current_size == 0 or (top10all.current_size > 0 and allregulate_count > top10all.get_lowest_key_prefix()):
-                    message = "Compound " + str(molecule_id) + " downregulates " + str(downregulate_count) + \
-                              " genes and upregulates " + str(upregulate_count) + " genes. Total: " + str(allregulate_count)
-                    top10all.add_item(allregulate_count, message)
-                    print(datetime.datetime.now(), message)
-                # else:
-                #     prediction_counter = 0
-                #     for prediction in predictions:
-                #         down_probability = prediction[0]
-                #         if down_probability > 0.5:
-                #             gene_symbol = gene_id_dict[lm_gene_entrez_ids[prediction_counter % num_genes]]
-                #             message = gene_symbol + " " + str(down_probability) + " Found compound " + str(molecule_id) \
-                #                       + " that downregulates " + gene_symbol + " " + str(down_probability)
-                #             if gene_symbol not in top10s:
-                #                 top10s[gene_symbol] = Top10()
-                #                 top10s[gene_symbol].add_item(down_probability, message)
-                #                 print(message)
-                #             else:
-                #                 if down_probability > top10s[gene_symbol].get_lowest_key():
-                #                     top10s[gene_symbol].add_item(down_probability, message)
-                #                     print(message)
-                #         prediction_counter += 1
-            down_counts.append(downregulate_count)
-            up_counts.append(upregulate_count)
-            all_counts.append(allregulate_count)
-            drug_counter += 1
-
-    if save_histogram_data:
-        save_list(down_counts, 'down', str(iteration))
-        save_list(up_counts, 'up', str(iteration))
-        save_list(all_counts, 'all', str(iteration))
-
-finally:
-    en.notify("Predicting Done")
-    plt.show()
+screen_compounds()
