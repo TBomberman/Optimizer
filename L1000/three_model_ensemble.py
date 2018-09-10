@@ -82,7 +82,9 @@ class ThreeModelEnsemble():
             return model
 
         self.up_model = train("Up", x, up_model_y, class_weight[2])
+        self.up_cutoff = self.up_model.maxfcutoff
         self.down_model = train("Down", x, down_model_y, class_weight[1])
+        self.down_cutoff = self.down_model.maxfcutoff
         self.stable_model = train("Stable", x, stable_model_y, class_weight[0])
 
     def evaluate(self, x=None, y=None, batch_size=None, verbose=0, sample_weight=None, steps=None):
@@ -112,7 +114,9 @@ class ThreeModelEnsemble():
 
     def predict_proba(self, x):
         y_pred_up = self.up_model.predict_proba(x)
+        y_pred_up[y_pred_up < self.up_cutoff] = 0
         y_pred_down = self.down_model.predict_proba(x)
+        y_pred_down[y_pred_down < self.down_cutoff] = 0
         y_pred_stable = self.stable_model.predict_proba(x)
         y_pred = np.concatenate((np.reshape(y_pred_stable[:,1],(-1, 1)),
                                 np.reshape(y_pred_down[:, 1], (-1, 1)),

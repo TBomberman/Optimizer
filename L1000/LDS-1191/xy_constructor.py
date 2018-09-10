@@ -24,30 +24,34 @@ evaluate_type = "use_optimizer" #"use_optimizer" "train_and_save" "test_trained"
 # target_cell_names = ['PC3', 'HT29']
 # target_cell_names = ['MCF7', 'A375']
 # target_cell_names = ['VCAP', 'A549']
-target_cell_names = ['VCAP']
-os.environ["CUDA_VISIBLE_DEVICES"] = "4"
+target_cell_names = ['HT29']
+os.environ["CUDA_VISIBLE_DEVICES"] = "7"
 direction = 'Multi' #'Down'
 save_data_to_file = False
 use_data_from_file = True
 test_blind = False
-load_data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/load_data/nogapnoblind/spearman/"
-data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/1vsall/nogapnoblind/spearman"
-gap_factors = [0.0] #, 0.6, 0.7, 0.8, 0.9]
-# gap_factors = [0.9, 0.6, 0.5, 0.2, 0.1]
-# gap_factors = [0.8, 0.7, 0.4, 0.3, 0.0]
+load_data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/load_data/5perc/"
+data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/1vsall/5perc/"
+gap_factors = [0.0]
+# gap_factors = [0.1, 0.8]
+# gap_factors = [0.2, 0.7]
+# gap_factors = [0.3, 0.6]
+# gap_factors = [0.4, 0.5]
 # class_weights = [0.01, 0.05]
-# class_weights = [0.02, 0.06, 0.09]
+# class_weights = [0.02, 0.06]
 # class_weights = [0.03, 0.07]
-class_weights = [0.03]
+# class_weights = [0.04, 0.08]
+# class_weights = [0.09]
+class_weights = [0.01]
 
 if use_data_from_file:
     for target_cell_name in target_cell_names:
         for bin in [10]:
-            for percentile_down in [10]:
+            for percentile_down in [5]:
                 for gap_factor in gap_factors:
                     for class_0_weight in class_weights:
-                        file_suffix = target_cell_name + '_' + direction + str(bin) + 'b_p' + str(percentile_down) + \
-                                      '_' + str(int(gap_factor*100)) + 'g'
+                        file_suffix = target_cell_name + '_' + direction + '_' + str(bin) + 'b_' + str(percentile_down) + \
+                                      'p_' + str(int(gap_factor*100)) + 'g'
 
                         model_file_prefix = data_folder_path + str(datetime.datetime.now()) + '_' + file_suffix + \
                                             '_' + str(int(class_0_weight*100)) + 'c'
@@ -60,7 +64,9 @@ if use_data_from_file:
 
                         try:
                             if evaluate_type == "use_optimizer":
-                                do_optimize(len(np.unique(npY_class)), npX, npY_class, model_file_prefix, class_0_weight,
+                                do_optimize(len(np.unique(npY_class)), npX, npY_class, model_file_prefix,
+                                            # None,
+                                            class_0_weight,
                                             cold_ids, labels_float=npY)
                             elif evaluate_type == "train_and_save":
                                 model = train_model(npX, npY_class)
@@ -265,7 +271,7 @@ for target_cell_name in target_cell_names:
             gene_cutoffs_down = {}
             gene_cutoffs_up = {}
             # percentile_down = 5 # for downregulation, use 95 for upregulation
-            for percentile_down in [10]:
+            for percentile_down in [5]:
                 percentile_up = 100 - percentile_down
 
                 # use_global gene_specific_cutoffs:
@@ -294,8 +300,8 @@ for target_cell_name in target_cell_names:
                         npY_class = np.zeros(len(npY), dtype=int)
 
                         for gap_factor in gap_factors:
-                            model_file_prefix = load_data_folder_path + target_cell_name + '_' + direction + \
-                                                str(bin) + 'b_p' + str(percentile_down) + '_' + \
+                            model_file_prefix = load_data_folder_path + target_cell_name + '_' + direction + '_' + \
+                                                str(bin) + 'b_' + str(percentile_down) + 'p_' + \
                                                 str(int(gap_factor * 100)) + 'g'
                             print(model_file_prefix)
                             prog_ctr = 0
@@ -361,11 +367,11 @@ for target_cell_name in target_cell_names:
                                 np.savez(model_file_prefix + "_cold_ids", cold_ids_save)
                                 np.savez(model_file_prefix + "_npY_float", npY)
 
-                            if evaluate_type == "use_optimizer":
-                                do_optimize(len(np.unique(npY_class)), npX, npY_class, model_file_prefix, 0.03, cold_ids, labels_float=npY)
-                            elif evaluate_type == "train_and_save":
-                                model = train_model(npX, npY_class)
-                                save_model(model, model_file_prefix)
+                            # if evaluate_type == "use_optimizer":
+                            #     do_optimize(len(np.unique(npY_class)), npX, npY_class, model_file_prefix, None, cold_ids, labels_float=npY)
+                            # elif evaluate_type == "train_and_save":
+                            #     model = train_model(npX, npY_class)
+                            #     save_model(model, model_file_prefix)
                             # elif evaluate_type == "test_trained":
                             #     evaluate(len(np.unique(npY_class)), npX, npY_class, model_file_prefix)
 

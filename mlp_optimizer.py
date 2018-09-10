@@ -42,7 +42,7 @@ def save_model(model, file_prefix):
     model.save_weights(file_prefix + ".h5")
     print("Saved model", file_prefix)
 
-def do_optimize(nb_classes, data, labels, model_file_prefix=None):
+def do_optimize(nb_classes, data, labels, model_file_prefix=None, pos_class_weight=None):
     rtn_model = None
     n = len(labels)
     d = data.shape[1]
@@ -101,8 +101,8 @@ def do_optimize(nb_classes, data, labels, model_file_prefix=None):
         class_weight = { 1: pos_class_weight, 0: 1-pos_class_weight}
 
         model.fit(X_train, Y_train, batch_size=batch_size, epochs=nb_epoch,
-                  verbose=0, validation_data=(X_test, Y_test), callbacks=[history, early_stopping, out_epoch],
-                  class_weight=class_weight)
+                  verbose=0, validation_data=(X_test, Y_test), callbacks=[history, early_stopping, out_epoch])
+                  # , class_weight=class_weight)
         # save_model(model, model_file_prefix)
         score = model.evaluate(X_test, Y_test, verbose=0)
 
@@ -124,6 +124,8 @@ def do_optimize(nb_classes, data, labels, model_file_prefix=None):
             # print('All stats val:', ['{:6.3f}'.format(val) for val in val_stats])
             print('Total:', ['{:6.3f}'.format(val) for val in [train_stats[0] + test_stats[0]]])# + val_stats[0]]])
 
+        maxfcutoff = 0
+
         if nb_classes > 2:
             for class_index in range(0, nb_classes):
                 print('class', class_index, 'stats')
@@ -136,6 +138,7 @@ def do_optimize(nb_classes, data, labels, model_file_prefix=None):
             # val_stats = all_stats(Y_val[:, 1], y_pred_val[:, 1] )
             test_stats = all_stats(Y_test[:, 1], y_pred_test[:, 1])#, val_stats[-1])
             print_stats(train_stats, test_stats)#, val_stats)
+            model.maxfcutoff = test_stats[5]
         else:
             train_stats = all_stats(Y_train, y_pred_train)
             # val_stats = all_stats(Y_val, y_pred_val)
