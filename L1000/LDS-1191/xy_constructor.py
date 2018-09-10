@@ -24,14 +24,14 @@ evaluate_type = "use_optimizer" #"use_optimizer" "train_and_save" "test_trained"
 # target_cell_names = ['PC3', 'HT29']
 # target_cell_names = ['MCF7', 'A375']
 # target_cell_names = ['VCAP', 'A549']
-target_cell_names = ['VCAP']
+target_cell_names = ['HT29']
 os.environ["CUDA_VISIBLE_DEVICES"] = "4"
 direction = 'Multi' #'Down'
 save_data_to_file = False
 use_data_from_file = True
 test_blind = False
-load_data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/load_data/nogapnoblind/spearman/"
-data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/1vsall/nogapnoblind/spearman"
+load_data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/load_data/spearman/"
+data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/1vsall/standardized_prob_"
 gap_factors = [0.0] #, 0.6, 0.7, 0.8, 0.9]
 # gap_factors = [0.9, 0.6, 0.5, 0.2, 0.1]
 # gap_factors = [0.8, 0.7, 0.4, 0.3, 0.0]
@@ -361,11 +361,11 @@ for target_cell_name in target_cell_names:
                                 np.savez(model_file_prefix + "_cold_ids", cold_ids_save)
                                 np.savez(model_file_prefix + "_npY_float", npY)
 
-                            if evaluate_type == "use_optimizer":
-                                do_optimize(len(np.unique(npY_class)), npX, npY_class, model_file_prefix, 0.03, cold_ids, labels_float=npY)
-                            elif evaluate_type == "train_and_save":
-                                model = train_model(npX, npY_class)
-                                save_model(model, model_file_prefix)
+                            # if evaluate_type == "use_optimizer":
+                            #     do_optimize(len(np.unique(npY_class)), npX, npY_class, model_file_prefix, None, cold_ids, labels_float=npY)
+                            # elif evaluate_type == "train_and_save":
+                            #     model = train_model(npX, npY_class)
+                            #     save_model(model, model_file_prefix)
                             # elif evaluate_type == "test_trained":
                             #     evaluate(len(np.unique(npY_class)), npX, npY_class, model_file_prefix)
 

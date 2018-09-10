@@ -12,6 +12,7 @@ from sklearn.model_selection import train_test_split
 from mlp_optimizer import do_optimize
 import sklearn.metrics as metrics
 from keras.utils import np_utils
+from sklearn import preprocessing
 
 class ThreeModelEnsemble():
 
@@ -112,10 +113,17 @@ class ThreeModelEnsemble():
 
     def predict_proba(self, x):
         y_pred_up = self.up_model.predict_proba(x)
+        y_pred_up = preprocessing.scale(y_pred_up)
+
         y_pred_down = self.down_model.predict_proba(x)
+        y_pred_down = preprocessing.scale(y_pred_down)
+
         y_pred_stable = self.stable_model.predict_proba(x)
+        y_pred_stable = preprocessing.scale(y_pred_stable)
+
         y_pred = np.concatenate((np.reshape(y_pred_stable[:,1],(-1, 1)),
                                 np.reshape(y_pred_down[:, 1], (-1, 1)),
                                 np.reshape(y_pred_up[:, 1], (-1, 1))), axis=1)
+        y_pred = np.argmax(y_pred, axis=1)
         return y_pred
 

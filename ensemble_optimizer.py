@@ -13,7 +13,7 @@ use_fit = True
 load_data = False
 save_data = False
 
-def do_optimize(nb_classes, data, labels, model_file_prefix=None, class_0_weight=0.03, cold_ids=None, labels_float=None):
+def do_optimize(nb_classes, data, labels, model_file_prefix=None, class_0_weight=None, cold_ids=None, labels_float=None):
     n = len(labels)
     labels = np_utils.to_categorical(labels, nb_classes)
     unique_cold_ids = np.unique(cold_ids)
@@ -49,12 +49,15 @@ def do_optimize(nb_classes, data, labels, model_file_prefix=None, class_0_weight
     #         wrong += 1
 
     model = ThreeModelEnsemble(saved_models_path=model_file_prefix + '_ensemble_models/', patience=5)
-    class_1_weight = (1-class_0_weight)/2
-    class_weight = {
-        0: class_0_weight,
-        1: class_1_weight,
-        2: class_1_weight
-    }
+    if class_0_weight is None:
+        class_weight = None
+    else:
+        class_1_weight = (1-class_0_weight)/2
+        class_weight = {
+            0: class_0_weight,
+            1: class_1_weight,
+            2: class_1_weight
+        }
     if use_fit:
         model.fit(X_train, Y_train, validation_data=(X_test, Y_test), class_weight=class_weight)
 

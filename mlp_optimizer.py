@@ -42,7 +42,7 @@ def save_model(model, file_prefix):
     model.save_weights(file_prefix + ".h5")
     print("Saved model", file_prefix)
 
-def do_optimize(nb_classes, data, labels, model_file_prefix=None):
+def do_optimize(nb_classes, data, labels, model_file_prefix=None, pos_class_weight=None):
     rtn_model = None
     n = len(labels)
     d = data.shape[1]
