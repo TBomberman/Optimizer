@@ -82,9 +82,14 @@ class ThreeModelEnsemble():
                 self.save_model(model, file_prefix)
             return model
 
-        self.up_model = train("Up", x, up_model_y, class_weight[2])
-        self.down_model = train("Down", x, down_model_y, class_weight[1])
-        self.stable_model = train("Stable", x, stable_model_y, class_weight[0])
+        if class_weight == None:
+            self.up_model = train("Up", x, up_model_y, pos_class_weight=None)
+            self.down_model = train("Down", x, down_model_y, pos_class_weight=None)
+            self.stable_model = train("Stable", x, stable_model_y, pos_class_weight=None)
+        else:
+            self.up_model = train("Up", x, up_model_y, class_weight[2])
+            self.down_model = train("Down", x, down_model_y, class_weight[1])
+            self.stable_model = train("Stable", x, stable_model_y, class_weight[0])
 
     def evaluate(self, x=None, y=None, batch_size=None, verbose=0, sample_weight=None, steps=None):
         up_model_y = y[:, 2]
@@ -124,6 +129,5 @@ class ThreeModelEnsemble():
         y_pred = np.concatenate((np.reshape(y_pred_stable[:,1],(-1, 1)),
                                 np.reshape(y_pred_down[:, 1], (-1, 1)),
                                 np.reshape(y_pred_up[:, 1], (-1, 1))), axis=1)
-        y_pred = np.argmax(y_pred, axis=1)
         return y_pred
 
