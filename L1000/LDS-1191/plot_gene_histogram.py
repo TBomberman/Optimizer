@@ -137,6 +137,24 @@ def plot_normal():
     plt.title("3 Class Thresholds")
     plt.show()
 
+def get_concentration_data_for_histogram():
+    csv = load_csv("/data/datasets/gwoo/L1000/LDS-1191/Metadata/GSE92742_Broad_LINCS_inst_info.csv")
+    doses = []
+    for row in csv:
+        dose_unit = row[7]
+        if dose_unit != 'um':
+            continue
+        doses.append(float(row[6]))
+
+    # plt.title('Histogram of Doses')
+    axes = plt.gca()
+    axes.set_xlim([0, 15])
+    plt.ylabel('Count')
+    plt.xlabel('Drug Concentrations (µM)')
+    plt.hist(doses, bins=2000)
+    plt.show()
+
 # get_drug_counts_per_cell_line()
 # get_stats()
-plot_normal()
+# plot_normal()
+get_concentration_data_for_histogram()
