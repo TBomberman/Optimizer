@@ -46,8 +46,8 @@ if use_data_from_file:
             for percentile_down in [10]:
                 for gap_factor in gap_factors:
                     for class_0_weight in class_weights:
-                        file_suffix = target_cell_name + '_' + direction + str(bin) + 'b_p' + str(percentile_down) + \
-                                      '_' + str(int(gap_factor*100)) + 'g'
+                        file_suffix = target_cell_name + '_' + direction + str(bin) + 'b_' + str(percentile_down) + \
+                                      'p_' + str(int(gap_factor*100)) + 'g'
 
                         model_file_prefix = data_folder_path + str(datetime.datetime.now()) + '_' + file_suffix + \
                                             '_' + str(int(class_0_weight*100)) + 'c'
@@ -295,7 +295,7 @@ for target_cell_name in target_cell_names:
 
                         for gap_factor in gap_factors:
                             model_file_prefix = load_data_folder_path + target_cell_name + '_' + direction + \
-                                                str(bin) + 'b_p' + str(percentile_down) + '_' + \
+                                                str(bin) + 'b_' + str(percentile_down) + 'p_' + \
                                                 str(int(gap_factor * 100)) + 'g'
                             print(model_file_prefix)
                             prog_ctr = 0
@@ -310,6 +310,7 @@ for target_cell_name in target_cell_names:
                                 up_threshold = class_cut_off_up # + abs(gap_factor * class_cut_off_up)
                                 mid_threshold_bottom = class_cut_off_down + abs(gap_factor * class_cut_off_down)
                                 mid_threshold_top = class_cut_off_up - abs(gap_factor * class_cut_off_up)
+                                # print("gene", gene_id, "down", down_threshold, "mid bottom", mid_threshold_bottom, "mid top", mid_threshold_top, "up", up_threshold)
                                 down_locations = np.where(npY <= down_threshold)
                                 up_locations = np.where(npY >= up_threshold)
                                 mid_locations = np.where((npY > mid_threshold_bottom) & (npY < mid_threshold_top))
@@ -337,12 +338,17 @@ for target_cell_name in target_cell_names:
                                     combined_locations += mid_locations
                                     npY_class[gene_up_locations] = 2
                                     npY_class[gene_down_locations] = 1
+                                    # print(len(gene_down_locations), "samples below", down_threshold)
+                                    # print(len(mid_locations), "samples between", mid_threshold_bottom, "and", mid_threshold_top)
+                                    # print(len(gene_up_locations), "samples below", up_threshold)
+                                    # print("down samples", len(gene_down_locations), "up samples", len(gene_up_locations), "mid samples", len(mid_locations))
+                            # print("total samples", len(combined_locations))
 
                             if direction == 'Both' or direction == 'Multi':
-                                npX = npX[combined_locations]
+                                npX_save = npX[combined_locations]
                                 cold_ids_save = [cold_ids[ci] for ci in combined_locations]
                                 npY_class_save = npY_class[combined_locations]
-                                npY = npY[combined_locations]
+                                npY_save = npY[combined_locations]
                             print("Evaluating cell line", cell_line_counter, cell_name, "(Percentile ends:", percentile_down, ")")
 
                             sample_size = len(npY_class_save)
@@ -356,10 +362,10 @@ for target_cell_name in target_cell_names:
                             print("Sample Size:", sample_size, "Drugs tested:", num_drugs / gene_count_data_limit)
 
                             if save_data_to_file:
-                                np.savez(model_file_prefix + "_npX", npX)
+                                np.savez(model_file_prefix + "_npX", npX_save)
                                 np.savez(model_file_prefix + "_npY_class", npY_class_save)
                                 np.savez(model_file_prefix + "_cold_ids", cold_ids_save)
-                                np.savez(model_file_prefix + "_npY_float", npY)
+                                np.savez(model_file_prefix + "_npY_float", npY_save)
 
                             # if evaluate_type == "use_optimizer":
                             #     do_optimize(len(np.unique(npY_class)), npX, npY_class, model_file_prefix, None, cold_ids, labels_float=npY)
