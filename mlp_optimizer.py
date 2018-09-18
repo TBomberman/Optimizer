@@ -13,6 +13,7 @@ import keras_enums as enums
 from helpers.utilities import all_stats, scatter2D_plot
 from helpers.callbacks import NEpochLogger
 from keras.utils import plot_model
+import datetime
 
 # local variables
 dropout = 0.2
@@ -22,7 +23,7 @@ nb_epoch = 10000 #1000 cutoff 1 #3000 cutoff  2 and
 regularizer = l1 # l1 beats the other 2
 lammy = 0
 use_plot = False
-train_percentage = 0.7
+train_percentage = 0.85
 patience = 5
 
 # uncomment this to disable regularizer
@@ -102,7 +103,7 @@ def do_optimize(nb_classes, data, labels, model_file_prefix=None, pos_class_weig
 
         model.fit(X_train, Y_train, batch_size=batch_size, epochs=nb_epoch,
                   verbose=0, validation_data=(X_test, Y_test), callbacks=[history, early_stopping, out_epoch],
-                  class_weight=class_weight)
+                  class_weight='auto')
         # save_model(model, model_file_prefix)
         score = model.evaluate(X_test, Y_test, verbose=0)
 
@@ -124,6 +125,13 @@ def do_optimize(nb_classes, data, labels, model_file_prefix=None, pos_class_weig
             # print('All stats val:', ['{:6.3f}'.format(val) for val in val_stats])
             print('Total:', ['{:6.3f}'.format(val) for val in [train_stats[0] + test_stats[0]]])# + val_stats[0]]])
 
+        def save(ytrue, ypred):
+            data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/1vsall/"
+            prefix = str(datetime.datetime.now())
+            print("saving", data_folder_path + prefix)
+            np.savez(data_folder_path + prefix + "_pred", ypred)
+            np.savez(data_folder_path + prefix + "_true", ytrue)
+
         if nb_classes > 2:
             for class_index in range(0, nb_classes):
                 print('class', class_index, 'stats')
@@ -134,6 +142,7 @@ def do_optimize(nb_classes, data, labels, model_file_prefix=None, pos_class_weig
         elif nb_classes == 2:
             train_stats = all_stats(Y_train[:, 1], y_pred_train[:, 1])
             # val_stats = all_stats(Y_val[:, 1], y_pred_val[:, 1] )
+            save(Y_test[:, 1], y_pred_test[:, 1])
             test_stats = all_stats(Y_test[:, 1], y_pred_test[:, 1])#, val_stats[-1])
             print_stats(train_stats, test_stats)#, val_stats)
         else:

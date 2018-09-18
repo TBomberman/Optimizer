@@ -30,23 +30,22 @@ direction = 'Multi' #'Down'
 save_data_to_file = False
 use_data_from_file = True
 test_blind = False
-load_data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/load_data/spearman/"
-data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/1vsall/standardized_prob_"
-gap_factors = [0.0] #, 0.6, 0.7, 0.8, 0.9]
-# gap_factors = [0.9, 0.6, 0.5, 0.2, 0.1]
-# gap_factors = [0.8, 0.7, 0.4, 0.3, 0.0]
-# class_weights = [0.01, 0.05]
-# class_weights = [0.02, 0.06, 0.09]
-# class_weights = [0.03, 0.07]
-class_weights = [0.03]
-
+load_data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/load_data/10pBlindGapFixed/"
+data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/1vsall/"
+# gap_factors = [0.8, 0.6, 0.4, 0.2, 0.0]
+# gap_factors = [0.2, 0.3] #, 0.6, 0.4, 0.2, 0.0]
+# gap_factors = [0.1, 0.2, 0.3, 0.4, 0.6, 0.9]
+gap_factors = [0.1]
+# class_weights = [0.01, 0.03, 0.05, 0.1, 0.15]
+percentiles = [10]
+class_weights = [0.01]
 if use_data_from_file:
     for target_cell_name in target_cell_names:
         for bin in [10]:
-            for percentile_down in [10]:
+            for percentile_down in percentiles:
                 for gap_factor in gap_factors:
                     for class_0_weight in class_weights:
-                        file_suffix = target_cell_name + '_' + direction + str(bin) + 'b_' + str(percentile_down) + \
+                        file_suffix = target_cell_name + '_' + direction + '_' + str(bin) + 'b_' + str(percentile_down) + \
                                       'p_' + str(int(gap_factor*100)) + 'g'
 
                         model_file_prefix = data_folder_path + str(datetime.datetime.now()) + '_' + file_suffix + \
@@ -57,11 +56,14 @@ if use_data_from_file:
                         npY_class = np.load(load_data_folder_path + file_suffix + "_npY_class.npz")['arr_0']
                         cold_ids = np.load(load_data_folder_path + file_suffix + "_cold_ids.npz")['arr_0']
                         npY = np.load(load_data_folder_path + file_suffix + "_npY_float.npz")['arr_0']
+                        test_npX = np.load(load_data_folder_path + file_suffix + "_test_npX.npz")['arr_0']
+                        test_npY_class = np.load(load_data_folder_path + file_suffix + "_test_npY_class.npz")['arr_0']
+                        test_npY_float = np.load(load_data_folder_path + file_suffix + "_test_npY_float.npz")['arr_0']
 
                         try:
                             if evaluate_type == "use_optimizer":
                                 do_optimize(len(np.unique(npY_class)), npX, npY_class, model_file_prefix, class_0_weight,
-                                            cold_ids, labels_float=npY)
+                                            cold_ids, labels_float=npY, test_data=[test_npX, test_npY_class, test_npY_float])
                             elif evaluate_type == "train_and_save":
                                 model = train_model(npX, npY_class)
                                 save_model(model, model_file_prefix)
@@ -106,7 +108,7 @@ experiments_dose_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/Met
 # set 1000 blind maccs keys aside
 import os.path
 print('remove blind drugs for validation')
-blind_drugs_filename = 'blind_drugs.txt'
+blind_drugs_filename = 'LDS-1191/data/blind_drugs.csv'
 if os.path.isfile(blind_drugs_filename):
     blind_drugs_keys = load_csv(blind_drugs_filename)
 else:
@@ -120,18 +122,17 @@ else:
         blind_drugs_file.write("%s\n" % key)
         blind_drugs_keys.append([key])
 
-# if test_blind:
-#     keys_to_remove = []
-#     for key in drug_features_dict.keys():
-#         if [key] in blind_drugs_keys:
-#             continue
-#         keys_to_remove.append(key)
-#     for key in keys_to_remove:
-#         drug_features_dict.pop(key, None)
-# else:
-#     for key in blind_drugs_keys:
-#         drug_features_dict.pop(key[0], None)
-#     drug_features_dict.pop("BRD-K56851771", None)
+if test_blind:
+    keys_to_remove = []
+    for key in drug_features_dict.keys():
+        if [key] in blind_drugs_keys:
+            continue
+        keys_to_remove.append(key)
+    for key in keys_to_remove:
+        drug_features_dict.pop(key, None)
+else:
+    for key in blind_drugs_keys:
+        drug_features_dict.pop(key[0], None)
 
 # getting the gene ids
 gene_id_dict = get_gene_id_dict()
@@ -147,7 +148,7 @@ print("Loading gene expressions from gctx")
 level_5_gctoo = load_gene_expression_data("/home/gwoo/Data/L1000/LDS-1191/Data/GSE92742_Broad_LINCS_Level5_COMPZ.MODZ_n473647x12328.gctx", lm_gene_entrez_ids)
 
 length = len(level_5_gctoo.col_metadata_df.index)
-# length = 15000
+# length = 10000
 
 # for target_cell_name in ['VCAP', 'HCC515', 'A549', 'HEPG2', 'MCF7', 'HEK293T', 'HT29', 'A375', 'HA1E', 'THP1', 'BT20', 'U937',
 #                          'MCF10A', 'HUH7', 'NKDBA', 'NOMO1', 'JURKAT', 'SKBR3', 'HS578T', 'MDAMB231']:
@@ -246,7 +247,10 @@ for target_cell_name in target_cell_names:
                         cell_drugs_counts[cell_id] = 0
                         cell_Y_gene_ids[cell_id] = []
 
+                    updated = False
                     # repeat_X[repeat_key] = pert_conc_ratio
+                    if repeat_key in repeat_X:
+                        updated = True
                     repeat_X[repeat_key] = abspert
 
                     if gene_count_data_limit > 1:
@@ -256,8 +260,9 @@ for target_cell_name in target_cell_names:
                         cell_X[cell_id][repeat_key] = drug_features
                         cell_cold_ids[cell_id][repeat_key] = drug_id
                     cell_Y[cell_id][repeat_key] = pert
-                    cell_Y_gene_ids[cell_id].append(gene_id)
-                    cell_drugs_counts[cell_id] += 1
+                    if not updated:
+                        cell_Y_gene_ids[cell_id].append(gene_id)
+                        cell_drugs_counts[cell_id] += 1
 
             elapsed_time = time.time() - start_time
             print(datetime.datetime.now(), "Time to load data:", elapsed_time)
@@ -265,7 +270,7 @@ for target_cell_name in target_cell_names:
             gene_cutoffs_down = {}
             gene_cutoffs_up = {}
             # percentile_down = 5 # for downregulation, use 95 for upregulation
-            for percentile_down in [10]:
+            for percentile_down in percentiles:
                 percentile_up = 100 - percentile_down
 
                 # use_global gene_specific_cutoffs:
@@ -294,18 +299,21 @@ for target_cell_name in target_cell_names:
                         npY_class = np.zeros(len(npY), dtype=int)
 
                         for gap_factor in gap_factors:
-                            model_file_prefix = load_data_folder_path + target_cell_name + '_' + direction + \
+                            model_file_prefix = load_data_folder_path + target_cell_name + '_' + direction + '_' + \
                                                 str(bin) + 'b_' + str(percentile_down) + 'p_' + \
                                                 str(int(gap_factor * 100)) + 'g'
                             print(model_file_prefix)
                             prog_ctr = 0
                             combined_locations = []
+                            combined_test_locations = []
                             for gene_id in lm_gene_entrez_ids: # this section is for gene specific class cutoffs
                                 prog_ctr += 1
                                 printProgressBar(prog_ctr, gene_count_data_limit, prefix='Marking positive pertubations')
                                 class_cut_off_down = gene_cutoffs_down[gene_id]
                                 class_cut_off_up = gene_cutoffs_up[gene_id]
                                 gene_locations = np.where(npY_gene_ids == gene_id)
+                                dummy, gene_test_locations = train_test_split(gene_locations[0], train_size=0.85,
+                                                                                       test_size=0.15, shuffle=False)
                                 down_threshold = class_cut_off_down # - abs(gap_factor * class_cut_off_down)
                                 up_threshold = class_cut_off_up # + abs(gap_factor * class_cut_off_up)
                                 mid_threshold_bottom = class_cut_off_down + abs(gap_factor * class_cut_off_down)
@@ -338,6 +346,7 @@ for target_cell_name in target_cell_names:
                                     combined_locations += mid_locations
                                     npY_class[gene_up_locations] = 2
                                     npY_class[gene_down_locations] = 1
+                                    combined_test_locations += gene_test_locations.tolist()
                                     # print(len(gene_down_locations), "samples below", down_threshold)
                                     # print(len(mid_locations), "samples between", mid_threshold_bottom, "and", mid_threshold_top)
                                     # print(len(gene_up_locations), "samples below", up_threshold)
@@ -349,6 +358,9 @@ for target_cell_name in target_cell_names:
                                 cold_ids_save = [cold_ids[ci] for ci in combined_locations]
                                 npY_class_save = npY_class[combined_locations]
                                 npY_save = npY[combined_locations]
+                                test_npX_save = npX[combined_test_locations]
+                                test_npY_class_save = npY_class[combined_test_locations]
+                                test_npY_save = npY[combined_test_locations]
                             print("Evaluating cell line", cell_line_counter, cell_name, "(Percentile ends:", percentile_down, ")")
 
                             sample_size = len(npY_class_save)
@@ -366,6 +378,9 @@ for target_cell_name in target_cell_names:
                                 np.savez(model_file_prefix + "_npY_class", npY_class_save)
                                 np.savez(model_file_prefix + "_cold_ids", cold_ids_save)
                                 np.savez(model_file_prefix + "_npY_float", npY_save)
+                                np.savez(model_file_prefix + "_test_npX", test_npX_save)
+                                np.savez(model_file_prefix + "_test_npY_class", test_npY_class_save)
+                                np.savez(model_file_prefix + "_test_npY_float", test_npY_save)
 
                             # if evaluate_type == "use_optimizer":
                             #     do_optimize(len(np.unique(npY_class)), npX, npY_class, model_file_prefix, None, cold_ids, labels_float=npY)
