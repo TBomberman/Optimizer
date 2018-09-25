@@ -25,8 +25,14 @@ for sublist in lm_gene_entrez_ids_list :
 # lm_gene_entrez_ids = ['2778']
 level_5_gctoo = load_gene_expression_data("/home/gwoo/Data/L1000/LDS-1191/Data/GSE92742_Broad_LINCS_Level5_COMPZ.MODZ_n473647x12328.gctx", lm_gene_entrez_ids)
 
+def find_nth(haystack, needle, n):
+    start = haystack.find(needle)
+    while start >= 0 and n > 1:
+        start = haystack.find(needle, start+len(needle))
+        n -= 1
+    return start
 
-def get_all_perts():
+def get_all_perts(target_cell_name=None):
     length = len(level_5_gctoo.col_metadata_df.index)
     # length = 10
     one_gene_expression_values = []
@@ -35,23 +41,33 @@ def get_all_perts():
     for i in range(length):
         printProgressBar(i, length, prefix='Load experiments progress')
         col_name = level_5_gctoo.col_metadata_df.index[i]
+
+        # parse the cell name
+        start = find_nth(col_name, "_", 1)
+        end = find_nth(col_name, "_", 2)
+        cell_name = col_name[start + 1:end]
+        if cell_name != target_cell_name & target_cell_name != None:
+            continue
+
         column = level_5_gctoo.data_df[col_name]
         for gene_id in lm_gene_entrez_ids:
             one_gene_expression_values.append(column[gene_id])
     return one_gene_expression_values
 
 def get_stats():
-    values = get_all_perts()
-    min = np.min(values)
-    max = np.max(values)
-    mean = np.mean(values)
-    median = np.median(values)
-    std = np.std(values)
-    print('min', min)
-    print('max', max)
-    print('mean', mean)
-    print('median', median)
-    print('std', std)
+    for cell in ['A549']: #, 'MCF7', 'HT29', 'A375', 'VCAP', 'A549']:
+        print(cell)
+        values = get_all_perts(cell)
+        min = np.min(values)
+        max = np.max(values)
+        mean = np.mean(values)
+        median = np.median(values)
+        std = np.std(values)
+        print('min', min)
+        print('max', max)
+        print('mean', mean)
+        print('median', median)
+        print('std', std)
 
     q5 = np.percentile(values, 5)
     q10 = np.percentile(values, 10)
@@ -113,15 +129,13 @@ def get_drug_counts_per_cell_line():
             continue
 
         if cell_name not in cell_line_perts:
-            cell_line_perts[cell_name] = {}
+            cell_line_perts[cell_name] = []
 
-        # for gene_id in lm_gene_entrez_ids:
-        if drug_id not in cell_line_perts[cell_name]:
-            cell_line_perts[cell_name][drug_id] = 1
-        # cell_line_perts[cell_name][drug_id] += 1
+        cell_line_perts[cell_name].append(drug_id)
 
     for cell_name in cell_line_perts:
-        print(cell_name, 'drug count', len(cell_line_perts[cell_name]))
+        length = len(list(set(cell_line_perts[cell_name])))
+        print(cell_name, 'drug count', length)
 
 def plot_normal():
     import matplotlib.pyplot as plt
@@ -157,4 +171,4 @@ def get_concentration_data_for_histogram():
 # get_drug_counts_per_cell_line()
 # get_stats()
 # plot_normal()
-get_concentration_data_for_histogram()
+# get_concentration_data_for_histogram()

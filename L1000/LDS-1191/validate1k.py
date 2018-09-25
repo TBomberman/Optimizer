@@ -219,4 +219,9 @@ def check_class_dist():
     print("1", np.sum(test_classes[:, 1]))
     print("2", np.sum(test_classes[:, 2]))
 
-check_class_dist()
+def validate_landmark():
+    gene_id_dict = get_gene_id_dict()
+    for entry in gene_id_dict:
+        print(entry)
+
+validate_landmark()

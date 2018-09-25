@@ -1,0 +1,15 @@
+[
+{
+"entrez_id": "367",
+"gene_symbol": "AR",
+"gene_name": "androgen receptor",
+"gene_family": [
+"Nuclear hormone receptors"
+],
+"l1000_type": "best inferred",
+"rna_seq_corr_fraction_self_rank": 0,
+"rna_seq_corr": 0.62,
+"rna_seq_corr_p_value": 0,
+"id": "58e2bfc2bd21ee32a42831ae"
+}
+]

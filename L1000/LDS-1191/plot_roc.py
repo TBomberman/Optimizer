@@ -21,12 +21,17 @@ def plot_multi_class_roc(filenames):
     # Plot all ROC curves
     plt.figure()
 
+    class_names = {
+        0: "No Regulation",
+        1: "Downregulation",
+        2: "Upregulation"
+    }
     # plot them
     colors = cycle(['aqua', 'darkorange', 'cornflowerblue'])
     for i, color in zip(range(n_classes), colors):
         plt.plot(fpr[i], tpr[i], color=color, lw=2,
-                 label='ROC curve of class {0} (area = {1:0.2f})'
-                 ''.format(i, roc_auc[i]))
+                 label='ROC curve of {0} (area = {1:0.2f})'
+                 ''.format(class_names[i], roc_auc[i]))
 
     # 'k--' is the black dashed line, lw = line width
     plt.plot([0, 1], [0, 1], 'k--', lw=2)
@@ -44,7 +49,6 @@ filenames = {}
 filenames[0] = "2018-09-18 05:01:02.533051"
 filenames[1] = "2018-09-18 04:18:07.858064"
 filenames[2] = "2018-09-18 03:03:10.649133"
-plot_multi_class_roc(filenames)
 
 def check_active_index():
     path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/load_data/10pBlindGapFixed/"
@@ -62,3 +66,18 @@ def check_active_index():
     # turns out that it's ordered by 0 is index 0 and 1 is index 1
 
 # check_active_index()
+
+def show_non_duplicates():
+    from L1000.data_loader import get_feature_dict, load_csv
+    path = "/data/datasets/gwoo/L1000/LDS-1191/Metadata/"
+    filename = "Small_Molecule_Metadata.txt"
+    csv = load_csv(path + filename)
+    items = []
+    for row in csv:
+        items.append(row[8].strip())
+    unique_list = list(set(items))
+    for item in unique_list:
+        print(item)
+
+# plot_multi_class_roc(filenames)
+# show_non_duplicates()
