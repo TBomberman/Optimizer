@@ -14,6 +14,7 @@ from helpers.utilities import all_stats, scatter2D_plot
 from helpers.callbacks import NEpochLogger
 from keras.utils import plot_model
 import datetime
+import sklearn.metrics as metrics
 
 # local variables
 dropout = 0.2
@@ -43,7 +44,9 @@ def save_model(model, file_prefix):
     model.save_weights(file_prefix + ".h5")
     print("Saved model", file_prefix)
 
-def do_optimize(nb_classes, data, labels, model_file_prefix=None, pos_class_weight=None):
+def do_optimize(nb_classes, data, labels, model_file_prefix=None, pos_class_weight=None, cold_ids=None,
+                labels_float=None, test_data=None):
+
     rtn_model = None
     n = len(labels)
     d = data.shape[1]
@@ -53,11 +56,22 @@ def do_optimize(nb_classes, data, labels, model_file_prefix=None, pos_class_weig
     train_size = int(train_percentage * n)
     print("Train size:", train_size)
     test_size = int((1-train_percentage) * n)
-    X_train, X_test, y_train, y_test = train_test_split(data, labels, train_size=train_size, test_size=test_size)
+    X_train, X_val, y_train, y_val = train_test_split(data, labels, train_size=train_size, test_size=test_size)
     # X_val, X_test, y_val, y_test = train_test_split(X_test, y_test, train_size=0.5, test_size=0.5)
     Y_train = y_train
-    Y_test = y_test
-    # Y_val = y_val
+    # Y_test = y_test
+    Y_val = y_val
+    Y_test = test_data[1]
+    Y_test = np_utils.to_categorical(Y_test, nb_classes)
+    X_test = test_data[0]
+
+    load_data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/load_data/blind/"
+    split = model_file_prefix.split("/")
+    split = split[len(split) - 1].split("_")
+    target_cell_name = split[1]
+    X_cold = np.load(load_data_folder_path + target_cell_name + "_npX.npz")['arr_0']
+    Y_cold = np.load(load_data_folder_path + target_cell_name + "_npY_class.npz")['arr_0']
+    Y_cold = np_utils.to_categorical(Y_cold, nb_classes)
 
     # for hyperparam in range(4, 7):
     for hyperparam in [1]:
@@ -102,7 +116,7 @@ def do_optimize(nb_classes, data, labels, model_file_prefix=None, pos_class_weig
         class_weight = { 1: pos_class_weight, 0: 1-pos_class_weight}
 
         model.fit(X_train, Y_train, batch_size=batch_size, epochs=nb_epoch,
-                  verbose=0, validation_data=(X_test, Y_test), callbacks=[history, early_stopping, out_epoch],
+                  verbose=0, validation_data=(X_val, Y_val), callbacks=[history, early_stopping, out_epoch],
                   class_weight='auto')
         # save_model(model, model_file_prefix)
         score = model.evaluate(X_test, Y_test, verbose=0)
@@ -111,18 +125,27 @@ def do_optimize(nb_classes, data, labels, model_file_prefix=None, pos_class_weig
         print('Test accuracy:', score[1])
         print("metrics", model.metrics_names)
 
+        score = model.evaluate(X_cold, Y_cold)
+        print('Blind Test score:', score[0])
+        print('Blind Test accuracy:', score[1])
+
         y_pred_train = model.predict_proba(X_train)
         y_pred_test = model.predict_proba(X_test)
         # y_pred_val = model.predict_proba(X_val)
+        y_pred_cold = model.predict_proba(X_cold)
 
-        def print_stats(train_stats, test_stats): #, val_stats):
+        # y_pred_train = np.argmax(y_pred_train, axis=1)
+        # y_pred_test = np.argmax(y_pred_test, axis=1)
+        # y_pred_cold = np.argmax(y_pred_cold, axis=1)
+
+        def print_stats(train_stats, test_stats, blind_stats):
             print_out = 'Hidden layers: %s, Neurons per layer: %s, Hyperparam: %s' % (
             layer_count + 1, neuron_count, hyperparam)
             print(print_out)
             print('All stats columns | AUC | Recall | Specificity | Number of Samples | Precision | Max F Cutoff')
             print('All stats train:', ['{:6.3f}'.format(val) for val in train_stats])
             print('All stats test:', ['{:6.3f}'.format(val) for val in test_stats])
-            # print('All stats val:', ['{:6.3f}'.format(val) for val in val_stats])
+            print('All stats blind:', ['{:6.3f}'.format(val) for val in blind_stats])
             print('Total:', ['{:6.3f}'.format(val) for val in [train_stats[0] + test_stats[0]]])# + val_stats[0]]])
 
         def save(ytrue, ypred):
@@ -132,13 +155,32 @@ def do_optimize(nb_classes, data, labels, model_file_prefix=None, pos_class_weig
             np.savez(data_folder_path + prefix + "_pred", ypred)
             np.savez(data_folder_path + prefix + "_true", ytrue)
 
+        def print_acc(text, Y_train, y_pred_train):
+            y_pred = np.argmax(y_pred_train, axis=1)
+            y_true = np.argmax(Y_train, axis=1)
+            target_names = [0, 1, 2]
+            cm = metrics.confusion_matrix(y_true, y_pred, labels=target_names)
+            cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+            accs = cm.diagonal()
+            print(text, "Accuracy class 0", accs[0])
+            print(text, "Accuracy class 1", accs[1])
+            print(text, "Accuracy class 2", accs[2])
+
+            report = metrics.classification_report(y_true, y_pred)
+            print("Report", report)
+
         if nb_classes > 2:
+            print_acc("Train", Y_train, y_pred_train)
+            print_acc("Test", Y_test, y_pred_test)
+            print_acc("Test Blind", Y_cold, y_pred_cold)
+
             for class_index in range(0, nb_classes):
                 print('class', class_index, 'stats')
                 train_stats = all_stats(Y_train[:, class_index], y_pred_train[:, class_index])
                 # val_stats = all_stats(Y_val[:, class_index], y_pred_val[:, class_index])
                 test_stats = all_stats(Y_test[:, class_index], y_pred_test[:, class_index])
-                print_stats(train_stats, test_stats)#, val_stats)
+                blind_stats = all_stats(Y_cold[:, class_index], y_pred_cold[:, class_index])
+                print_stats(train_stats, test_stats, blind_stats)
         elif nb_classes == 2:
             train_stats = all_stats(Y_train[:, 1], y_pred_train[:, 1])
             # val_stats = all_stats(Y_val[:, 1], y_pred_val[:, 1] )

@@ -4,7 +4,7 @@ import json
 import time
 import random
 import matplotlib.pyplot as plt
-from ensemble_optimizer import do_optimize
+from mlp_optimizer import do_optimize
 import numpy as np
 from L1000.data_loader import get_feature_dict, load_gene_expression_data, printProgressBar, load_csv, get_trimmed_feature_dict
 from L1000.gene_predictor import train_model, save_model
@@ -24,14 +24,14 @@ evaluate_type = "use_optimizer" #"use_optimizer" "train_and_save" "test_trained"
 # target_cell_names = ['PC3', 'HT29']
 # target_cell_names = ['MCF7', 'A375']
 # target_cell_names = ['VCAP', 'A549']
-target_cell_names = ['HT29']
-os.environ["CUDA_VISIBLE_DEVICES"] = "4"
+target_cell_names = ['MCF7']
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 direction = 'Multi' #'Down'
 save_data_to_file = False
 use_data_from_file = True
 test_blind = False
 load_data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/load_data/10pBlindGapFixed/"
-data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/1vsall/"
+data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/3ClassClassifier/"
 # gap_factors = [0.8, 0.6, 0.4, 0.2, 0.0]
 # gap_factors = [0.2, 0.3] #, 0.6, 0.4, 0.2, 0.0]
 # gap_factors = [0.1, 0.2, 0.3, 0.4, 0.6, 0.9]
