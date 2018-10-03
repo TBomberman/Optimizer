@@ -24,18 +24,18 @@ evaluate_type = "use_optimizer" #"use_optimizer" "train_and_save" "test_trained"
 # target_cell_names = ['PC3', 'HT29']
 # target_cell_names = ['MCF7', 'A375']
 # target_cell_names = ['VCAP', 'A549']
-target_cell_names = ['MCF7']
-os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+target_cell_names = ['HT29']
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 direction = 'Multi' #'Down'
-save_data_to_file = False
-use_data_from_file = True
+save_data_to_file = True
+use_data_from_file = False
 test_blind = False
-load_data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/load_data/10pBlindGapFixed/"
-data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/3ClassClassifier/"
+load_data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/load_data/cv/voting/"
+data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/cv/"
 # gap_factors = [0.8, 0.6, 0.4, 0.2, 0.0]
 # gap_factors = [0.2, 0.3] #, 0.6, 0.4, 0.2, 0.0]
 # gap_factors = [0.1, 0.2, 0.3, 0.4, 0.6, 0.9]
-gap_factors = [0.1]
+gap_factors = [0.0]
 # class_weights = [0.01, 0.03, 0.05, 0.1, 0.15]
 percentiles = [10]
 class_weights = [0.01]
@@ -122,17 +122,17 @@ else:
         blind_drugs_file.write("%s\n" % key)
         blind_drugs_keys.append([key])
 
-if test_blind:
-    keys_to_remove = []
-    for key in drug_features_dict.keys():
-        if [key] in blind_drugs_keys:
-            continue
-        keys_to_remove.append(key)
-    for key in keys_to_remove:
-        drug_features_dict.pop(key, None)
-else:
-    for key in blind_drugs_keys:
-        drug_features_dict.pop(key[0], None)
+# if test_blind:
+#     keys_to_remove = []
+#     for key in drug_features_dict.keys():
+#         if [key] in blind_drugs_keys:
+#             continue
+#         keys_to_remove.append(key)
+#     for key in keys_to_remove:
+#         drug_features_dict.pop(key, None)
+# else:
+#     for key in blind_drugs_keys:
+#         drug_features_dict.pop(key[0], None)
 
 # getting the gene ids
 gene_id_dict = get_gene_id_dict()
@@ -259,7 +259,9 @@ for target_cell_name in target_cell_names:
                     else:
                         cell_X[cell_id][repeat_key] = drug_features
                         cell_cold_ids[cell_id][repeat_key] = drug_id
-                    cell_Y[cell_id][repeat_key] = pert
+                    if repeat_key not in cell_Y[cell_id]:
+                        cell_Y[cell_id][repeat_key] = []
+                    cell_Y[cell_id][repeat_key].append(pert)
                     if not updated:
                         cell_Y_gene_ids[cell_id].append(gene_id)
                         cell_drugs_counts[cell_id] += 1
@@ -293,10 +295,11 @@ for target_cell_name in target_cell_names:
                         print(datetime.datetime.now(), "Converting dictionary values to np")
                         npX = np.asarray(list(cell_X[cell_id].values()), dtype='float16')
                         cold_ids = list(cell_cold_ids[cell_id].values())
-                        npY = np.asarray(list(cell_Y[cell_id].values()), dtype='float16')
+                        y_pert_lists = np.asarray(list(cell_Y[cell_id].values()))
+                        # npY = np.asarray(list(cell_Y[cell_id].values()), dtype='float16')
                         npY_gene_ids = np.asarray(cell_Y_gene_ids[cell_id])
-
-                        npY_class = np.zeros(len(npY), dtype=int)
+                        n_samples = len(y_pert_lists)
+                        npY_class = np.zeros(n_samples, dtype=int)
 
                         for gap_factor in gap_factors:
                             model_file_prefix = load_data_folder_path + target_cell_name + '_' + direction + '_' + \
@@ -312,41 +315,62 @@ for target_cell_name in target_cell_names:
                                 class_cut_off_down = gene_cutoffs_down[gene_id]
                                 class_cut_off_up = gene_cutoffs_up[gene_id]
                                 gene_locations = np.where(npY_gene_ids == gene_id)
-                                dummy, gene_test_locations = train_test_split(gene_locations[0], train_size=0.85,
-                                                                                       test_size=0.15, shuffle=False)
+                                # dummy, gene_test_locations = train_test_split(gene_locations[0], train_size=0.85,
+                                #                                                        test_size=0.15, shuffle=False)
                                 down_threshold = class_cut_off_down # - abs(gap_factor * class_cut_off_down)
                                 up_threshold = class_cut_off_up # + abs(gap_factor * class_cut_off_up)
                                 mid_threshold_bottom = class_cut_off_down + abs(gap_factor * class_cut_off_down)
                                 mid_threshold_top = class_cut_off_up - abs(gap_factor * class_cut_off_up)
                                 # print("gene", gene_id, "down", down_threshold, "mid bottom", mid_threshold_bottom, "mid top", mid_threshold_top, "up", up_threshold)
-                                down_locations = np.where(npY <= down_threshold)
-                                up_locations = np.where(npY >= up_threshold)
-                                mid_locations = np.where((npY > mid_threshold_bottom) & (npY < mid_threshold_top))
+
+                                def get_class_vote(pert_list, bottom_threshold, top_threshold,
+                                                mid_bottom_threshold, mid_top_threshold):
+                                    votes = [0,0,0,0]
+                                    # list of perts
+                                    for pert in pert_list:
+                                        if pert > top_threshold:
+                                            votes[2] += 1
+                                        elif pert < bottom_threshold:
+                                            votes[1] += 1
+                                        elif mid_bottom_threshold < pert < mid_top_threshold:
+                                            votes[3] += 1
+                                        else:
+                                            votes[0] += 1
+                                    is_tie = False
+                                    highest_vote_class = np.argmax(votes)
+                                    for i in range(0, len(votes)):
+                                        if i == highest_vote_class:
+                                            continue
+                                        if votes[i] == votes[highest_vote_class]:
+                                            is_tie = True
+                                            break
+                                    if is_tie:
+                                        return 0
+                                    else:
+                                        return highest_vote_class
+                                class_votes = np.zeros(n_samples, dtype=int)
+
+                                for pert_i in gene_locations[0]:
+                                    class_votes[pert_i] = get_class_vote(y_pert_lists[pert_i], down_threshold, up_threshold,
+                                                              mid_threshold_bottom, mid_threshold_top)
+                                down_locations = np.where(class_votes == 1)
+                                up_locations = np.where(class_votes == 2)
+                                mid_locations = np.where(class_votes == 3)
                                 if direction == 'Down':
-                                    intersect = np.intersect1d(gene_locations, down_locations)
-                                    npY_class[intersect] = 1
+                                    npY_class[down_locations] = 1
                                 elif direction == 'Up':
-                                    intersect = np.intersect1d(gene_locations, up_locations)
-                                    npY_class[intersect] = 1
+                                    npY_class[up_locations] = 1
                                 elif direction == 'Both':
-                                    intersect = np.intersect1d(gene_locations, down_locations)
-                                    combined_locations += intersect.tolist()
-                                    intersect = np.intersect1d(gene_locations, up_locations)
-                                    combined_locations += intersect.tolist()
-                                    npY_class[intersect] = 1
+                                    combined_locations += down_locations[0].tolist()
+                                    combined_locations += up_locations.tolist()
+                                    npY_class[combined_locations] = 1
                                 else: # direction = multi
-                                    intersect = np.intersect1d(gene_locations, down_locations)
-                                    gene_down_locations = intersect.tolist()
-                                    combined_locations += gene_down_locations
-                                    intersect = np.intersect1d(gene_locations, up_locations)
-                                    gene_up_locations = intersect.tolist()
-                                    combined_locations += gene_up_locations
-                                    intersect = np.intersect1d(gene_locations, mid_locations)
-                                    mid_locations = intersect.tolist()
-                                    combined_locations += mid_locations
-                                    npY_class[gene_up_locations] = 2
-                                    npY_class[gene_down_locations] = 1
-                                    combined_test_locations += gene_test_locations.tolist()
+                                    combined_locations += down_locations[0].tolist()
+                                    combined_locations += up_locations[0].tolist()
+                                    combined_locations += mid_locations[0].tolist()
+                                    npY_class[up_locations] = 2
+                                    npY_class[down_locations] = 1
+                                    # combined_test_locations += gene_test_locations.tolist()
                                     # print(len(gene_down_locations), "samples below", down_threshold)
                                     # print(len(mid_locations), "samples between", mid_threshold_bottom, "and", mid_threshold_top)
                                     # print(len(gene_up_locations), "samples below", up_threshold)
@@ -357,10 +381,10 @@ for target_cell_name in target_cell_names:
                                 npX_save = npX[combined_locations]
                                 cold_ids_save = [cold_ids[ci] for ci in combined_locations]
                                 npY_class_save = npY_class[combined_locations]
-                                npY_save = npY[combined_locations]
+                                npY_save = npY_class[combined_locations]
                                 test_npX_save = npX[combined_test_locations]
                                 test_npY_class_save = npY_class[combined_test_locations]
-                                test_npY_save = npY[combined_test_locations]
+                                test_npY_save = npY_class[combined_test_locations]
                             print("Evaluating cell line", cell_line_counter, cell_name, "(Percentile ends:", percentile_down, ")")
 
                             sample_size = len(npY_class_save)
