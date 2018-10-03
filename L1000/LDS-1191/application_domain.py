@@ -85,10 +85,15 @@ IV = np.linalg.inv(cov)
 
 distances = []
 n = x.shape[0]
+lapse = 0
+time = datetime.datetime.now()
 for source_i in range(0, n):
     source = x[source_i]
-    if source_i % 10 == 0:
-        print(str(datetime.datetime.now()), "getting distances for molecule", source_i)
+    if source_i % 20 == 0:
+        newtime = datetime.datetime.now()
+        lapse = newtime - time
+        time = newtime
+        print(str(time), "getting distances for molecule", source_i, lapse)
     for target_i in range(source_i, n):
         if source_i == target_i:
             continue
