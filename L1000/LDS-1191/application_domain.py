@@ -64,43 +64,47 @@ def get_array(dict):
 
     return np.array(list)
 
-drug_features_dict = get_feature_dict('data/smiles_rdkit_maccs.csv') #, use_int=True)
-unique_drug_features_dict = remove_dups(drug_features_dict)
-drug_features = get_array(unique_drug_features_dict)
-# one_feature = drug_features[0]
-# print(drug_features.shape)
-# uneeded_cols = get_corr_cols(drug_features)
-uneeded_cols = [0,1,2,4,5,6,7,59,65,113,135,144,143]
-# print(len(drug_features_dict))
+def get_distances():
+    drug_features_dict = get_feature_dict('data/smiles_rdkit_maccs.csv') #, use_int=True)
+    unique_drug_features_dict = remove_dups(drug_features_dict)
+    drug_features = get_array(unique_drug_features_dict)
+    # one_feature = drug_features[0]
+    # print(drug_features.shape)
+    # uneeded_cols = get_corr_cols(drug_features)
+    uneeded_cols = [0,1,2,4,5,6,7,59,65,113,135,144,143]
+    # print(len(drug_features_dict))
 
-n_cols = drug_features.shape[1]
-cols = range(0, n_cols)
-cols = [x for x in cols if x not in uneeded_cols]
+    n_cols = drug_features.shape[1]
+    cols = range(0, n_cols)
+    cols = [x for x in cols if x not in uneeded_cols]
 
-x = drug_features[:, cols]
-print(x.shape)
-cov = np.cov(x.T)
-# print(cov.shape)
-IV = np.linalg.inv(cov)
+    x = drug_features[:, cols]
+    print(x.shape)
+    cov = np.cov(x.T)
+    # print(cov.shape)
+    IV = np.linalg.inv(cov)
 
-distances = []
-n = x.shape[0]
-lapse = 0
-time = datetime.datetime.now()
-for source_i in range(0, n):
-    source = x[source_i]
-    if source_i % 20 == 0:
-        newtime = datetime.datetime.now()
-        lapse = newtime - time
-        time = newtime
-        print(str(time), "getting distances for molecule", source_i, lapse)
-    for target_i in range(source_i, n):
-        if source_i == target_i:
-            continue
-        target = x[target_i]
-        distances.append(mahalanobis(source, target, IV))
+    distances = []
+    n = x.shape[0]
+    lapse = 0
+    time = datetime.datetime.now()
+    for source_i in range(0, n):
+        source = x[source_i]
+        if source_i % 20 == 0:
+            newtime = datetime.datetime.now()
+            lapse = newtime - time
+            time = newtime
+            print(str(time), "getting distances for molecule", source_i, lapse)
+        for target_i in range(source_i, n):
+            if source_i == target_i:
+                continue
+            target = x[target_i]
+            distances.append(mahalanobis(source, target, IV))
 
-np.savez("/data/datasets/gwoo/L1000/LDS-1191/Output/appDomain/distances", distances)
-plt.hist(distances, bins=100)
-plt.show()
+    np.savez("/data/datasets/gwoo/L1000/LDS-1191/Output/appDomain/distances", distances)
+    plt.hist(distances, bins=100)
+    plt.show()
+
+get_distances()
+
 
