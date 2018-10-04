@@ -105,6 +105,22 @@ def get_distances():
     plt.hist(distances, bins=100)
     plt.show()
 
-get_distances()
+def plot_hist():
+    import seaborn as sns
+    distances = np.load("/data/datasets/gwoo/L1000/LDS-1191/Output/appDomain/distances.npz")
+    # distances = {}
+    # distances['arr_0'] = np.random.normal(size=100)
+    plot = sns.distplot(distances['arr_0'], bins=100, axlabel="Mahalanobis Distance")
+    plot.set_title("Histogram of Distances between Molecules")
+    plot.set(ylabel="Normalized Count")
+    plot.ticklabel_format(style='plain') #, axis='both', scilimits=(0, 0))
 
+    # x = np.random.normal(size=100)
+    # plot = sns.distplot(x)
+    fig = plot.get_figure()
+    fig.show()
+    fig.savefig("/data/datasets/gwoo/L1000/LDS-1191/Output/appDomain/plot.png")
+
+# get_distances()
+plot_hist()
 
