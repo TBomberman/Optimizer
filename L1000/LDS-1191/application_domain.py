@@ -64,21 +64,25 @@ def get_array(dict):
 
     return np.array(list)
 
-def get_distances():
-    drug_features_dict = get_feature_dict('data/smiles_rdkit_maccs.csv') #, use_int=True)
+def remove_corr_features(all_features):
+    uneeded_cols = [0, 1, 2, 4, 5, 6, 7, 59, 65, 113, 135, 144, 143]
+    # print(len(drug_features_dict))
+    n_cols = all_features.shape[1]
+    cols = range(0, n_cols)
+    cols = [x for x in cols if x not in uneeded_cols]
+    return all_features[:, cols]
+
+def get_uncorr_drug_features():
+    drug_features_dict = get_feature_dict('data/smiles_rdkit_maccs.csv')  # , use_int=True)
     unique_drug_features_dict = remove_dups(drug_features_dict)
     drug_features = get_array(unique_drug_features_dict)
     # one_feature = drug_features[0]
     # print(drug_features.shape)
     # uneeded_cols = get_corr_cols(drug_features)
-    uneeded_cols = [0,1,2,4,5,6,7,59,65,113,135,144,143]
-    # print(len(drug_features_dict))
+    return remove_corr_features(drug_features)
 
-    n_cols = drug_features.shape[1]
-    cols = range(0, n_cols)
-    cols = [x for x in cols if x not in uneeded_cols]
-
-    x = drug_features[:, cols]
+def get_distances():
+    x = get_uncorr_drug_features()
     print(x.shape)
     cov = np.cov(x.T)
     # print(cov.shape)
@@ -139,7 +143,27 @@ def check_nathan_duplicates():
 
     print("done")
 
+def centeroidnp(arr):
+    length = arr.shape[0]
+    sum = arr.sum(axis=0)
+    return sum/length
+
+def get_distance_from_centroid():
+    drug_features = get_uncorr_drug_features()
+    centroid = centeroidnp(drug_features)
+
+    cov = np.cov(drug_features.T)
+    IV = np.linalg.inv(cov)
+
+    nathan_drug_features_dict = get_feature_dict('data/nathan_smiles_rdkit_maccs.csv')  # , use_int=True)
+    for nathan_drug_id in nathan_drug_features_dict:
+        nathan_maccs = nathan_drug_features_dict[nathan_drug_id]
+        nathan_maccs = remove_corr_features(np.array(nathan_maccs, dtype='float16').reshape(1,167))
+        distance = mahalanobis(nathan_maccs, centroid, IV)
+        print("distance of", nathan_drug_id, "from centroid", distance)
+
 
 # get_distances()
 # plot_hist()
-check_nathan_duplicates()
+# check_nathan_duplicates()
+get_distance_from_centroid()
