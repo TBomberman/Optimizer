@@ -14,7 +14,7 @@ def remove_dups(dict):
     unique_dict = {}
     check_dups = {}
     for drug_id in dict:
-        value = drug_features_dict[drug_id]
+        value = dict[drug_id]
         val_str = ''.join(value)
         if val_str in check_dups:
             # print (drug_id)
@@ -121,6 +121,25 @@ def plot_hist():
     fig.show()
     fig.savefig("/data/datasets/gwoo/L1000/LDS-1191/Output/appDomain/plot.png")
 
-# get_distances()
-plot_hist()
+def check_nathan_duplicates():
+    drug_features_dict = get_feature_dict('data/smiles_rdkit_maccs.csv') #, use_int=True)
+    print("size of original drugs", len(drug_features_dict))
+    nathan_drug_features_dict = get_feature_dict('data/nathan_smiles_rdkit_maccs.csv')  # , use_int=True)
+    for nathan_drug_id in nathan_drug_features_dict:
+        print("checking for duplicates of", nathan_drug_id)
+        nathan_maccs = nathan_drug_features_dict[nathan_drug_id]
+        nathan_val_str = ''.join(nathan_maccs)
 
+        for drug_id in drug_features_dict:
+            l1000_maccs = drug_features_dict[drug_id]
+            l1000_val_str = ''.join(l1000_maccs)
+            val_str = ''.join(l1000_val_str)
+            if val_str == nathan_val_str:
+                print(nathan_drug_id, "is the same as", drug_id)
+
+    print("done")
+
+
+# get_distances()
+# plot_hist()
+check_nathan_duplicates()
