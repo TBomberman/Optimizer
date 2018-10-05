@@ -2,6 +2,7 @@ import json
 import matplotlib.pyplot as plt
 import numpy as np
 from L1000.data_loader import load_gene_expression_data, load_csv, printProgressBar, get_feature_dict
+import seaborn as sns
 
 # go through the data set
 # for each gene, calculate the variance
@@ -17,12 +18,12 @@ def load_landmark_genes():
 
 symbols = load_landmark_genes()
 gene_count_data_limit = 978
-lm_gene_entrez_ids_list = load_csv('data/genes_by_var.csv')[:gene_count_data_limit]
-lm_gene_entrez_ids = []
-for sublist in lm_gene_entrez_ids_list :
-    for item in sublist:
-        lm_gene_entrez_ids.append(item)
-# lm_gene_entrez_ids = ['2778']
+# lm_gene_entrez_ids_list = load_csv('data/genes_by_var.csv')[:gene_count_data_limit]
+# lm_gene_entrez_ids = []
+# for sublist in lm_gene_entrez_ids_list :
+#     for item in sublist:
+#         lm_gene_entrez_ids.append(item)
+lm_gene_entrez_ids = ['2778']
 level_5_gctoo = load_gene_expression_data("/home/gwoo/Data/L1000/LDS-1191/Data/GSE92742_Broad_LINCS_Level5_COMPZ.MODZ_n473647x12328.gctx", lm_gene_entrez_ids)
 
 def find_nth(haystack, needle, n):
@@ -46,7 +47,7 @@ def get_all_perts(target_cell_name=None):
         start = find_nth(col_name, "_", 1)
         end = find_nth(col_name, "_", 2)
         cell_name = col_name[start + 1:end]
-        if cell_name != target_cell_name & target_cell_name != None:
+        if cell_name != target_cell_name and target_cell_name != None:
             continue
 
         column = level_5_gctoo.data_df[col_name]
@@ -81,11 +82,15 @@ def get_stats():
 
 def get_histogram():
     values = get_all_perts()
-    plt.title('Histogram of Perturbations')
-    plt.ylabel('Number of expressions')
-    plt.xlabel('Z-score')
-    plt.hist(values, bins=1000)
-    plt.show()
+
+    import seaborn as sns
+    plot = sns.distplot(values, bins=1000, axlabel="Z-score")
+    plot.set_title("Histogram of gene: GNAS")
+    plot.set(ylabel="Normalized Count")
+    plot.ticklabel_format(style='plain')  # , axis='both', scilimits=(0, 0))
+    fig = plot.get_figure()
+    fig.show()
+    fig.savefig("/data/datasets/gwoo/L1000/LDS-1191/Output/appDomain/plot.png")
 
 def get_drug_counts_per_cell_line():
     def find_nth(haystack, needle, n):
@@ -172,3 +177,4 @@ def get_concentration_data_for_histogram():
 # get_stats()
 # plot_normal()
 # get_concentration_data_for_histogram()
+get_histogram()
