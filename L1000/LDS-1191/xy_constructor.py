@@ -4,7 +4,7 @@ import json
 import time
 import random
 import matplotlib.pyplot as plt
-from mlp_optimizer import do_optimize
+from ensemble_optimizer import do_optimize
 import numpy as np
 from L1000.data_loader import get_feature_dict, load_gene_expression_data, printProgressBar, load_csv, get_trimmed_feature_dict
 from L1000.gene_predictor import train_model, save_model
@@ -25,13 +25,13 @@ evaluate_type = "use_optimizer" #"use_optimizer" "train_and_save" "test_trained"
 # target_cell_names = ['MCF7', 'A375']
 # target_cell_names = ['VCAP', 'A549']
 target_cell_names = ['HT29']
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = "3"
 direction = 'Multi' #'Down'
-save_data_to_file = True
-use_data_from_file = False
+save_data_to_file = False
+use_data_from_file = True
 test_blind = False
-load_data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/load_data/cv/voting/"
-data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/cv/"
+load_data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/load_data/morgan2048/"
+data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/cv/morgan2048/"
 # gap_factors = [0.8, 0.6, 0.4, 0.2, 0.0]
 # gap_factors = [0.2, 0.3] #, 0.6, 0.4, 0.2, 0.0]
 # gap_factors = [0.1, 0.2, 0.3, 0.4, 0.6, 0.9]
@@ -54,11 +54,16 @@ if use_data_from_file:
                         print('save location', model_file_prefix)
                         npX = np.load(load_data_folder_path + file_suffix + "_npX.npz")['arr_0'] # must be not balanced too because 70% of this is X_train.npz
                         npY_class = np.load(load_data_folder_path + file_suffix + "_npY_class.npz")['arr_0']
-                        cold_ids = np.load(load_data_folder_path + file_suffix + "_cold_ids.npz")['arr_0']
-                        npY = np.load(load_data_folder_path + file_suffix + "_npY_float.npz")['arr_0']
-                        test_npX = np.load(load_data_folder_path + file_suffix + "_test_npX.npz")['arr_0']
-                        test_npY_class = np.load(load_data_folder_path + file_suffix + "_test_npY_class.npz")['arr_0']
-                        test_npY_float = np.load(load_data_folder_path + file_suffix + "_test_npY_float.npz")['arr_0']
+                        # cold_ids = np.load(load_data_folder_path + file_suffix + "_cold_ids.npz")['arr_0']
+                        # npY = np.load(load_data_folder_path + file_suffix + "_npY_float.npz")['arr_0']
+                        # test_npX = np.load(load_data_folder_path + file_suffix + "_test_npX.npz")['arr_0']
+                        # test_npY_class = np.load(load_data_folder_path + file_suffix + "_test_npY_class.npz")['arr_0']
+                        # test_npY_float = np.load(load_data_folder_path + file_suffix + "_test_npY_float.npz")['arr_0']
+                        cold_ids = []
+                        npY = []
+                        test_npX = []
+                        test_npY_class = []
+                        test_npY_float = []
 
                         try:
                             if evaluate_type == "use_optimizer":
@@ -89,7 +94,7 @@ def get_gene_id_dict():
 # get the dictionaries
 # get the expressions
 print(datetime.datetime.now(), "Loading drug and gene features")
-drug_features_dict = get_feature_dict('LDS-1191/data/smiles_rdkit_maccs.csv') #, use_int=True)
+drug_features_dict = get_feature_dict('LDS-1191/data/smiles_rdkit_morgan_2048.csv') #, use_int=True)
 # drug_descriptor_file = '/data/datasets/gwoo/L1000/LDS-1191/WorkingData/1to12std.csv'
 # drug_desc_dict = get_feature_dict(drug_descriptor_file) #, use_int=True)
 # print(drug_descriptor_file)
@@ -379,12 +384,12 @@ for target_cell_name in target_cell_names:
 
                             if direction == 'Both' or direction == 'Multi':
                                 npX_save = npX[combined_locations]
-                                cold_ids_save = [cold_ids[ci] for ci in combined_locations]
+                                # cold_ids_save = [cold_ids[ci] for ci in combined_locations]
                                 npY_class_save = npY_class[combined_locations]
-                                npY_save = npY_class[combined_locations]
-                                test_npX_save = npX[combined_test_locations]
-                                test_npY_class_save = npY_class[combined_test_locations]
-                                test_npY_save = npY_class[combined_test_locations]
+                                # npY_save = npY_class[combined_locations]
+                                # test_npX_save = npX[combined_test_locations]
+                                # test_npY_class_save = npY_class[combined_test_locations]
+                                # test_npY_save = npY_class[combined_test_locations]
                             print("Evaluating cell line", cell_line_counter, cell_name, "(Percentile ends:", percentile_down, ")")
 
                             sample_size = len(npY_class_save)
@@ -400,11 +405,11 @@ for target_cell_name in target_cell_names:
                             if save_data_to_file:
                                 np.savez(model_file_prefix + "_npX", npX_save)
                                 np.savez(model_file_prefix + "_npY_class", npY_class_save)
-                                np.savez(model_file_prefix + "_cold_ids", cold_ids_save)
-                                np.savez(model_file_prefix + "_npY_float", npY_save)
-                                np.savez(model_file_prefix + "_test_npX", test_npX_save)
-                                np.savez(model_file_prefix + "_test_npY_class", test_npY_class_save)
-                                np.savez(model_file_prefix + "_test_npY_float", test_npY_save)
+                                # np.savez(model_file_prefix + "_cold_ids", cold_ids_save)
+                                # np.savez(model_file_prefix + "_npY_float", npY_save)
+                                # np.savez(model_file_prefix + "_test_npX", test_npX_save)
+                                # np.savez(model_file_prefix + "_test_npY_class", test_npY_class_save)
+                                # np.savez(model_file_prefix + "_test_npY_float", test_npY_save)
 
                             # if evaluate_type == "use_optimizer":
                             #     do_optimize(len(np.unique(npY_class)), npX, npY_class, model_file_prefix, None, cold_ids, labels_float=npY)
