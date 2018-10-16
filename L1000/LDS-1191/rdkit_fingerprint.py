@@ -11,7 +11,7 @@ from rdkit.Chem import AllChem, DataStructs
 from rdkit import Chem
 
 i=0
-finger_dimension = 256
+finger_dimension = 2048
 molecules = []
 fps = []
 id = []
@@ -54,4 +54,4 @@ id = id.reshape(len(fps),1)
 data = np.hstack((id,fps))
 header = np.array(header).reshape(1,len(header))
 data_header = np.vstack((header,data))
-np.savetxt("data/smiles_rdkit_morgan.csv", data_header, delimiter=",", fmt="%s")
+np.savetxt("data/smiles_rdkit_morgan_2048.csv", data_header, delimiter=",", fmt="%s")
