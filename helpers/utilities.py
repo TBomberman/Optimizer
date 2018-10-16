@@ -1128,7 +1128,7 @@ def all_stats(labels,scores,cutoff=None):
             TPR=round(tpr[cutoff_id][0],5)
             FPR=round(fpr[cutoff_id][0],5)
             PRE=round(precision[cutoff_pre_id][0],5)
-            stats=aucvalue,TPR,1-FPR,len(labels),PRE,cutoff
+            stats=aucvalue,TPR,1-FPR,len(labels),PRE,cutoff, max(F_score)
         except:
             stats=float('NaN'),float('NaN'),float('NaN'),len(labels),float('NaN'),float('NaN')
        else:
