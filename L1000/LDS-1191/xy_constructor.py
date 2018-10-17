@@ -30,8 +30,8 @@ direction = 'Multi' #'Down'
 save_data_to_file = False
 use_data_from_file = True
 test_blind = False
-load_data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/load_data/morgan2048/"
-data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/cv/morgan2048/"
+load_data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/load_data/morgan2048/blind/"
+data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/cv/morgan2048/blind/"
 # gap_factors = [0.8, 0.6, 0.4, 0.2, 0.0]
 # gap_factors = [0.2, 0.3] #, 0.6, 0.4, 0.2, 0.0]
 # gap_factors = [0.1, 0.2, 0.3, 0.4, 0.6, 0.9]
@@ -54,21 +54,25 @@ if use_data_from_file:
                         print('save location', model_file_prefix)
                         npX = np.load(load_data_folder_path + file_suffix + "_npX.npz")['arr_0'] # must be not balanced too because 70% of this is X_train.npz
                         npY_class = np.load(load_data_folder_path + file_suffix + "_npY_class.npz")['arr_0']
-                        # cold_ids = np.load(load_data_folder_path + file_suffix + "_cold_ids.npz")['arr_0']
+                        cold_ids = np.load(load_data_folder_path + file_suffix + "_cold_ids.npz")['arr_0']
                         # npY = np.load(load_data_folder_path + file_suffix + "_npY_float.npz")['arr_0']
                         # test_npX = np.load(load_data_folder_path + file_suffix + "_test_npX.npz")['arr_0']
                         # test_npY_class = np.load(load_data_folder_path + file_suffix + "_test_npY_class.npz")['arr_0']
                         # test_npY_float = np.load(load_data_folder_path + file_suffix + "_test_npY_float.npz")['arr_0']
-                        cold_ids = []
                         npY = []
                         test_npX = []
                         test_npY_class = []
                         test_npY_float = []
 
+                        # for testing
+                        # ints = random.sample(range(1,100000), 100)
+                        # npX = npX[ints]
+                        # npY_class = npY_class[ints]
+                        # cold_ids = cold_ids[ints]
                         try:
                             if evaluate_type == "use_optimizer":
                                 do_optimize(len(np.unique(npY_class)), npX, npY_class, model_file_prefix, class_0_weight,
-                                            cold_ids, labels_float=npY, test_data=[test_npX, test_npY_class, test_npY_float])
+                                            cold_ids, labels_float=npY) # , test_data=[test_npX, test_npY_class, test_npY_float])
                             elif evaluate_type == "train_and_save":
                                 model = train_model(npX, npY_class)
                                 save_model(model, model_file_prefix)
@@ -384,7 +388,7 @@ for target_cell_name in target_cell_names:
 
                             if direction == 'Both' or direction == 'Multi':
                                 npX_save = npX[combined_locations]
-                                # cold_ids_save = [cold_ids[ci] for ci in combined_locations]
+                                cold_ids_save = [cold_ids[ci] for ci in combined_locations]
                                 npY_class_save = npY_class[combined_locations]
                                 # npY_save = npY_class[combined_locations]
                                 # test_npX_save = npX[combined_test_locations]
@@ -405,7 +409,7 @@ for target_cell_name in target_cell_names:
                             if save_data_to_file:
                                 np.savez(model_file_prefix + "_npX", npX_save)
                                 np.savez(model_file_prefix + "_npY_class", npY_class_save)
-                                # np.savez(model_file_prefix + "_cold_ids", cold_ids_save)
+                                np.savez(model_file_prefix + "_cold_ids", cold_ids_save)
                                 # np.savez(model_file_prefix + "_npY_float", npY_save)
                                 # np.savez(model_file_prefix + "_test_npX", test_npX_save)
                                 # np.savez(model_file_prefix + "_test_npY_class", test_npY_class_save)

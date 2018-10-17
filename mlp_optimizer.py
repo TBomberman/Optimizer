@@ -24,7 +24,7 @@ nb_epoch = 10000 #1000 cutoff 1 #3000 cutoff  2 and
 regularizer = l1 # l1 beats the other 2
 lammy = 0
 use_plot = False
-train_percentage = 0.85
+train_percentage = 7/8
 patience = 5
 
 # uncomment this to disable regularizer
@@ -51,29 +51,29 @@ def do_optimize(nb_classes, data, labels, model_file_prefix=None, pos_class_weig
     if nb_classes > 1:
         labels = np_utils.to_categorical(labels, nb_classes)
 
-    n_splits = 10
-    kf = KFold(n_splits=n_splits, shuffle=True)
-    sum_auc = 0
-    count = 0
-    for train_index, test_index in kf.split(data):
-        count += 1
-        print("TRAIN:", train_index, "TEST:", test_index)
-        X_train = data[train_index]
-        Y_train = labels[train_index]
-        val_indexes, test_indexes = train_test_split(test_index, train_size=0.5, test_size=0.5, shuffle=True)
-        X_val = data[val_indexes]
-        Y_val = labels[val_indexes]
-        X_test = data[test_indexes]
-        Y_test = labels[test_indexes]
+    # n_splits = 10
+    # kf = KFold(n_splits=n_splits, shuffle=True)
+    # sum_auc = 0
+    # count = 0
+    # for train_index, test_index in kf.split(data):
+    #     count += 1
+    #     print("TRAIN:", train_index, "TEST:", test_index)
+    #     X_train = data[train_index]
+    #     Y_train = labels[train_index]
+    #     val_indexes, test_indexes = train_test_split(test_index, train_size=0.5, test_size=0.5, shuffle=True)
+    #     X_val = data[val_indexes]
+    #     Y_val = labels[val_indexes]
+    #     X_test = data[test_indexes]
+    #     Y_test = labels[test_indexes]
 
-        # train_size = int(train_percentage * n)
-        # print("Train size:", train_size)
-        # test_size = int((1-train_percentage) * n)
-        # X_train, X_test, y_train, y_test = train_test_split(data, labels, train_size=train_size, test_size=test_size)
-        # # X_val, X_test, y_val, y_test = train_test_split(X_test, y_test, train_size=0.5, test_size=0.5)
-        # Y_train = y_train
-        # Y_test = y_test
-        # # Y_val = y_val
+        train_size = int(train_percentage * n)
+        print("Train size:", train_size)
+        test_size = int((1-train_percentage) * n)
+        X_train, X_test, y_train, y_test = train_test_split(data, labels, train_size=train_size, test_size=test_size)
+        # X_val, X_test, y_val, y_test = train_test_split(X_test, y_test, train_size=0.5, test_size=0.5)
+        Y_train = y_train
+        Y_test = y_test
+        # Y_val = y_val
 
         # for hyperparam in range(4, 7):
         for hyperparam in [1]:
@@ -118,7 +118,7 @@ def do_optimize(nb_classes, data, labels, model_file_prefix=None, pos_class_weig
             class_weight = { 1: pos_class_weight, 0: 1-pos_class_weight}
 
             model.fit(X_train, Y_train, batch_size=batch_size, epochs=nb_epoch,
-                      verbose=0, validation_data=(X_val, Y_val), callbacks=[history, early_stopping, out_epoch],
+                      verbose=0, validation_data=(X_test, Y_test), callbacks=[history, early_stopping, out_epoch],
                       class_weight='auto')
             # save_model(model, model_file_prefix)
             # score = model.evaluate(X_test, Y_test, verbose=0)
@@ -179,14 +179,14 @@ def do_optimize(nb_classes, data, labels, model_file_prefix=None, pos_class_weig
                     test_stats = all_stats(Y_test[:, class_index], y_pred_test[:, class_index])
                     # blind_stats = all_stats(Y_cold[:, class_index], y_pred_cold[:, class_index])
                     print_stats(train_stats, test_stats) #, blind_stats)
-                    sum_auc += test_stats[0]
+                    # sum_auc += test_stats[0]
             elif nb_classes == 2:
                 train_stats = all_stats(Y_train[:, 1], y_pred_train[:, 1])
                 # val_stats = all_stats(Y_val[:, 1], y_pred_val[:, 1] )
                 save(Y_test[:, 1], y_pred_test[:, 1])
                 test_stats = all_stats(Y_test[:, 1], y_pred_test[:, 1])#, val_stats[-1])
                 print_stats(train_stats, test_stats)#, val_stats)
-                sum_auc += test_stats[0]
+                # sum_auc += test_stats[0]
             else:
                 train_stats = all_stats(Y_train, y_pred_train)
                 # val_stats = all_stats(Y_val, y_pred_val)
@@ -216,8 +216,8 @@ def do_optimize(nb_classes, data, labels, model_file_prefix=None, pos_class_weig
                 plt.draw()
 
             rtn_model = model
-        print("running kfold auc", count, sum_auc / count)
-    print("final kfold auc", sum_auc / n_splits)
+    #     print("running kfold auc", count, sum_auc / count)
+    # print("final kfold auc", sum_auc / n_splits)
     return rtn_model
 
 def add_dense_dropout(count, neuron_count, model, activation):

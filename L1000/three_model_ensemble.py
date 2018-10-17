@@ -88,8 +88,8 @@ class ThreeModelEnsemble():
             self.stable_model = train("Stable", x, stable_model_y, pos_class_weight=None)
         else:
             self.up_model = train("Up", x, up_model_y, class_weight[2])
-            # self.down_model = train("Down", x, down_model_y, class_weight[1])
-            # self.stable_model = train("Stable", x, stable_model_y, class_weight[0])
+            self.down_model = train("Down", x, down_model_y, class_weight[1])
+            self.stable_model = train("Stable", x, stable_model_y, class_weight[0])
 
     def evaluate(self, x=None, y=None, batch_size=None, verbose=0, sample_weight=None, steps=None):
         up_model_y = y[:, 2]
@@ -98,7 +98,7 @@ class ThreeModelEnsemble():
 
         sum_scores = 0
         def get_score(model, x, y):
-            # labels = np_utils.to_categorical(y, 2)
+            labels = np_utils.to_categorical(y, 2)
             score = model.evaluate(x, labels, verbose=0)
             if isinstance(score, list):
                 return score[0]
