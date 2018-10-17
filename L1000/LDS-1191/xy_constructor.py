@@ -4,7 +4,7 @@ import json
 import time
 import random
 import matplotlib.pyplot as plt
-from ensemble_optimizer import do_optimize
+from mlp_optimizer import do_optimize
 import numpy as np
 from L1000.data_loader import get_feature_dict, load_gene_expression_data, printProgressBar, load_csv, get_trimmed_feature_dict
 from L1000.gene_predictor import train_model, save_model
@@ -24,8 +24,8 @@ evaluate_type = "use_optimizer" #"use_optimizer" "train_and_save" "test_trained"
 # target_cell_names = ['PC3', 'HT29']
 # target_cell_names = ['MCF7', 'A375']
 # target_cell_names = ['VCAP', 'A549']
-target_cell_names = ['HT29']
-os.environ["CUDA_VISIBLE_DEVICES"] = "3"
+target_cell_names = ['A375']
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 direction = 'Multi' #'Down'
 save_data_to_file = False
 use_data_from_file = True
@@ -69,10 +69,11 @@ if use_data_from_file:
                         # npX = npX[ints]
                         # npY_class = npY_class[ints]
                         # cold_ids = cold_ids[ints]
+
                         try:
                             if evaluate_type == "use_optimizer":
                                 do_optimize(len(np.unique(npY_class)), npX, npY_class, model_file_prefix, class_0_weight,
-                                            cold_ids, labels_float=npY) # , test_data=[test_npX, test_npY_class, test_npY_float])
+                                            cold_ids, labels_float=npY) #, test_data=[test_npX, test_npY_class, test_npY_float])
                             elif evaluate_type == "train_and_save":
                                 model = train_model(npX, npY_class)
                                 save_model(model, model_file_prefix)

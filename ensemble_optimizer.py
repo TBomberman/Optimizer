@@ -33,9 +33,6 @@ def do_optimize(nb_classes, data, labels, model_file_prefix=None, class_0_weight
         else:
             warm_indexes.append(i)
 
-    all_indexes = range(0, n)
-
-    test_size = len(cold_indexes)
     if test_data is None:
         test_size = 1/9
         train_size = 1 - test_size
