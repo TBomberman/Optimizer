@@ -194,9 +194,9 @@ def do_optimize(nb_classes, data, labels, model_file_prefix=None, pos_class_weig
             cm = metrics.confusion_matrix(y_true, y_pred, labels=target_names)
             cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
             accs = cm.diagonal()
-            print(text, "Accuracy class 0", accs[0])
-            print(text, "Accuracy class 1", accs[1])
-            print(text, "Accuracy class 2", accs[2])
+            print(text, "Accuracy class 0", accs[0])  # number of actual 0's predicted correctly
+            print(text, "Accuracy class 1", accs[1])  # number of actual 1's predicted correctly
+            print(text, "Accuracy class 2", accs[2])  # number of actual 2's predicted correctly
 
             report = metrics.classification_report(y_true, y_pred)
             print("Report", report)
