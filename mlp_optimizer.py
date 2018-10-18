@@ -117,7 +117,7 @@ def do_optimize(nb_classes, data, labels, model_file_prefix=None, pos_class_weig
         neuron_count = int(d)# * 0.2 * hyperparam)
 
         # model = get_model(neuron_count, nb_classes, hyperparam)
-        layer_count = 0
+        layer_count = 1
         optimizer = enums.optimizers[4]
         # act 0: 'elu', 1: 'selu', 2: 'sigmoid', 3: 'linear', 4: 'softplus', 5: 'softmax', 6: 'tanh', 7: 'hard_sigmoid',
         # 8: 'relu', 9: 'softsign'
