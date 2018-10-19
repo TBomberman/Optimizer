@@ -15,6 +15,7 @@ from helpers.callbacks import NEpochLogger
 from keras.utils import plot_model
 import datetime
 import sklearn.metrics as metrics
+from keras.layers.normalization import BatchNormalization
 
 # local variables
 dropout = 0.2
@@ -131,6 +132,7 @@ def do_optimize(nb_classes, data, labels, model_file_prefix=None, pos_class_weig
         print('Patience', patience)
 
         model.add(Dense(neuron_count, input_shape=(neuron_count,), activity_regularizer=regularizer(lammy)))
+        model.add(BatchNormalization())
         # model.add(Activation('tanh'))
         model.add(Activation(activation_input))
         model.add(Dropout(dropout))
@@ -138,6 +140,7 @@ def do_optimize(nb_classes, data, labels, model_file_prefix=None, pos_class_weig
         add_dense_dropout(layer_count, neuron_count, model, activation)
 
         model.add(Dense(nb_classes, activity_regularizer=regularizer(lammy)))
+        model.add(BatchNormalization())
         # model.add(Activation('softmax'))
         model.add(Activation(activation_output))
         # model.summary() # too much verbage
@@ -257,6 +260,7 @@ def do_optimize(nb_classes, data, labels, model_file_prefix=None, pos_class_weig
 def add_dense_dropout(count, neuron_count, model, activation):
     for x in range(0, count):
         model.add(Dense(neuron_count, activity_regularizer=regularizer(lammy)))
+        model.add(BatchNormalization())
         model.add(Activation(activation))
         model.add(Dropout(dropout))
 

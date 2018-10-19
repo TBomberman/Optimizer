@@ -70,9 +70,12 @@ class ThreeModelEnsemble():
             validation_data=None, shuffle=True, class_weight=None, sample_weight=None, initial_epoch=0,
             steps_per_epoch=None,validation_steps=None, **kwargs):
 
-        up_model_y = y[:,2]
-        down_model_y = y[:,1]
-        stable_model_y = y[:,0]
+        self.up_model_y = y[:,2]
+        self.down_model_y = y[:,1]
+        self.stable_model_y = y[:,0]
+        up_model_y = self.up_model_y
+        down_model_y = self.down_model_y
+        stable_model_y = self.stable_model_y
 
         def train(direction, x, y, pos_class_weight):
             print('training', direction)
@@ -118,13 +121,22 @@ class ThreeModelEnsemble():
 
     def predict_proba(self, x):
         y_pred_up = self.up_model.predict_proba(x)
-        y_pred_up = preprocessing.scale(y_pred_up)
+        # y_pred_up = preprocessing.scale(y_pred_up)
+        mean = np.mean(self.up_model_y)
+        std = np.mean(self.up_model_y)
+        y_pred_up = y_pred_up - mean / std
 
         y_pred_down = self.down_model.predict_proba(x)
-        y_pred_down = preprocessing.scale(y_pred_down)
+        # y_pred_down = preprocessing.scale(y_pred_down)
+        mean = np.mean(self.down_model_y)
+        std = np.mean(self.down_model_y)
+        y_pred_down = y_pred_down - mean / std
 
         y_pred_stable = self.stable_model.predict_proba(x)
-        y_pred_stable = preprocessing.scale(y_pred_stable)
+        # y_pred_stable = preprocessing.scale(y_pred_stable)
+        mean = np.mean(self.stable_model_y)
+        std = np.mean(self.stable_model_y)
+        y_pred_stable = y_pred_stable - mean / std
 
         y_pred = np.concatenate((np.reshape(y_pred_stable[:,1],(-1, 1)),
                                 np.reshape(y_pred_down[:, 1], (-1, 1)),
