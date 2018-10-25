@@ -4,19 +4,19 @@ import json
 import time
 import random
 import matplotlib.pyplot as plt
-from mlp_optimizer import do_optimize
+from ensemble_optimizer import do_optimize
 import numpy as np
 from L1000.data_loader import get_feature_dict, load_gene_expression_data, printProgressBar, load_csv, get_trimmed_feature_dict
 from L1000.gene_predictor import train_model, save_model
 from sklearn.model_selection import train_test_split
 import os
-
+os.environ["CUDA_VISIBLE_DEVICES"] = "6"
 import helpers.email_notifier as en
-# import tensorflow as tf
-# from keras.backend.tensorflow_backend import set_session
-# config = tf.ConfigProto()
-# config.gpu_options.per_process_gpu_memory_fraction = 0.5
-# set_session(tf.Session(config=config))
+import tensorflow as tf
+from keras.backend.tensorflow_backend import set_session
+config = tf.ConfigProto()
+config.gpu_options.per_process_gpu_memory_fraction = 0.45
+set_session(tf.Session(config=config))
 
 start_time = time.time()
 gene_count_data_limit = 978
@@ -25,7 +25,6 @@ evaluate_type = "use_optimizer" #"use_optimizer" "train_and_save" "test_trained"
 # target_cell_names = ['MCF7', 'A375']
 # target_cell_names = ['VCAP', 'A549']
 target_cell_names = ['A375']
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 direction = 'Multi' #'Down'
 save_data_to_file = False
 use_data_from_file = True
@@ -54,7 +53,7 @@ if use_data_from_file:
                         print('save location', model_file_prefix)
                         npX = np.load(load_data_folder_path + file_suffix + "_npX.npz")['arr_0'] # must be not balanced too because 70% of this is X_train.npz
                         npY_class = np.load(load_data_folder_path + file_suffix + "_npY_class.npz")['arr_0']
-                        cold_ids = np.load(load_data_folder_path + file_suffix + "_cold_ids.npz")['arr_0']
+                        # cold_ids = np.load(load_data_folder_path + file_suffix + "_cold_ids.npz")['arr_0']
                         # npY = np.load(load_data_folder_path + file_suffix + "_npY_float.npz")['arr_0']
                         # test_npX = np.load(load_data_folder_path + file_suffix + "_test_npX.npz")['arr_0']
                         # test_npY_class = np.load(load_data_folder_path + file_suffix + "_test_npY_class.npz")['arr_0']
@@ -63,9 +62,10 @@ if use_data_from_file:
                         test_npX = []
                         test_npY_class = []
                         test_npY_float = []
+                        cold_ids = []
 
                         # for testing
-                        # ints = random.sample(range(1,100000), 100)
+                        # ints = random.sample(range(1,100000), 1000)
                         # npX = npX[ints]
                         # npY_class = npY_class[ints]
                         # cold_ids = cold_ids[ints]
