@@ -1,7 +1,7 @@
 import datetime
 from ensemble_optimizer_lite import do_optimize
 import numpy as np
-
+import random
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "6"
 import helpers.email_notifier as en
@@ -38,10 +38,10 @@ for target_cell_name in target_cell_names:
                     cold_ids = []
 
                     # for testing
-                    ints = random.sample(range(1,100000), 1000)
-                    npX = npX[ints]
-                    npY_class = npY_class[ints]
-                    cold_ids = cold_ids[ints]
+                    # ints = random.sample(range(1,100000), 1000)
+                    # npX = npX[ints]
+                    # npY_class = npY_class[ints]
+                    # cold_ids = cold_ids[ints]
 
                     try:
                         do_optimize(len(np.unique(npY_class)), npX, npY_class, model_file_prefix)

@@ -1,5 +1,5 @@
 import numpy as np
-from mlp_optimizer import do_optimize
+from mlp_optimizer_lite import do_optimize
 import sklearn.metrics as metrics
 from keras.utils import np_utils
 
