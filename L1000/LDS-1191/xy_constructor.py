@@ -10,13 +10,13 @@ from L1000.data_loader import get_feature_dict, load_gene_expression_data, print
 from L1000.gene_predictor import train_model, save_model
 from sklearn.model_selection import train_test_split
 import os
-
+os.environ["CUDA_VISIBLE_DEVICES"] = "6"
 import helpers.email_notifier as en
-# import tensorflow as tf
-# from keras.backend.tensorflow_backend import set_session
-# config = tf.ConfigProto()
-# config.gpu_options.per_process_gpu_memory_fraction = 0.5
-# set_session(tf.Session(config=config))
+import tensorflow as tf
+from keras.backend.tensorflow_backend import set_session
+config = tf.ConfigProto()
+config.gpu_options.per_process_gpu_memory_fraction = 0.45
+set_session(tf.Session(config=config))
 
 start_time = time.time()
 gene_count_data_limit = 978
@@ -25,7 +25,6 @@ evaluate_type = "use_optimizer" #"use_optimizer" "train_and_save" "test_trained"
 # target_cell_names = ['MCF7', 'A375']
 # target_cell_names = ['VCAP', 'A549']
 target_cell_names = ['A375']
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 direction = 'Multi' #'Down'
 save_data_to_file = False
 use_data_from_file = True
