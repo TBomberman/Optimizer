@@ -15,5 +15,3 @@ def notify(message="python script done"):
 
     server.sendmail("godwinwoo2@gmail.com", "godwinwoo@gmail.com", msg)
     server.quit()
-
-notify("hi")

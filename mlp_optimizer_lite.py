@@ -10,6 +10,7 @@ from helpers.utilities import all_stats
 from helpers.callbacks import NEpochLogger
 import sklearn.metrics as metrics
 from keras.layers.normalization import BatchNormalization
+import datetime
 
 # local variables
 dropout = 0.2
@@ -79,6 +80,13 @@ def do_optimize(nb_classes, data, labels):
                 print('All stats test:', ['{:6.3f}'.format(val) for val in test_stats])
                 print('Total:', ['{:6.3f}'.format(val) for val in [train_stats[0] + test_stats[0]]])
 
+            def save(ytrue, ypred):
+                data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/1vsall/"
+                prefix = str(datetime.datetime.now())
+                print("saving", data_folder_path + prefix)
+                np.savez(data_folder_path + prefix + "_pred", ypred)
+                np.savez(data_folder_path + prefix + "_true", ytrue)
+
             def print_acc(text, Y_train, y_pred_train):
                 y_pred = np.argmax(y_pred_train, axis=1)
                 y_true = np.argmax(Y_train, axis=1)
@@ -108,6 +116,7 @@ def do_optimize(nb_classes, data, labels):
             elif nb_classes == 2:
                 train_stats = all_stats(Y_train[:, 1], y_pred_train[:, 1])
                 test_stats = all_stats(Y_test[:, 1], y_pred_test[:, 1])
+                save(Y_test[:, 1], y_pred_test[:, 1])
                 print_stats(train_stats, test_stats)
                 sum_auc += test_stats[0]
                 sum_prec += test_stats[4]

@@ -4,6 +4,7 @@ import numpy as np
 from scipy import interp
 from keras.utils import np_utils
 from itertools import cycle
+from helpers.utilities import all_stats
 
 def plot_multi_class_roc(filenames):
     n_classes = len(filenames)
@@ -12,11 +13,16 @@ def plot_multi_class_roc(filenames):
     tpr = dict()
     roc_auc = dict()
 
+    print('All stats columns | AUC | Recall | Specificity | Number of Samples | Precision | Max F Cutoff | Max F score')
     for i in range(0, n_classes):
         y_true = np.load(data_folder_path + filenames[i] + "_true.npz")['arr_0']
         y_pred = np.load(data_folder_path + filenames[i] + "_pred.npz")['arr_0']
-        fpr[i], tpr[i], _ = metrics.roc_curve(y_true[:, 1], y_pred[:, 1])
+
+        fpr[i], tpr[i], _ = metrics.roc_curve(y_true, y_pred)
         roc_auc[i] = metrics.auc(fpr[i], tpr[i])
+
+        test_stats = all_stats(y_true, y_pred)
+        print(i, 'All stats test:', ['{:6.3f}'.format(val) for val in test_stats])
 
     # Plot all ROC curves
     plt.figure()
@@ -44,11 +50,6 @@ def plot_multi_class_roc(filenames):
     plt.title('MCF7: ROC curve for ' + str(n_classes) + " classes")
     plt.legend(loc="lower right")
     plt.show()
-
-filenames = {}
-filenames[0] = "2018-09-18 05:01:02.533051"
-filenames[1] = "2018-09-18 04:18:07.858064"
-filenames[2] = "2018-09-18 03:03:10.649133"
 
 def check_active_index():
     path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/load_data/10pBlindGapFixed/"
@@ -79,5 +80,10 @@ def show_non_duplicates():
     for item in unique_list:
         print(item)
 
-# plot_multi_class_roc(filenames)
+filenames = {}
+filenames[0] = "2018-10-27 06:44:20.758712"
+filenames[1] = "2018-10-25 14:50:49.269442"
+filenames[2] = "2018-10-24 22:27:13.582107"
+
+plot_multi_class_roc(filenames)
 # show_non_duplicates()
