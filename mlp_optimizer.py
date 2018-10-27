@@ -123,7 +123,6 @@ def do_optimize(nb_classes, data, labels, model_file_prefix=None, pos_class_weig
             # activation_output = enums.activation_functions[2]
 
             model = Sequential()
-            print('Patience', patience)
 
             model.add(Dense(neuron_count, input_shape=(neuron_count,), activity_regularizer=regularizer(lammy),
                             kernel_regularizer=l2(hyperparam)))
@@ -176,7 +175,6 @@ def do_optimize(nb_classes, data, labels, model_file_prefix=None, pos_class_weig
                 print('All stats train:', ['{:6.3f}'.format(val) for val in train_stats])
                 print('All stats test:', ['{:6.3f}'.format(val) for val in test_stats])
                 print('All stats blind:', ['{:6.3f}'.format(val) for val in blind_stats])
-                print('Total:', ['{:6.3f}'.format(val) for val in [train_stats[0] + test_stats[0]]])# + val_stats[0]]])
 
             def save(ytrue, ypred):
                 data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/1vsall/"
