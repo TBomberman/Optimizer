@@ -123,19 +123,19 @@ class ThreeModelEnsemble():
         y_pred_up = self.up_model.predict_proba(x)
         # y_pred_up = preprocessing.scale(y_pred_up)
         mean = np.mean(self.up_model_y)
-        std = np.mean(self.up_model_y)
+        std = np.std(self.up_model_y)
         y_pred_up = y_pred_up - mean / std
 
         y_pred_down = self.down_model.predict_proba(x)
         # y_pred_down = preprocessing.scale(y_pred_down)
         mean = np.mean(self.down_model_y)
-        std = np.mean(self.down_model_y)
+        std = np.std(self.down_model_y)
         y_pred_down = y_pred_down - mean / std
 
         y_pred_stable = self.stable_model.predict_proba(x)
         # y_pred_stable = preprocessing.scale(y_pred_stable)
         mean = np.mean(self.stable_model_y)
-        std = np.mean(self.stable_model_y)
+        std = np.std(self.stable_model_y)
         y_pred_stable = y_pred_stable - mean / std
 
         y_pred = np.concatenate((np.reshape(y_pred_stable[:,1],(-1, 1)),

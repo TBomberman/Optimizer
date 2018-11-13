@@ -9,9 +9,9 @@ import numpy as np
 from L1000.data_loader import get_feature_dict, load_gene_expression_data, printProgressBar, load_csv, get_trimmed_feature_dict
 from L1000.gene_predictor import train_model, save_model
 from sklearn.model_selection import train_test_split
+import helpers.email_notifier as en
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "6"
-import helpers.email_notifier as en
 import tensorflow as tf
 from keras.backend.tensorflow_backend import set_session
 config = tf.ConfigProto()
@@ -29,14 +29,14 @@ direction = 'Multi' #'Down'
 save_data_to_file = False
 use_data_from_file = True
 test_blind = False
-load_data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/load_data/morgan2048/blind/"
-data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/cv/morgan2048/blind/"
+load_data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/load_data/morgan2048/5p/"
+data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/cv/morgan2048/5p/"
 # gap_factors = [0.8, 0.6, 0.4, 0.2, 0.0]
 # gap_factors = [0.2, 0.3] #, 0.6, 0.4, 0.2, 0.0]
 # gap_factors = [0.1, 0.2, 0.3, 0.4, 0.6, 0.9]
 gap_factors = [0.0]
 # class_weights = [0.01, 0.03, 0.05, 0.1, 0.15]
-percentiles = [10]
+percentiles = [5]
 class_weights = [0.01]
 if use_data_from_file:
     for target_cell_name in target_cell_names:

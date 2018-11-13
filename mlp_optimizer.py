@@ -287,6 +287,7 @@ def get_model(neuron_count, nb_classes, hyperparam=0):
     print('Patience', patience)
 
     model.add(Dense(neuron_count, input_shape=(neuron_count,), activity_regularizer=regularizer(lammy)))
+    model.add(BatchNormalization())
     # model.add(Activation('tanh'))
     model.add(Activation(activation_input))
     model.add(Dropout(dropout))
@@ -294,6 +295,7 @@ def get_model(neuron_count, nb_classes, hyperparam=0):
     add_dense_dropout(layer_count, neuron_count, model, activation, hyperparam)
 
     model.add(Dense(nb_classes, activity_regularizer=regularizer(lammy)))
+    model.add(BatchNormalization())
     # model.add(Activation('softmax'))
     model.add(Activation(activation_output))
     # model.summary() # too much verbage
@@ -304,7 +306,7 @@ def get_model(neuron_count, nb_classes, hyperparam=0):
     return model
 
 def my_plot_model():
-    model = get_model(1274, 2)
+    model = get_model(3155, 2)
     plot_model(model, to_file='model.png', show_shapes=True, show_layer_names=False)
 
 my_plot_model()

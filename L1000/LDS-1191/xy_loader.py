@@ -16,10 +16,10 @@ set_session(tf.Session(config=config))
 # target_cell_names = ['VCAP', 'A549']
 target_cell_names = ['MCF7']
 direction = 'Multi' #'Down'
-load_data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/load_data/morgan2048/blind/"
-data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/cv/morgan2048/blind/"
+load_data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/load_data/morgan2048/5p/"
+data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/cv/morgan2048/5p/"
 gap_factors = [0.0]
-percentiles = [10]
+percentiles = [5]
 class_weights = [0.01]
 for target_cell_name in target_cell_names:
     for bin in [10]:
