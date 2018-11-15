@@ -147,13 +147,37 @@ def plot_normal():
     import numpy as np
     import matplotlib.mlab as mlab
     import math
+    from matplotlib import collections  as mc
+    import pylab as pl
+
+    fig_size = plt.rcParams["figure.figsize"]
+    # print("Current size:", fig_size)
+    fig_size[1] = 3
+    plt.cla()
+    plt.rcParams["figure.figsize"] = fig_size
 
     mu = 0
     variance = 1
     sigma = math.sqrt(variance)
     x = np.linspace(mu - 3 * sigma, mu + 3 * sigma, 100)
     plt.plot(x, mlab.normpdf(x, mu, sigma))
-    plt.title("3 Class Thresholds")
+
+    # percentiles
+    vals = mlab.prctile(x, p=(10, 90))
+
+    downx = vals[0]
+    upx = vals[1]
+
+    plt.plot(*[(downx, downx), (0, mlab.normpdf(downx, mu, sigma))], color='red')
+    plt.plot(*[(downx, -3), (0, 0)], color='red', label='Downregulation')
+    plt.plot(*[(upx, upx), (0, mlab.normpdf(upx, mu, sigma))], color='green')
+    plt.plot(*[(upx, 3), (0, 0)], color='green', label='Upregulation')
+    plt.plot(*[(downx, upx), (0, 0)], color='blue', label='No regulation')
+    plt.legend()
+
+    plt.title("Top and Bottom 10 Percentiles")
+    plt.xlabel("Z-score")
+    plt.ylabel("Density")
     plt.show()
 
 def get_concentration_data_for_histogram():
@@ -171,10 +195,12 @@ def get_concentration_data_for_histogram():
     plt.ylabel('Count')
     plt.xlabel('Drug Concentrations (µM)')
     plt.hist(doses, bins=2000)
+    fig = plt.figure()
+    fig.add_axes([0.1, 0.1, 0.8, 0.8])
     plt.show()
 
 # get_drug_counts_per_cell_line()
 # get_stats()
-# plot_normal()
+plot_normal()
 # get_concentration_data_for_histogram()
-get_histogram()
+# get_histogram()
