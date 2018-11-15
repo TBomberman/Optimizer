@@ -3,7 +3,7 @@ from ensemble_optimizer_lite import do_optimize
 import numpy as np
 import random
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "6"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 import helpers.email_notifier as en
 import tensorflow as tf
 from keras.backend.tensorflow_backend import set_session
@@ -16,8 +16,8 @@ set_session(tf.Session(config=config))
 # target_cell_names = ['VCAP', 'A549']
 target_cell_names = ['MCF7']
 direction = 'Multi' #'Down'
-load_data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/load_data/morgan2048/5p/"
-data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/cv/morgan2048/5p/"
+load_data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/load_data/morgan2048/cell_diff/"
+data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/cv/morgan2048/cell_diff/"
 gap_factors = [0.0]
 percentiles = [5]
 class_weights = [0.01]

@@ -11,7 +11,7 @@ from L1000.gene_predictor import train_model, save_model
 from sklearn.model_selection import train_test_split
 import helpers.email_notifier as en
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "6"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 import tensorflow as tf
 from keras.backend.tensorflow_backend import set_session
 config = tf.ConfigProto()
@@ -19,18 +19,18 @@ config.gpu_options.per_process_gpu_memory_fraction = 0.45
 set_session(tf.Session(config=config))
 
 start_time = time.time()
-gene_count_data_limit = 978
+gene_count_data_limit = 4 #978
 evaluate_type = "use_optimizer" #"use_optimizer" "train_and_save" "test_trained"
 # target_cell_names = ['PC3', 'HT29']
 # target_cell_names = ['MCF7', 'A375']
 # target_cell_names = ['VCAP', 'A549']
-target_cell_names = ['A375']
+target_cell_names = ['MCF7']
 direction = 'Multi' #'Down'
-save_data_to_file = False
-use_data_from_file = True
-test_blind = False
-load_data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/load_data/morgan2048/5p/"
-data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/cv/morgan2048/5p/"
+save_data_to_file = True
+use_data_from_file = False
+test_blind = True
+load_data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/load_data/morgan2048/cell_diff/"
+data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/cv/morgan2048/cell_diff/"
 # gap_factors = [0.8, 0.6, 0.4, 0.2, 0.0]
 # gap_factors = [0.2, 0.3] #, 0.6, 0.4, 0.2, 0.0]
 # gap_factors = [0.1, 0.2, 0.3, 0.4, 0.6, 0.9]
@@ -90,7 +90,7 @@ def find_nth(haystack, needle, n):
     return start
 
 def get_gene_id_dict():
-    lm_genes = json.load(open('LDS-1191/data/landmark_genes.json'))
+    lm_genes = json.load(open('LDS-1191/data/cell_diff_genes.json'))
     dict = {}
     for lm_gene in lm_genes:
         dict[lm_gene['entrez_id']] = lm_gene['gene_symbol']
@@ -103,7 +103,7 @@ drug_features_dict = get_feature_dict('LDS-1191/data/smiles_rdkit_morgan_2048.cs
 # drug_descriptor_file = '/data/datasets/gwoo/L1000/LDS-1191/WorkingData/1to12std.csv'
 # drug_desc_dict = get_feature_dict(drug_descriptor_file) #, use_int=True)
 # print(drug_descriptor_file)
-gene_features_dict = get_feature_dict('LDS-1191/data/gene_go_fingerprint_moreThan3.csv')#, use_int=True)
+gene_features_dict = get_feature_dict('LDS-1191/data/lm_cell_diff_gene_go_fingerprint.csv')#, use_int=True)
 # prot_features_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/WorkingData/protein_fingerprint.csv')#, use_int=False)
 # info to separate by data by cell lines, drug + gene tests may not be equally spread out across cell lines
 cell_name_to_id_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/Metadata/Cell_Line_Metadata.txt', '\t', 2)
@@ -118,7 +118,7 @@ experiments_dose_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/Met
 # set 1000 blind maccs keys aside
 import os.path
 print('remove blind drugs for validation')
-blind_drugs_filename = 'LDS-1191/data/blind_drugs.csv'
+blind_drugs_filename = 'LDS-1191/data/german_35_blind_drugs.csv'
 if os.path.isfile(blind_drugs_filename):
     blind_drugs_keys = load_csv(blind_drugs_filename)
 else:
@@ -132,22 +132,25 @@ else:
         blind_drugs_file.write("%s\n" % key)
         blind_drugs_keys.append([key])
 
-# if test_blind:
-#     keys_to_remove = []
-#     for key in drug_features_dict.keys():
-#         if [key] in blind_drugs_keys:
-#             continue
-#         keys_to_remove.append(key)
-#     for key in keys_to_remove:
-#         drug_features_dict.pop(key, None)
-# else:
-#     for key in blind_drugs_keys:
-#         drug_features_dict.pop(key[0], None)
+print("before removing blind:", len(drug_features_dict))
+if test_blind:
+    keys_to_remove = []
+    for key in drug_features_dict.keys():
+        if [key] in blind_drugs_keys:
+            continue
+        keys_to_remove.append(key)
+    for key in keys_to_remove:
+        drug_features_dict.pop(key, None)
+else:
+    for key in blind_drugs_keys:
+        drug_features_dict.pop(key[0], None)
+
+print("after removing blind:", len(drug_features_dict))
 
 # getting the gene ids
 gene_id_dict = get_gene_id_dict()
 # lm_gene_entrez_ids = list(gene_id_dict.keys())[:200]
-lm_gene_entrez_ids_list = load_csv('LDS-1191/data/genes_by_var.csv')[:gene_count_data_limit]
+lm_gene_entrez_ids_list = load_csv('LDS-1191/data/genes_by_var_cell_diff.csv')[:gene_count_data_limit]
 lm_gene_entrez_ids = []
 for sublist in lm_gene_entrez_ids_list :
     for item in sublist:
@@ -163,6 +166,9 @@ length = len(level_5_gctoo.col_metadata_df.index)
 # for target_cell_name in ['VCAP', 'HCC515', 'A549', 'HEPG2', 'MCF7', 'HEK293T', 'HT29', 'A375', 'HA1E', 'THP1', 'BT20', 'U937',
 #                          'MCF10A', 'HUH7', 'NKDBA', 'NOMO1', 'JURKAT', 'SKBR3', 'HS578T', 'MDAMB231']:
 #     for direction in ['Down', 'Up']:
+
+# for german_key in blind_drugs_keys:
+#     drug_features_dict.pop(german_key[0], None)
 
 for target_cell_name in target_cell_names:
     for bin in [10]:
@@ -314,7 +320,7 @@ for target_cell_name in target_cell_names:
                         for gap_factor in gap_factors:
                             model_file_prefix = load_data_folder_path + target_cell_name + '_' + direction + '_' + \
                                                 str(bin) + 'b_' + str(percentile_down) + 'p_' + \
-                                                str(int(gap_factor * 100)) + 'g'
+                                                str(int(gap_factor * 100)) + 'g_' + 'all35BlindData'
                             print(model_file_prefix)
                             prog_ctr = 0
                             combined_locations = []
@@ -399,8 +405,8 @@ for target_cell_name in target_cell_names:
 
                             sample_size = len(npY_class_save)
 
-                            if sample_size < 300: # smaller sizes was giving y values of only one class
-                                continue
+                            # if sample_size < 300: # smaller sizes was giving y values of only one class
+                            #     continue
 
                             print('Positive samples', np.sum(npY_class_save))
 
