@@ -27,7 +27,7 @@ for target_cell_name in target_cell_names:
             for gap_factor in gap_factors:
                 for class_0_weight in class_weights:
                     file_suffix = target_cell_name + '_' + direction + '_' + str(bin) + 'b_' + \
-                                  str(percentile_down) + 'p_' + str(int(gap_factor*100)) + 'g'
+                                  str(percentile_down) + 'p_' + str(int(gap_factor*100)) + 'g_all35blind'
                     model_file_prefix = data_folder_path + str(datetime.datetime.now()) + '_' + file_suffix + \
                                         '_' + str(int(class_0_weight*100)) + 'c'
                     print('load location', load_data_folder_path)
@@ -44,6 +44,17 @@ for target_cell_name in target_cell_names:
                     # cold_ids = cold_ids[ints]
 
                     try:
+                        def save_model(model, file_prefix):
+                            # serialize model to JSON
+                            model_json = model.to_json()
+                            os.makedirs(os.path.dirname(file_prefix), exist_ok=True)
+                            with open(file_prefix + ".json", "w") as json_file:
+                                json_file.write(model_json)
+                            model.save_weights(file_prefix + ".h5")
+                            print("Saved model", file_prefix, "to disk")
+
                         do_optimize(len(np.unique(npY_class)), npX, npY_class, model_file_prefix)
+                        # save_model(model, model_file_prefix)
+
                     finally:
                         en.notify()

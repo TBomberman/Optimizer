@@ -2,6 +2,7 @@ import numpy as np
 from mlp_optimizer_lite import do_optimize
 import sklearn.metrics as metrics
 from keras.utils import np_utils
+import os
 
 class ThreeModelEnsemble:
 
@@ -38,11 +39,15 @@ class ThreeModelEnsemble:
         def train(direction, x, y):
             print('training', direction)
             model = do_optimize(2, x, y)
+            file_prefix = self.saved_models_path + "1vsAll" + direction
+            if self.save_models:
+                self.save_model(model, file_prefix)
             return model
 
         self.up_model = train("Up", x, up_model_y)
-        self.down_model = train("Down", x, down_model_y)
-        self.stable_model = train("Stable", x, stable_model_y)
+        # self.down_model = train("Down", x, down_model_y)
+        # self.stable_model = train("Stable", x, stable_model_y)
+
 
     def evaluate(self, x=None, y=None, batch_size=None, verbose=0, sample_weight=None, steps=None):
         up_model_y = y[:, 2]
@@ -90,3 +95,11 @@ class ThreeModelEnsemble:
                                 np.reshape(y_pred_up[:, 1], (-1, 1))), axis=1)
         return y_pred
 
+    def save_model(self, model, file_prefix):
+        # serialize model to JSON
+        model_json = model.to_json()
+        os.makedirs(os.path.dirname(file_prefix), exist_ok=True)
+        with open(file_prefix + ".json", "w") as json_file:
+            json_file.write(model_json)
+        model.save_weights(file_prefix + ".h5")
+        print("Saved model", file_prefix, "to disk")
