@@ -1,0 +1,52 @@
+[  
+   {  
+      "entrez_id":"64321",
+      "gene_symbol":"SOX17",
+      "gene_name":"SRY-box 17",
+      "gene_family":[  
+         "SRY-boxes"
+      ],
+      "l1000_type":"best inferred",
+      "rna_seq_corr_fraction_self_rank":0,
+      "rna_seq_corr":0.74,
+      "rna_seq_corr_p_value":0,
+      "id":"58e2bfc2bd21ee32a4284258"
+   },
+   {  
+      "entrez_id":"7852",
+      "gene_symbol":"CXCR4",
+      "gene_name":"C-X-C motif chemokine receptor 4",
+      "gene_family":[  
+         "CD molecules",
+         "C-X-C motif chemokine receptors"
+      ],
+      "l1000_type":"landmark",
+      "id":"58e2bfc2bd21ee32a4283f36"
+   },
+   {  
+      "entrez_id":"3170",
+      "gene_symbol":"FOXA2",
+      "gene_name":"forkhead box A2",
+      "gene_family":[  
+         "Forkhead boxes"
+      ],
+      "l1000_type":"best inferred",
+      "rna_seq_corr_fraction_self_rank":0.01,
+      "rna_seq_corr":0.38,
+      "rna_seq_corr_p_value":0.05,
+      "id":"58e2bfc2bd21ee32a4284c72"
+   },
+   {  
+      "entrez_id":"2627",
+      "gene_symbol":"GATA6",
+      "gene_name":"GATA binding protein 6",
+      "gene_family":[  
+         "GATA zinc finger domain containing"
+      ],
+      "l1000_type":"best inferred",
+      "rna_seq_corr_fraction_self_rank":0,
+      "rna_seq_corr":0.85,
+      "rna_seq_corr_p_value":0,
+      "id":"58e2bfc2bd21ee32a4280c95"
+   }
+]
