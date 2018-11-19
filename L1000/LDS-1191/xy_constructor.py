@@ -19,18 +19,18 @@ config.gpu_options.per_process_gpu_memory_fraction = 0.45
 set_session(tf.Session(config=config))
 
 start_time = time.time()
-gene_count_data_limit = 4 #978
+gene_count_data_limit = 984 #978
 evaluate_type = "use_optimizer" #"use_optimizer" "train_and_save" "test_trained"
 # target_cell_names = ['PC3', 'HT29']
 # target_cell_names = ['MCF7', 'A375']
 # target_cell_names = ['VCAP', 'A549']
-target_cell_names = ['MCF7']
+target_cell_names = ['VCAP']
 direction = 'Multi' #'Down'
 save_data_to_file = True
 use_data_from_file = False
 test_blind = True
-load_data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/load_data/morgan2048/cell_diff/"
-data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/cv/morgan2048/cell_diff/"
+load_data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/load_data/morgan2048/ar/"
+data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/cv/morgan2048/ar/"
 # gap_factors = [0.8, 0.6, 0.4, 0.2, 0.0]
 # gap_factors = [0.2, 0.3] #, 0.6, 0.4, 0.2, 0.0]
 # gap_factors = [0.1, 0.2, 0.3, 0.4, 0.6, 0.9]
@@ -90,7 +90,7 @@ def find_nth(haystack, needle, n):
     return start
 
 def get_gene_id_dict():
-    lm_genes = json.load(open('LDS-1191/data/cell_diff_genes.json'))
+    lm_genes = json.load(open('LDS-1191/data/lm_plus_ar_genes.json'))
     dict = {}
     for lm_gene in lm_genes:
         dict[lm_gene['entrez_id']] = lm_gene['gene_symbol']
@@ -103,7 +103,7 @@ drug_features_dict = get_feature_dict('LDS-1191/data/smiles_rdkit_morgan_2048.cs
 # drug_descriptor_file = '/data/datasets/gwoo/L1000/LDS-1191/WorkingData/1to12std.csv'
 # drug_desc_dict = get_feature_dict(drug_descriptor_file) #, use_int=True)
 # print(drug_descriptor_file)
-gene_features_dict = get_feature_dict('LDS-1191/data/lm_cell_diff_gene_go_fingerprint.csv')#, use_int=True)
+gene_features_dict = get_feature_dict('LDS-1191/data/lm_ar_gene_go_fingerprint.csv')#, use_int=True)
 # prot_features_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/WorkingData/protein_fingerprint.csv')#, use_int=False)
 # info to separate by data by cell lines, drug + gene tests may not be equally spread out across cell lines
 cell_name_to_id_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/Metadata/Cell_Line_Metadata.txt', '\t', 2)
@@ -132,25 +132,25 @@ else:
         blind_drugs_file.write("%s\n" % key)
         blind_drugs_keys.append([key])
 
-print("before removing blind:", len(drug_features_dict))
-if test_blind:
-    keys_to_remove = []
-    for key in drug_features_dict.keys():
-        if [key] in blind_drugs_keys:
-            continue
-        keys_to_remove.append(key)
-    for key in keys_to_remove:
-        drug_features_dict.pop(key, None)
-else:
-    for key in blind_drugs_keys:
-        drug_features_dict.pop(key[0], None)
-
-print("after removing blind:", len(drug_features_dict))
+# print("before removing blind:", len(drug_features_dict))
+# if test_blind:
+#     keys_to_remove = []
+#     for key in drug_features_dict.keys():
+#         if [key] in blind_drugs_keys:
+#             continue
+#         keys_to_remove.append(key)
+#     for key in keys_to_remove:
+#         drug_features_dict.pop(key, None)
+# else:
+#     for key in blind_drugs_keys:
+#         drug_features_dict.pop(key[0], None)
+#
+# print("after removing blind:", len(drug_features_dict))
 
 # getting the gene ids
 gene_id_dict = get_gene_id_dict()
 # lm_gene_entrez_ids = list(gene_id_dict.keys())[:200]
-lm_gene_entrez_ids_list = load_csv('LDS-1191/data/genes_by_var_cell_diff.csv')[:gene_count_data_limit]
+lm_gene_entrez_ids_list = load_csv('LDS-1191/data/genes_by_var_ar.csv')[:gene_count_data_limit]
 lm_gene_entrez_ids = []
 for sublist in lm_gene_entrez_ids_list :
     for item in sublist:
