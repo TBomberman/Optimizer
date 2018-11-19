@@ -574,4 +574,55 @@ def screen_compounds():
         en.notify("Predicting Done")
         plt.show()
 
-screen_compounds()
+def predict_german_35():
+    model_filename_prefix = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/cv/morgan2048/cell_diff/2018-11-16 19:55:43.572269_MCF7_Multi_10b_5p_0g_all35blind_1c_ensemble_models/1vsAllUp"
+    model = load_model_from_file_prefix(model_filename_prefix)
+    data_filename = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/load_data/morgan2048/cell_diff/MCF7_Multi_10b_5p_0g_all35BlindData_npX.npz"
+    data = np.load(data_filename)['arr_0']
+    ids_filename = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/load_data/morgan2048/cell_diff/MCF7_Multi_10b_5p_0g_all35BlindData_cold_ids.npz"
+    ids = np.load(ids_filename)['arr_0']
+    gene_features_dict = get_feature_dict('/data/datasets/gwoo/Python/Optimizer/L1000/LDS-1191/data/lm_cell_diff_gene_go_fingerprint.csv')
+    gene_str_dict = {}
+
+    def get_gene_str_from_list(list):
+        gene_str = ""
+        for elem in list:
+            gene_str += elem
+        return gene_str
+
+    gene_str_dict["SOX17"] = get_gene_str_from_list(gene_features_dict["SOX17"])
+    gene_str_dict["CXCR4"] = get_gene_str_from_list(gene_features_dict["CXCR4"])
+    gene_str_dict["FOXA2"] = get_gene_str_from_list(gene_features_dict["FOXA2"])
+    gene_str_dict["GATA6"] = get_gene_str_from_list(gene_features_dict["GATA6"])
+
+    def get_gene_str_from_arry(arr):
+        gene_str = ""
+        for i in range(0, len(arr)):
+            gene_str += str(int(arr[i]))
+        return gene_str
+
+    predictions = model.predict(data)
+
+    def get_gene(gene_str):
+        if gene_str == gene_str_dict["SOX17"]:
+            return "SOX17"
+        if gene_str == gene_str_dict["CXCR4"]:
+            return "CXCR4"
+        if gene_str == gene_str_dict["FOXA2"]:
+            return "FOXA2"
+        if gene_str == gene_str_dict["GATA6"]:
+            return "GATA6"
+        else:
+            return ""
+
+    for i in range(0, len(data)):
+        drug = ids[i]
+        gene = get_gene(get_gene_str_from_arry(data[i][-1222:]))
+        prediction = predictions[i]
+        if prediction[1] > 0.5:
+            print(drug, gene, "Up")
+        else:
+            print(drug, gene, "")
+
+# screen_compounds()
+predict_german_35()
