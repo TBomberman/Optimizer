@@ -1,14 +1,18 @@
 import os
-os.environ["PATH"] += r";C:\ProgramData\Anaconda3\envs\my-rdkit-env"
-os.environ["PATH"] += r";C:\ProgramData\Anaconda3\envs\my-rdkit-env\Library\mingw-w64\bin"
-os.environ["PATH"] += r";C:\ProgramData\Anaconda3\envs\my-rdkit-env\Library\usr\bin"
-os.environ["PATH"] += r";C:\ProgramData\Anaconda3\envs\my-rdkit-env\Library\bin"
-os.environ["PATH"] += r";C:\ProgramData\Anaconda3\envs\my-rdkit-env\Script"
-from L1000.data_loader import get_feature_dict, load_csv
 from rdkit.Chem import Descriptors, MACCSkeys
 import numpy as np
 from rdkit.Chem import AllChem, DataStructs
 from rdkit import Chem
+import csv
+
+def load_csv(file):
+    # load data
+    expression = []
+    with open(file, "r") as csv_file:
+        reader = csv.reader(csv_file, dialect='excel')
+        for row in reader:
+            expression.append(row)
+    return expression
 
 i=0
 finger_dimension = 2048
@@ -23,8 +27,11 @@ path = os.path.dirname(os.path.abspath(__file__))
 print(path)
 # drug_dict = get_feature_dict('G:/GodwinWoo/LINCS/LDS-1191/Metadata/GSE92742_Broad_LINCS_pert_info.txt',
 #                              delimiter='\t', use_int=False)
-drug_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/Metadata/GSE92742_Broad_LINCS_pert_info.txt',
-                             delimiter='\t', use_int=False)
+# drug_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/Metadata/GSE92742_Broad_LINCS_pert_info.txt',
+#                              delimiter='\t', use_int=False)
+drug_dict = {}
+drug_dict['ZINC335870'] = ['','','','','','O[C@H](CCl)CNc1cccc2c(NC[C@@H](O)CCl)cccc12']
+drug_dict['ZINC145981020'] = ['','','','','','O[C@@H](CCl)COc1cccc2c(OC[C@@H](O)CCl)cccc12']
 
 count = 0
 for key in drug_dict:
@@ -54,4 +61,4 @@ id = id.reshape(len(fps),1)
 data = np.hstack((id,fps))
 header = np.array(header).reshape(1,len(header))
 data_header = np.vstack((header,data))
-np.savetxt("data/smiles_rdkit_morgan_2048.csv", data_header, delimiter=",", fmt="%s")
+np.savetxt("vpc2055_compounds_morgan_2048.csv", data_header, delimiter=",", fmt="%s")
