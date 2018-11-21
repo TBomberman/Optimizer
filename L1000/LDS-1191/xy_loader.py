@@ -26,8 +26,9 @@ for target_cell_name in target_cell_names:
         for percentile_down in percentiles:
             for gap_factor in gap_factors:
                 for class_0_weight in class_weights:
-                    file_suffix = target_cell_name + '_' + direction + '_' + str(bin) + 'b_' + \
-                                  str(percentile_down) + 'p_' + str(int(gap_factor*100)) + 'g_all35Blind'
+                    # file_suffix = target_cell_name + '_' + direction + '_' + str(bin) + 'b_' + \
+                    #               str(percentile_down) + 'p_' + str(int(gap_factor*100)) + 'g_all35Blind'
+                    file_suffix = 'VCAP_AR_Genes'
                     model_file_prefix = data_folder_path + str(datetime.datetime.now()) + '_' + file_suffix + \
                                         '_' + str(int(class_0_weight*100)) + 'c'
                     print('load location', load_data_folder_path)

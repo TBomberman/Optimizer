@@ -9,7 +9,7 @@ data(go)
 data(gene_GO_terms)
 data(GO_IC)
 
-gene_json_data <- jsonlite::fromJSON('data/lm_plus_ar_genes.json')
+gene_json_data <- jsonlite::fromJSON('data/ar_genes.json')
 
 gene_list <- gene_json_data["gene_symbol"][[1]]
 
@@ -50,4 +50,4 @@ for (i in (1:length(go_terms_unique))){
 
 rownames(gene_go_fingerprint) <- gene_list
 colnames(gene_go_fingerprint) <- go_terms_unique
-write.csv(gene_go_fingerprint,file="data/lm_ar_gene_go_fingerprint.csv", quote=FALSE)
+write.csv(gene_go_fingerprint,file="data/ar_gene_go_fingerprint.csv", quote=FALSE)

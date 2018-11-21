@@ -1,0 +1,142 @@
+[
+  {
+      "entrez_id":"7113",
+      "gene_symbol":"TMPRSS2",
+      "gene_name":"transmembrane protease, serine 2",
+      "gene_family":[
+         "Proteases, serine",
+         "Scavenger receptor cysteine rich domain containing"
+      ],
+      "l1000_type":"best inferred",
+      "rna_seq_corr_fraction_self_rank":0.01,
+      "rna_seq_corr":0.56,
+      "rna_seq_corr_p_value":0.01,
+      "id":"58e2bfc2bd21ee32a4282bce"
+   },
+  {
+      "entrez_id":"367",
+      "gene_symbol":"AR",
+      "gene_name":"androgen receptor",
+      "gene_family":[
+         "Nuclear hormone receptors"
+      ],
+      "l1000_type":"best inferred",
+      "rna_seq_corr_fraction_self_rank":0,
+      "rna_seq_corr":0.62,
+      "rna_seq_corr_p_value":0,
+      "id":"58e2bfc2bd21ee32a42831ae"
+   },
+  {
+      "entrez_id":"354",
+      "gene_symbol":"KLK3",
+      "gene_name":"kallikrein related peptidase 3",
+      "gene_family":[
+         "Kallikreins"
+      ],
+      "l1000_type":"inferred",
+      "rna_seq_corr_fraction_self_rank":0.28,
+      "rna_seq_corr":0.1,
+      "rna_seq_corr_p_value":0.35,
+      "id":"58e2bfc2bd21ee32a4283180"
+   },
+  {
+      "entrez_id":"3817",
+      "gene_symbol":"KLK2",
+      "gene_name":"kallikrein related peptidase 2",
+      "gene_family":[
+         "Kallikreins"
+      ],
+      "l1000_type":"inferred",
+      "rna_seq_corr_fraction_self_rank":0.29,
+      "rna_seq_corr":0.09,
+      "rna_seq_corr_p_value":0.35,
+      "id":"58e2bfc2bd21ee32a428090f"
+   },
+  {
+      "entrez_id":"7366",
+      "gene_symbol":"UGT2B15",
+      "gene_name":"UDP glucuronosyltransferase family 2 member B15",
+      "gene_family":[
+         "UDP glucuronosyltransferases"
+      ],
+      "l1000_type":"inferred",
+      "rna_seq_corr_fraction_self_rank":0.01,
+      "rna_seq_corr":0.32,
+      "rna_seq_corr_p_value":0.08,
+      "id":"58e2bfc2bd21ee32a4283203"
+   },
+ {
+      "entrez_id":"7367",
+      "gene_symbol":"UGT2B17",
+      "gene_name":"UDP glucuronosyltransferase family 2 member B17",
+      "gene_family":[
+         "UDP glucuronosyltransferases",
+         "Minor histocompatibility antigens"
+      ],
+      "l1000_type":"inferred",
+      "rna_seq_corr_fraction_self_rank":0.07,
+      "rna_seq_corr":0.25,
+      "rna_seq_corr_p_value":0.14,
+      "id":"58e2bfc2bd21ee32a4283201"
+   },
+  {
+"entrez_id": "991",
+"gene_symbol": "CDC20",
+"gene_name": "cell division cycle 20",
+"gene_family": [
+"WD repeat domain containing"
+],
+"l1000_type": "landmark",
+"id": "58e2bfc2bd21ee32a428422e"
+},
+  {
+"entrez_id": "983",
+"gene_symbol": "CDK1",
+"gene_name": "cyclin dependent kinase 1",
+"gene_family": [
+"Cyclin dependent kinases"
+],
+"l1000_type": "landmark",
+"id": "58e2bfc2bd21ee32a4284210"
+},
+  {
+"entrez_id": "890",
+"gene_symbol": "CCNA2",
+"gene_name": "cyclin A2",
+"gene_family": [
+"Cyclins"
+],
+"l1000_type": "landmark",
+"id": "58e2bfc2bd21ee32a4283f66"
+},
+  {
+"entrez_id": "11065",
+"gene_symbol": "UBE2C",
+"gene_name": "ubiquitin conjugating enzyme E2 C",
+"gene_family": [
+"Ubiquitin conjugating enzymes E2"
+],
+"l1000_type": "landmark",
+"id": "58e2bfc2bd21ee32a4280499"
+},
+  {
+"entrez_id": "207",
+"gene_symbol": "AKT1",
+"gene_name": "AKT serine/threonine kinase 1",
+"gene_family": [
+"Pleckstrin homology domain containing"
+],
+"l1000_type": "landmark",
+"id": "58e2bfc2bd21ee32a4282de5"
+},
+  {
+"entrez_id": "10221",
+"gene_symbol": "TRIB1",
+"gene_name": "tribbles pseudokinase 1",
+"gene_family": [
+""
+],
+"l1000_type": "landmark",
+"id": "58e2bfc2bd21ee32a4281055"
+}
+]

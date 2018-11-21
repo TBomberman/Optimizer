@@ -19,7 +19,7 @@ config.gpu_options.per_process_gpu_memory_fraction = 0.45
 set_session(tf.Session(config=config))
 
 start_time = time.time()
-gene_count_data_limit = 984 #978
+gene_count_data_limit = 12 #978
 evaluate_type = "use_optimizer" #"use_optimizer" "train_and_save" "test_trained"
 # target_cell_names = ['PC3', 'HT29']
 # target_cell_names = ['MCF7', 'A375']
@@ -103,7 +103,7 @@ drug_features_dict = get_feature_dict('LDS-1191/data/smiles_rdkit_morgan_2048.cs
 # drug_descriptor_file = '/data/datasets/gwoo/L1000/LDS-1191/WorkingData/1to12std.csv'
 # drug_desc_dict = get_feature_dict(drug_descriptor_file) #, use_int=True)
 # print(drug_descriptor_file)
-gene_features_dict = get_feature_dict('LDS-1191/data/lm_ar_gene_go_fingerprint.csv')#, use_int=True)
+gene_features_dict = get_feature_dict('LDS-1191/data/ar_gene_go_fingerprint.csv')#, use_int=True)
 # prot_features_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/WorkingData/protein_fingerprint.csv')#, use_int=False)
 # info to separate by data by cell lines, drug + gene tests may not be equally spread out across cell lines
 cell_name_to_id_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/Metadata/Cell_Line_Metadata.txt', '\t', 2)

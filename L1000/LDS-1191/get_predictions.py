@@ -575,12 +575,12 @@ def screen_compounds():
         plt.show()
 
 def predict_arts_2():
-    up_model_filename_prefix = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/cv/morgan2048/ar/2018-11-19 19:23:34.708510_VCAP_Multi_10b_5p_0g_all35Blind_1c_ensemble_models/1vsAllUp"
+    up_model_filename_prefix = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/cv/morgan2048/ar/2018-11-21 15:39:01.351176_VCAP_AR_Genes_1c_ensemble_models/1vsAllUp"
     up_model = load_model_from_file_prefix(up_model_filename_prefix)
-    down_model_filename_prefix = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/cv/morgan2048/ar/2018-11-19 19:23:51.475813_VCAP_Multi_10b_5p_0g_all35Blind_1c_ensemble_models/1vsAllDown"
+    down_model_filename_prefix = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/cv/morgan2048/ar/2018-11-21 15:45:57.572786_VCAP_AR_Genes_1c_ensemble_models/1vsAllDown"
     down_model = load_model_from_file_prefix(down_model_filename_prefix)
 
-    gene_features_dict = get_feature_dict('/data/datasets/gwoo/Python/Optimizer/L1000/LDS-1191/data/lm_ar_gene_go_fingerprint.csv')
+    gene_features_dict = get_feature_dict('/data/datasets/gwoo/Python/Optimizer/L1000/LDS-1191/data/ar_gene_go_fingerprint.csv')
     drug_features_dict = get_feature_dict('/data/datasets/gwoo/Python/Optimizer/L1000/LDS-1191/data/vpc_compounds_morgan_2048.csv')
 
     target_gene_features_dict = {
