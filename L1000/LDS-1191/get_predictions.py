@@ -612,11 +612,11 @@ def predict_arts_2():
 
     for i in range(0, len(data)):
         up_prediction = up_predictions[i]
-        if up_prediction[1] > 0.354: # max f cutoff
+        if up_prediction[1] > 0.217:  # max f cutoff
             print(descriptions[i], "Up Probability", up_prediction[1])
     for i in range(0, len(data)):
         down_prediction = down_predictions[i]
-        if down_prediction[1] > 0.363: # max f cutoff
+        if down_prediction[1] > 0.229:  # max f cutoff
             print(descriptions[i], "Down Probability", down_prediction[1])
 
 
