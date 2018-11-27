@@ -99,7 +99,7 @@ def get_gene_id_dict():
 # get the dictionaries
 # get the expressions
 print(datetime.datetime.now(), "Loading drug and gene features")
-drug_features_dict = get_feature_dict('LDS-1191/data/smiles_rdkit_morgan_2048.csv') #, use_int=True)
+drug_features_dict = get_feature_dict('LDS-1191/data/non_kekulized_morgan_2048.csv') #, use_int=True)
 # drug_descriptor_file = '/data/datasets/gwoo/L1000/LDS-1191/WorkingData/1to12std.csv'
 # drug_desc_dict = get_feature_dict(drug_descriptor_file) #, use_int=True)
 # print(drug_descriptor_file)

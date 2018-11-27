@@ -575,13 +575,13 @@ def screen_compounds():
         plt.show()
 
 def predict_arts_2():
-    up_model_filename_prefix = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/cv/morgan2048/ar/2018-11-21 15:39:01.351176_VCAP_AR_Genes_1c_ensemble_models/1vsAllUp"
+    up_model_filename_prefix = "/data/datasets/gwoo/L1000/LDS-1191/saved_models/screen_ar/VCAP_NK_LM_AR_Up"
     up_model = load_model_from_file_prefix(up_model_filename_prefix)
-    down_model_filename_prefix = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/cv/morgan2048/ar/2018-11-21 15:45:57.572786_VCAP_AR_Genes_1c_ensemble_models/1vsAllDown"
+    down_model_filename_prefix = "/data/datasets/gwoo/L1000/LDS-1191/saved_models/screen_ar/VCAP_NK_LM_AR_Down"
     down_model = load_model_from_file_prefix(down_model_filename_prefix)
 
-    gene_features_dict = get_feature_dict('/data/datasets/gwoo/Python/Optimizer/L1000/LDS-1191/data/ar_gene_go_fingerprint.csv')
-    drug_features_dict = get_feature_dict('/data/datasets/gwoo/Python/Optimizer/L1000/LDS-1191/data/vpc_compounds_morgan_2048.csv')
+    gene_features_dict = get_feature_dict('/data/datasets/gwoo/Python/Optimizer/L1000/LDS-1191/data/lm_ar_gene_go_fingerprint.csv')
+    drug_features_dict = get_feature_dict('/data/datasets/gwoo/Python/Optimizer/L1000/LDS-1191/data/vpc_compounds_morgan_2048_nk.csv')
 
     target_gene_features_dict = {
         'AR': gene_features_dict['AR'],
@@ -612,12 +612,58 @@ def predict_arts_2():
 
     for i in range(0, len(data)):
         up_prediction = up_predictions[i]
-        # if up_prediction[1] > 0.5:
-        print(descriptions[i], "Up Probability", up_prediction[1])
+        if up_prediction[1] > 0.354: # max f cutoff
+            print(descriptions[i], "Up Probability", up_prediction[1])
     for i in range(0, len(data)):
         down_prediction = down_predictions[i]
-        # if down_prediction[1] > 0.5:
-        print(descriptions[i], "Down Probability", down_prediction[1])
+        if down_prediction[1] > 0.363: # max f cutoff
+            print(descriptions[i], "Down Probability", down_prediction[1])
+
+
+def predict_file(fname):
+    ar_up_model_filename_prefix = "/data/datasets/gwoo/L1000/LDS-1191/saved_models/screen_ar/VCAP_AR_Up"
+    ar_up_model = load_model_from_file_prefix(ar_up_model_filename_prefix)
+    ar_down_model_filename_prefix = "/data/datasets/gwoo/L1000/LDS-1191/saved_models/screen_ar/VCAP_AR_Down"
+    ar_down_model = load_model_from_file_prefix(ar_down_model_filename_prefix)
+    lm_ar_up_model_filename_prefix = "/data/datasets/gwoo/L1000/LDS-1191/saved_models/screen_ar/VCAP_LM_AR_Up"
+    lm_ar_up_model = load_model_from_file_prefix(lm_ar_up_model_filename_prefix)
+    lm_ar_down_model_filename_prefix = "/data/datasets/gwoo/L1000/LDS-1191/saved_models/screen_ar/VCAP_LM_AR_Down"
+    lm_ar_down_model = load_model_from_file_prefix(lm_ar_down_model_filename_prefix)
+
+
+    with open(fname, 'r') as file:
+        count = 0
+        for line in file:
+            if count > 2:
+                break
+            print(fname, line)
+            count += 1
+
+            #
+            # with open('ZINC_15_morgan_2048_2D/' + fname.split('/')[-1], 'a') as ref2:
+            #     ref2.write((',').join([zin_id] + [str(elem) for elem in np.where(arg == 1)[0]]))
+            #     ref2.write('\n')
+
+
+def screen_zinc():
+    import multiprocessing
+    from multiprocessing import Pool
+    from contextlib import closing
+    import glob
+
+    files = []
+    for f in glob.glob('/data/datasets/gwoo/zinc/Morgan/*'):
+        files.append(f)
+
+    cpu_count = multiprocessing.cpu_count()
+    cpu_count = 1
+    with closing(Pool(cpu_count)) as pool:
+        pool.map(predict_file, files)
+
 
 # screen_compounds()
 predict_arts_2()
+# screen_zinc()
+
+
+
