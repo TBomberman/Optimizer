@@ -19,18 +19,18 @@ config.gpu_options.per_process_gpu_memory_fraction = 0.45
 set_session(tf.Session(config=config))
 
 start_time = time.time()
-gene_count_data_limit = 12 #978
+gene_count_data_limit = 984
 evaluate_type = "use_optimizer" #"use_optimizer" "train_and_save" "test_trained"
 # target_cell_names = ['PC3', 'HT29']
 # target_cell_names = ['MCF7', 'A375']
 # target_cell_names = ['VCAP', 'A549']
-target_cell_names = ['VCAP']
+target_cell_names = ['LNCAP']
 direction = 'Multi' #'Down'
 save_data_to_file = True
 use_data_from_file = False
 test_blind = True
-load_data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/load_data/morgan2048/ar/"
-data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/cv/morgan2048/ar/"
+load_data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/load_data/morgan2048/LNCAP/"
+data_folder_path = "/data/datasets/gwoo/L1000/LDS-1191/ensemble_models/cv/morgan2048/LNCAP/"
 # gap_factors = [0.8, 0.6, 0.4, 0.2, 0.0]
 # gap_factors = [0.2, 0.3] #, 0.6, 0.4, 0.2, 0.0]
 # gap_factors = [0.1, 0.2, 0.3, 0.4, 0.6, 0.9]
@@ -99,16 +99,16 @@ def get_gene_id_dict():
 # get the dictionaries
 # get the expressions
 print(datetime.datetime.now(), "Loading drug and gene features")
-drug_features_dict = get_feature_dict('LDS-1191/data/non_kekulized_morgan_2048.csv') #, use_int=True)
+drug_features_dict = get_feature_dict('LDS-1191/data/combined_compounds_morgan_2048_nk.csv') #, use_int=True)
 # drug_descriptor_file = '/data/datasets/gwoo/L1000/LDS-1191/WorkingData/1to12std.csv'
 # drug_desc_dict = get_feature_dict(drug_descriptor_file) #, use_int=True)
 # print(drug_descriptor_file)
-gene_features_dict = get_feature_dict('LDS-1191/data/ar_gene_go_fingerprint.csv')#, use_int=True)
+gene_features_dict = get_feature_dict('LDS-1191/data/gene_go_fingerprint_moreThan3.csv')#, use_int=True)
 # prot_features_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/WorkingData/protein_fingerprint.csv')#, use_int=False)
 # info to separate by data by cell lines, drug + gene tests may not be equally spread out across cell lines
-cell_name_to_id_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/Metadata/Cell_Line_Metadata.txt', '\t', 2)
+cell_name_to_id_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1484/Metadata/Cell_Line_Metadata.txt', '\t', 2)
 # info to remove any dosages that are not 'µM'. Want to standardize the dosages.
-experiments_dose_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/Metadata/GSE92742_Broad_LINCS_sig_info.txt', '\t', 0)
+experiments_dose_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1484/Metadata/GSE70138_Broad_LINCS_sig_info.txt', '\t', 0)
 
 # float16_dict = {}
 # for key in prot_features_dict:
@@ -147,18 +147,26 @@ else:
 #
 # print("after removing blind:", len(drug_features_dict))
 
+def get_their_id(good_id):
+    return 'b\'' + good_id + '\''
+
+def get_our_id(bad_id):
+    return bad_id[2:-1]
+
 # getting the gene ids
 gene_id_dict = get_gene_id_dict()
 # lm_gene_entrez_ids = list(gene_id_dict.keys())[:200]
-lm_gene_entrez_ids_list = load_csv('LDS-1191/data/genes_by_var_ar.csv')[:gene_count_data_limit]
+lm_gene_entrez_ids_list = load_csv('LDS-1191/data/genes_by_var.csv')[:gene_count_data_limit]
 lm_gene_entrez_ids = []
-for sublist in lm_gene_entrez_ids_list :
+for sublist in lm_gene_entrez_ids_list:
     for item in sublist:
-        lm_gene_entrez_ids.append(item)
+        lm_gene_entrez_ids.append(get_their_id(item))
+        # lm_gene_entrez_ids.append(item)
 
 
 print("Loading gene expressions from gctx")
-level_5_gctoo = load_gene_expression_data("/home/gwoo/Data/L1000/LDS-1191/Data/GSE92742_Broad_LINCS_Level5_COMPZ.MODZ_n473647x12328.gctx", lm_gene_entrez_ids)
+# level_5_gctoo = load_gene_expression_data("/home/gwoo/Data/L1000/LDS-1191/Data/GSE92742_Broad_LINCS_Level5_COMPZ.MODZ_n473647x12328.gctx")
+level_5_gctoo = load_gene_expression_data("/home/gwoo/Data/L1000/LDS-1484/Data/GSE70138_Broad_LINCS_Level5_COMPZ_n118050x12328.gctx", lm_gene_entrez_ids)
 
 length = len(level_5_gctoo.col_metadata_df.index)
 # length = 10000
@@ -212,11 +220,12 @@ for target_cell_name in target_cell_names:
                 # more_drug_features = drug_desc_dict[drug_id]
 
                 # parse the dosage unit and value
-                dose_unit = experiment_data[5]
-                if dose_unit != 'µM': # standardize dose amounts
+                dose_unit = experiment_data[4][-2:]
+                # if dose_unit != 'µM':  # standardize dose amounts
+                if dose_unit != 'um': # standardize dose amounts
                     # column counts: -666 17071, % 2833, uL 238987, uM 205066, ng 1439, ng / uL 2633, ng / mL 5625
                     continue
-                dose_amt = float(experiment_data[4])
+                dose_amt = float(experiment_data[4][:-2])
                 if dose_amt < bin - 0.1 or dose_amt > bin + 0.1: # only use the 5 mm bin
                     continue
 
@@ -239,6 +248,8 @@ for target_cell_name in target_cell_names:
                 cell_id = cell_name_to_id_dict[cell_name][0]
 
                 for gene_id in lm_gene_entrez_ids:
+                    their_gene_id = gene_id
+                    gene_id = get_our_id(gene_id)
                     gene_symbol = gene_id_dict[gene_id]
 
                     if gene_symbol not in gene_features_dict:
@@ -247,7 +258,7 @@ for target_cell_name in target_cell_names:
                     # if gene_symbol not in prot_features_dict:
                     #     continue
 
-                    pert = column[gene_id].astype('float16')
+                    pert = column[their_gene_id].astype('float16')
                     # pert_conc_ratio = abs(pert / dose_amt)
                     abspert = abs(pert)
 
@@ -294,7 +305,9 @@ for target_cell_name in target_cell_names:
                 # use_global gene_specific_cutoffs:
                 prog_ctr = 0
                 for gene_id in lm_gene_entrez_ids:
-                    row = level_5_gctoo.data_df.loc[gene_id, :].values
+                    their_gene_id = gene_id
+                    gene_id = get_our_id(gene_id)
+                    row = level_5_gctoo.data_df.loc[their_gene_id, :].values
                     prog_ctr += 1
                     printProgressBar(prog_ctr, gene_count_data_limit, prefix='Storing percentile cutoffs')
                     gene_cutoffs_down[gene_id] = np.percentile(row, percentile_down)
@@ -320,12 +333,13 @@ for target_cell_name in target_cell_names:
                         for gap_factor in gap_factors:
                             model_file_prefix = load_data_folder_path + target_cell_name + '_' + direction + '_' + \
                                                 str(bin) + 'b_' + str(percentile_down) + 'p_' + \
-                                                str(int(gap_factor * 100)) + 'g_' + 'all35BlindData'
+                                                str(int(gap_factor * 100)) + 'g'
                             print(model_file_prefix)
                             prog_ctr = 0
                             combined_locations = []
                             combined_test_locations = []
                             for gene_id in lm_gene_entrez_ids: # this section is for gene specific class cutoffs
+                                gene_id = get_our_id(gene_id)
                                 prog_ctr += 1
                                 printProgressBar(prog_ctr, gene_count_data_limit, prefix='Marking positive pertubations')
                                 class_cut_off_down = gene_cutoffs_down[gene_id]
