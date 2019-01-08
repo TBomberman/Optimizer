@@ -42,6 +42,9 @@ path = os.path.dirname(os.path.abspath(__file__))
 print(path)
 drug_dict = get_feature_dict('G:/GodwinWoo/LINCS/LDS-1191/Metadata/GSE92742_Broad_LINCS_pert_info.txt',
                              delimiter='\t', use_int=False)
+# this is the LNCAP dataset
+# drug_dict14 = get_feature_dict('G:/GodwinWoo/LINCS/LDS-1484/Metadata/GSE70138_Broad_LINCS_pert_info.txt',
+#                              delimiter='\t', use_int=False)
 # drug_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1191/Metadata/GSE92742_Broad_LINCS_pert_info.txt',
 #                              delimiter='\t', use_int=False)
 # drug_dict = {}
@@ -58,13 +61,21 @@ drug_dict = get_feature_dict('G:/GodwinWoo/LINCS/LDS-1191/Metadata/GSE92742_Broa
 # drug_dict['ZINC335870/VPC2055'] = ['','','','','','O[C@H](CCl)CNC1=C2C=CC=C(NC[C@@H](O)CCl)C2=CC=C1']
 # drug_dict['ZINC145981020/VPC220010'] = ['','','','','','O[C@@H](CCl)COC1=C2C=CC=C(OC[C@@H](O)CCl)C2=CC=C1']
 
+# nathan's drugs
+drug_dict = {}
+drug_dict['Enzalutamide'] = ['','','','','','CNC(=O)C1=C(F)C=C(C=C1)N1C(=S)N(C(=O)C1(C)C)C1=CC=C(C#N)C(=C1)C(F)(F)F']
+drug_dict['VPC13789'] = ['','','','','','Fc1c(F)c2[nH]cc(-c3nc4c(c(C(=O)NC(C)C)ccc4)cc3)c2cc1F']
+drug_dict['VPC14449'] = ['','','','','','Brc1n(-c2nc(N3CCOCC3)sc2)cc(Br)n1']
+drug_dict['VPC17005'] = ['','','','','','O=C(NC=1SCCN=1)c1c2c(sc1)cccc2']
+drug_dict['VPC220010'] = ['','','','','','ClCC(O)COc1c2c(c(OCC(O)CCl)ccc2)ccc1']
+
 count = 0
 for key in drug_dict:
     count += 1
     try:
         smiles = drug_dict[key][5]
         m = Chem.MolFromSmiles(smiles)
-        # Chem.Kekulize(m) # this generates different fps from cannonical smiles
+        # Chem.Kekulize(m) # this generates different fps from canonical smiles
         molecules.append(m)
         # fps.append(np.array([fp for fp in MACCSkeys.GenMACCSKeys(m).ToBitString()]))
         fp = np.zeros((1,))
@@ -86,4 +97,4 @@ id = id.reshape(len(fps),1)
 data = np.hstack((id,fps))
 header = np.array(header).reshape(1,len(header))
 data_header = np.vstack((header,data))
-np.savetxt("vpc_compounds_morgan_2048_nk.csv", data_header, delimiter=",", fmt="%s")
+np.savetxt("nathans_morgan_2048_nk.csv", data_header, delimiter=",", fmt="%s")
