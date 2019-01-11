@@ -10,14 +10,16 @@ from sortedcontainers import SortedDict
 import matplotlib.pyplot as plt
 import helpers.email_notifier as en
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = ""
 import tensorflow as tf
 from keras.backend.tensorflow_backend import set_session
 config = tf.ConfigProto()
 config.gpu_options.per_process_gpu_memory_fraction = 0.05
 set_session(tf.Session(config=config))
 import time
-
+from multiprocessing import Pool
+import multiprocessing as mp
+from contextlib import closing
 
 down_model_file_prefixes = [
     'PC3Down5bin-1k77',
@@ -90,7 +92,6 @@ path_prefix = "saved_models/"
 # zinc_file_name  = 'data/german_smiles_rdkit_maccs.csv'
 # zinc_file_name  = 'data/nathan_smiles_rdkit_maccs.csv'
 # zinc_file_name  = 'data/smiles_rdkit_maccs.csv'
-zinc_file_name  = 'data/non_kekulized_morgan_2048.csv'
 
 class Top10():
     def __init__(self):
@@ -733,13 +734,19 @@ def get_target_score(num_pert_samples, up_samples, down_samples, flat_samples, m
     return pert_score, 0.0, pert_score
 
 
-def get_predictions(up_gene_ids, down_gene_ids, up_model, down_model):
+def get_predictions(zinc_file_name, up_gene_ids, down_gene_ids, up_model, down_model):
 
     def get_drug_features(row):
-        drug_features = []
-        for value in row[1:]:
-            drug_features.append(int(float(value)))
-        return drug_features
+        # drug_features = []
+        # for value in row[1:]:
+        #     drug_features.append(int(float(value)))
+        # return drug_features
+        introw = []
+        for item in row[1:]:
+            introw.append(int(item))
+        drug_features = np.zeros(2048)
+        drug_features[introw] = 1
+        return drug_features.tolist()
 
     def get_samples(drug_features, gene_features_list):
         samples_list = []
@@ -804,6 +811,25 @@ def get_predictions(up_gene_ids, down_gene_ids, up_model, down_model):
 
         return pert_scores
 
+    def predict_batch(mol_id_batch, up_samples_batch, down_samples_batch):
+        score_list = []
+        nd_up_samples_batch = np.asarray(up_samples_batch)
+        nd_down_samples_batch = np.asarray(down_samples_batch)
+        pert_score_batch = get_multi_mol_target_score(len(mol_id_batch), nd_up_samples_batch,
+                                                      nd_down_samples_batch, up_model, down_model,
+                                                      n_genes)
+        for i in range(0, len(mol_id_batch)):
+            # get one score per compound
+            molecule_id_inner = mol_id_batch[i]
+            pert_score = pert_score_batch[i]
+            scores.append(pert_score)
+            # if top10scores.current_size < top10scores.max_size or \
+            #         pert_score > top10scores.get_lowest_key_prefix():
+            message = str(molecule_id_inner) + ", " + "{:0.4f}".format(pert_score)
+            # top10scores.add_item(pert_score, message)
+            score_list.append(message)
+            print(datetime.datetime.now(), message)
+        return score_list
     # top10scores = Top10Float()
 
     up_gene_features_list, down_gene_features_list, flat_gene_features_list = get_genes_features_list(up_gene_ids,
@@ -819,6 +845,7 @@ def get_predictions(up_gene_ids, down_gene_ids, up_model, down_model):
     print('iteration', iteration)
     mols_per_batch = 10000
     start_time = time.time()
+    toSave = []
 
     with open(zinc_file_name, "r") as csv_file:
         reader = csv.reader(csv_file, dialect='excel', delimiter=',')
@@ -848,23 +875,8 @@ def get_predictions(up_gene_ids, down_gene_ids, up_model, down_model):
                 down_samples_batch.extend(down_samples)
 
                 if drug_counter % mols_per_batch == 0:
-                    def predict_batch(mol_id_batch, up_samples_batch, down_samples_batch):
-                        nd_up_samples_batch = np.asarray(up_samples_batch)
-                        nd_down_samples_batch = np.asarray(down_samples_batch)
-                        pert_score_batch = get_multi_mol_target_score(len(mol_id_batch), nd_up_samples_batch,
-                                                                      nd_down_samples_batch, up_model, down_model,
-                                                                      n_genes)
-                        for i in range(0, mols_per_batch):
-                            # get one score per compound
-                            molecule_id_inner = mol_id_batch[i]
-                            pert_score = pert_score_batch[i]
-                            scores.append(pert_score)
-                            # if top10scores.current_size < top10scores.max_size or \
-                            #         pert_score > top10scores.get_lowest_key_prefix():
-                            message = ", " + str(molecule_id_inner) + ", " + "{:0.4f}".format(pert_score)
-                            # top10scores.add_item(pert_score, message)
-                            print(datetime.datetime.now(), message)
-                    predict_batch(mol_id_batch, up_samples_batch, down_samples_batch)
+                    score_list = predict_batch(mol_id_batch, up_samples_batch, down_samples_batch)
+                    toSave.extend(score_list)
                     mol_id_batch = []
                     up_samples_batch = []
                     down_samples_batch = []
@@ -872,10 +884,14 @@ def get_predictions(up_gene_ids, down_gene_ids, up_model, down_model):
                 continue
             finally:
                 drug_counter += 1
-        predict_batch(mol_id_batch, up_samples_batch, down_samples_batch)
+        score_list = predict_batch(mol_id_batch, up_samples_batch, down_samples_batch)
+        toSave.extend(score_list)
+        with open(zinc_file_name + '.scores.csv', 'w') as f:
+            for item in toSave:
+                f.write("%s\n" % item)
 
 
-def screen_for_ar_compounds():
+def screen_for_ar_compounds(file):
     ar_up_genes = ['7366', '7367', '10221']
     ar_down_genes = ['367', '354', '3817', '7113', '991', '983', '890', '11065', '207']
     path_prefix = "/data/datasets/gwoo/L1000/LDS-1191/saved_models/screen_ar/"
@@ -885,16 +901,43 @@ def screen_for_ar_compounds():
         up_model = load_model_from_file_prefix(path_prefix + up_model_file_prefix)
         down_model = load_model_from_file_prefix(path_prefix + down_model_file_prefix)
         # get_specific_predictions(ar_up_genes, ar_down_genes, get_target_score, None, [up_model], [down_model])
-        get_predictions(ar_up_genes, ar_down_genes, up_model, down_model)
+        get_predictions(file, ar_up_genes, ar_down_genes, up_model, down_model)
     finally:
-        en.notify("Predicting Done")
-        quit()
+        en.notify("Predicting Done" + file)
+
+
+def unpack_get_predictions(args):
+    file = args[0]
+    ar_up_genes = args[1]
+    ar_down_genes = args[2]
+    up_model_file_prefix = args[3]
+    down_model_file_prefix = args[4]
+    up_model = load_model_from_file_prefix(up_model_file_prefix)
+    down_model = load_model_from_file_prefix(down_model_file_prefix)
+    get_predictions(file, ar_up_genes, ar_down_genes, up_model, down_model)
+
+
+def split_multi_process():
+    data_path = 'data/'
+    files = os.listdir(data_path)
+    smi_files = []
+    for file in files:
+        if file.endswith('.smi') and not file == 'merged_id_smiles.smi':
+            smi_files.append(file)
+
+    # for file in smi_files:
+    #     screen_for_ar_compounds(data_path + file)
+
+    try:
+        with closing(Pool(mp.cpu_count())) as pool:
+            pool.map(screen_for_ar_compounds, smi_files)
+    finally:
+        en.notify("Predicting Done All Files")
 
 
 # screen_compounds()
 # predict_arts_2()
 # screen_zinc()
 # predict_nathans()
-screen_for_ar_compounds()
-
-
+# screen_for_ar_compounds('data/non_kekulized_morgan_2048.csv')
+split_multi_process()
