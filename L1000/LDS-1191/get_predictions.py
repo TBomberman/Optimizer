@@ -9,12 +9,15 @@ from L1000.gene_predictor import load_model
 from sortedcontainers import SortedDict
 import matplotlib.pyplot as plt
 import helpers.email_notifier as en
-
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 import tensorflow as tf
 from keras.backend.tensorflow_backend import set_session
 config = tf.ConfigProto()
 config.gpu_options.per_process_gpu_memory_fraction = 0.05
 set_session(tf.Session(config=config))
+import time
+
 
 down_model_file_prefixes = [
     'PC3Down5bin-1k77',
@@ -81,12 +84,13 @@ operation = "promiscuous"
 hit_score = 0
 plot_histograms = False
 save_histogram_data = False
-use_ends_model = True
+use_ends_model = False
 path_prefix = "saved_models/"
 # zinc_file_name  = '/home/gwoo/Data/zinc/ZincCompounds_InStock_maccs.tab'
 # zinc_file_name  = 'data/german_smiles_rdkit_maccs.csv'
-zinc_file_name  = 'data/nathan_smiles_rdkit_maccs.csv'
+# zinc_file_name  = 'data/nathan_smiles_rdkit_maccs.csv'
 # zinc_file_name  = 'data/smiles_rdkit_maccs.csv'
+zinc_file_name  = 'data/non_kekulized_morgan_2048.csv'
 
 class Top10():
     def __init__(self):
@@ -135,7 +139,7 @@ def load_model_from_file_prefix(model_file_prefix):
     return load_model(model_file_prefix)
 
 def get_gene_id_dict():
-    lm_genes = json.load(open('data/landmark_genes.json'))
+    lm_genes = json.load(open('data/lm_plus_ar_genes.json'))
     dict = {}
     for lm_gene in lm_genes:
         dict[lm_gene['entrez_id']] = lm_gene['gene_symbol']
@@ -222,7 +226,7 @@ def get_specific_predictions(up_gene_ids, down_gene_ids, score_function, model, 
     def get_drug_features(row):
         drug_features = []
         for value in row[1:]:
-            drug_features.append(int(value))
+            drug_features.append(int(float(value)))
         return drug_features
 
     def get_samples(drug_features, gene_features_list):
@@ -232,8 +236,8 @@ def get_specific_predictions(up_gene_ids, down_gene_ids, score_function, model, 
         return np.asarray(samples_list, dtype="float16")
 
     def get_genes_features_list(up_gene_ids, down_gene_ids):
-        gene_features_dict = get_feature_dict('data/gene_go_fingerprint_moreThan3.csv', use_int=True)
-        gene_ids_by_var = load_csv('data/genes_by_var.csv')
+        gene_features_dict = get_feature_dict('data/lm_ar_gene_go_fingerprint.csv', use_int=True)
+        gene_ids_by_var = load_csv('data/genes_by_var_lm_ar.csv')
 
         gene_ids_list = []
         for sublist in gene_ids_by_var:
@@ -269,7 +273,7 @@ def get_specific_predictions(up_gene_ids, down_gene_ids, score_function, model, 
     scores = []
     iteration = 0
     n_drugs = 500000
-    n_gpus = 14
+    n_gpus = 1
     batch_size = int(n_drugs / n_gpus)
     start = iteration * batch_size
     end = start + batch_size - 1
@@ -297,7 +301,7 @@ def get_specific_predictions(up_gene_ids, down_gene_ids, score_function, model, 
                 up_samples = get_samples(drug_features, up_gene_features_list)
                 down_samples = get_samples(drug_features, down_gene_features_list)
                 flat_samples = get_samples(drug_features, flat_gene_features_list)
-                print('mol id', molecule_id)
+                # print('mol id', molecule_id)
                 num_models = max(len(up_models), 1)
 
                 def get_scores(up_models1, down_models1):
@@ -710,10 +714,187 @@ def predict_nathans():
             print(descriptions[i], "Down Probability", down_prediction[1])
 
 
+def get_target_score(num_pert_samples, up_samples, down_samples, flat_samples, model, up_models, down_models):
+    up_auc = 0.823
+    down_auc = 0.827
+    up_weight = up_auc / (up_auc + down_auc)
+    down_weight = 1 - up_weight
+    n_up = len(up_samples)
+    n_down = len(down_samples)
+
+    up_model_all_predictions = up_models[0].predict(up_samples)
+    down_model_all_predictions = down_models[0].predict(down_samples)
+
+    average_up_gene_probability = np.sum(up_model_all_predictions[:, 1]) / n_up
+    average_down_gene_probability = np.sum(down_model_all_predictions[:, 1]) / n_down
+
+    pert_score = up_weight * average_up_gene_probability + down_weight * average_down_gene_probability
+
+    return pert_score, 0.0, pert_score
+
+
+def get_predictions(up_gene_ids, down_gene_ids, up_model, down_model):
+
+    def get_drug_features(row):
+        drug_features = []
+        for value in row[1:]:
+            drug_features.append(int(float(value)))
+        return drug_features
+
+    def get_samples(drug_features, gene_features_list):
+        samples_list = []
+        for gene_features in gene_features_list:
+            samples_list.append(np.asarray(drug_features + gene_features))
+        return np.asarray(samples_list, dtype="float16")
+
+    def get_genes_features_list(up_gene_ids, down_gene_ids):
+        gene_features_dict = get_feature_dict('data/lm_ar_gene_go_fingerprint.csv', use_int=True)
+        gene_ids_by_var = load_csv('data/genes_by_var_lm_ar.csv')
+
+        gene_ids_list = []
+        for sublist in gene_ids_by_var:
+            for item in sublist:
+                gene_ids_list.append(item)
+
+        gene_name_list = []
+        up_gene_features_list = []
+        down_gene_features_list = []
+        flat_gene_features_list = []
+        for gene_id in gene_ids_list:
+            gene_symbol = gene_id_dict[gene_id]
+            if gene_symbol not in gene_features_dict:
+                continue
+            gene_features = gene_features_dict[gene_symbol]
+
+            if gene_id in up_gene_ids:
+                up_gene_features_list.append(gene_features)
+            elif gene_id in down_gene_ids:
+                down_gene_features_list.append(gene_features)
+            else:
+                # print('flat gene id', gene_id)
+                flat_gene_features_list.append(gene_features)
+                gene_name_list.append(gene_symbol)
+        # print(gene_name_list)
+        return up_gene_features_list, down_gene_features_list, flat_gene_features_list
+
+    def get_multi_mol_target_score(n_mol, up_samples, down_samples, up_model, down_model, n_target_genes):
+        up_auc = 0.823
+        down_auc = 0.827
+        up_weight = up_auc / (up_auc + down_auc)
+        down_weight = 1 - up_weight
+        n_up = len(up_samples)
+        n_down = len(down_samples)
+
+        up_model_all_predictions = up_model.predict(up_samples)
+        down_model_all_predictions = down_model.predict(down_samples)
+
+        n_up_samples_per_mol = int(n_up / n_mol)
+        n_down_samples_per_mol = int(n_down / n_mol)
+
+        pert_scores = []
+        for i in range(0, n_mol):
+            up_start = i * n_up_samples_per_mol
+            up_end = (i + 1) * n_up_samples_per_mol - 1
+            up_gene_probability_sum = np.sum(up_model_all_predictions[up_start:up_end, 1]) * up_weight
+            down_start = i * n_down_samples_per_mol
+            down_end = (i + 1) * n_down_samples_per_mol - 1
+            down_gene_probability_sum = np.sum(down_model_all_predictions[down_start:down_end, 1]) * down_weight
+            pert_score = (up_gene_probability_sum + down_gene_probability_sum) / n_target_genes
+            pert_scores.append(pert_score)
+
+        return pert_scores
+
+    # top10scores = Top10Float()
+
+    up_gene_features_list, down_gene_features_list, flat_gene_features_list = get_genes_features_list(up_gene_ids,
+                                                                                                      down_gene_ids)
+    n_genes = len(up_gene_features_list) + len(down_gene_features_list)
+    scores = []
+    iteration = 0
+    n_drugs = 500000
+    n_gpus = 1
+    batch_size = int(n_drugs / n_gpus)
+    start = iteration * batch_size
+    end = start + batch_size - 1
+    print('iteration', iteration)
+    mols_per_batch = 10000
+    start_time = time.time()
+
+    with open(zinc_file_name, "r") as csv_file:
+        reader = csv.reader(csv_file, dialect='excel', delimiter=',')
+        next(reader)
+        drug_counter = 1
+        mol_id_batch = []
+        up_samples_batch = []
+        down_samples_batch = []
+        for row in reader:
+            try:
+                if drug_counter % 100 == 0:
+                    print(drug_counter, time.time() - start_time)
+                if save_histogram_data:
+                    if drug_counter < start:
+                        drug_counter += 1
+                        continue
+                    if drug_counter > end:
+                        break
+                molecule_id = row[0]
+                drug_features = get_drug_features(row)
+                up_samples = get_samples(drug_features, up_gene_features_list)
+                down_samples = get_samples(drug_features, down_gene_features_list)
+                # print('mol id', molecule_id)
+
+                mol_id_batch.append(molecule_id)
+                up_samples_batch.extend(up_samples)
+                down_samples_batch.extend(down_samples)
+
+                if drug_counter % mols_per_batch == 0:
+                    def predict_batch(mol_id_batch, up_samples_batch, down_samples_batch):
+                        nd_up_samples_batch = np.asarray(up_samples_batch)
+                        nd_down_samples_batch = np.asarray(down_samples_batch)
+                        pert_score_batch = get_multi_mol_target_score(len(mol_id_batch), nd_up_samples_batch,
+                                                                      nd_down_samples_batch, up_model, down_model,
+                                                                      n_genes)
+                        for i in range(0, mols_per_batch):
+                            # get one score per compound
+                            molecule_id_inner = mol_id_batch[i]
+                            pert_score = pert_score_batch[i]
+                            scores.append(pert_score)
+                            # if top10scores.current_size < top10scores.max_size or \
+                            #         pert_score > top10scores.get_lowest_key_prefix():
+                            message = ", " + str(molecule_id_inner) + ", " + "{:0.4f}".format(pert_score)
+                            # top10scores.add_item(pert_score, message)
+                            print(datetime.datetime.now(), message)
+                    predict_batch(mol_id_batch, up_samples_batch, down_samples_batch)
+                    mol_id_batch = []
+                    up_samples_batch = []
+                    down_samples_batch = []
+            except:
+                continue
+            finally:
+                drug_counter += 1
+        predict_batch(mol_id_batch, up_samples_batch, down_samples_batch)
+
+
+def screen_for_ar_compounds():
+    ar_up_genes = ['7366', '7367', '10221']
+    ar_down_genes = ['367', '354', '3817', '7113', '991', '983', '890', '11065', '207']
+    path_prefix = "/data/datasets/gwoo/L1000/LDS-1191/saved_models/screen_ar/"
+    up_model_file_prefix = "VCAP_NK_LM_AR_Up"
+    down_model_file_prefix = "VCAP_NK_LM_AR_Down"
+    try:
+        up_model = load_model_from_file_prefix(path_prefix + up_model_file_prefix)
+        down_model = load_model_from_file_prefix(path_prefix + down_model_file_prefix)
+        # get_specific_predictions(ar_up_genes, ar_down_genes, get_target_score, None, [up_model], [down_model])
+        get_predictions(ar_up_genes, ar_down_genes, up_model, down_model)
+    finally:
+        en.notify("Predicting Done")
+        quit()
+
+
 # screen_compounds()
-predict_arts_2()
+# predict_arts_2()
 # screen_zinc()
 # predict_nathans()
-
+screen_for_ar_compounds()
 
 
