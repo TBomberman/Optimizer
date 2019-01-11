@@ -894,7 +894,8 @@ def get_predictions(zinc_file_name, up_gene_ids, down_gene_ids, up_model, down_m
 def screen_for_ar_compounds(file):
     ar_up_genes = ['7366', '7367', '10221']
     ar_down_genes = ['367', '354', '3817', '7113', '991', '983', '890', '11065', '207']
-    path_prefix = "/data/datasets/gwoo/L1000/LDS-1191/saved_models/screen_ar/"
+    # path_prefix = "/data/datasets/gwoo/L1000/LDS-1191/saved_models/screen_ar/"
+    path_prefix = "/home/integra/Data/screen_ar_models/"
     up_model_file_prefix = "VCAP_NK_LM_AR_Up"
     down_model_file_prefix = "VCAP_NK_LM_AR_Down"
     try:
@@ -918,7 +919,8 @@ def unpack_get_predictions(args):
 
 
 def split_multi_process():
-    data_path = 'data/'
+    # data_path = 'data/'
+    data_path = '/project/6006305/integra/ZINC_15_morgan_2048_2D/'
     files = os.listdir(data_path)
     smi_files = []
     for file in files:
