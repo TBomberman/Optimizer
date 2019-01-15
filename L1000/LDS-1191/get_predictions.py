@@ -95,7 +95,7 @@ path_prefix = "saved_models/"
 # data_path = '/home/integra/projects/def-cherkaso/integra/ZINC_15_morgan_2048_2D/'
 # save_path = '/home/integra/projects/def-cherkaso/integra/ZINC_15_morgan_2048_2D_scores/'
 data_path = 'data/'
-save_path = 'datg/'
+save_path = 'data/'
 
 class Top10():
     def __init__(self):
@@ -853,7 +853,7 @@ def get_predictions(zinc_file_name, up_gene_ids, down_gene_ids, up_model, down_m
 
     with open(data_path + zinc_file_name, "r") as csv_file:
         reader = csv.reader(csv_file, dialect='excel', delimiter=',')
-        next(reader)
+        # next(reader)
         drug_counter = 1
         mol_id_batch = []
         up_samples_batch = []
