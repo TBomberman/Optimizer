@@ -11,11 +11,11 @@ import matplotlib.pyplot as plt
 import helpers.email_notifier as en
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
-import tensorflow as tf
-from keras.backend.tensorflow_backend import set_session
-config = tf.ConfigProto()
-config.gpu_options.per_process_gpu_memory_fraction = 0.05
-set_session(tf.Session(config=config))
+# import tensorflow as tf
+# from keras.backend.tensorflow_backend import set_session
+# config = tf.ConfigProto()
+# config.gpu_options.per_process_gpu_memory_fraction = 0.05
+# set_session(tf.Session(config=config))
 import time
 from multiprocessing import Pool
 import multiprocessing as mp
@@ -92,6 +92,10 @@ path_prefix = "saved_models/"
 # zinc_file_name  = 'data/german_smiles_rdkit_maccs.csv'
 # zinc_file_name  = 'data/nathan_smiles_rdkit_maccs.csv'
 # zinc_file_name  = 'data/smiles_rdkit_maccs.csv'
+# data_path = '/home/integra/projects/def-cherkaso/integra/ZINC_15_morgan_2048_2D/'
+# save_path = '/home/integra/projects/def-cherkaso/integra/ZINC_15_morgan_2048_2D_scores/'
+data_path = 'data/'
+save_path = 'datg/'
 
 class Top10():
     def __init__(self):
@@ -837,7 +841,7 @@ def get_predictions(zinc_file_name, up_gene_ids, down_gene_ids, up_model, down_m
     n_genes = len(up_gene_features_list) + len(down_gene_features_list)
     scores = []
     iteration = 0
-    n_drugs = 500000
+    n_drugs = 10000
     n_gpus = 1
     batch_size = int(n_drugs / n_gpus)
     start = iteration * batch_size
@@ -847,7 +851,7 @@ def get_predictions(zinc_file_name, up_gene_ids, down_gene_ids, up_model, down_m
     start_time = time.time()
     toSave = []
 
-    with open(zinc_file_name, "r") as csv_file:
+    with open(data_path + zinc_file_name, "r") as csv_file:
         reader = csv.reader(csv_file, dialect='excel', delimiter=',')
         next(reader)
         drug_counter = 1
@@ -886,7 +890,7 @@ def get_predictions(zinc_file_name, up_gene_ids, down_gene_ids, up_model, down_m
                 drug_counter += 1
         score_list = predict_batch(mol_id_batch, up_samples_batch, down_samples_batch)
         toSave.extend(score_list)
-        with open(zinc_file_name + '.scores.csv', 'w') as f:
+        with open(save_path + zinc_file_name + '.scores.csv', 'w') as f:
             for item in toSave:
                 f.write("%s\n" % item)
 
@@ -894,8 +898,8 @@ def get_predictions(zinc_file_name, up_gene_ids, down_gene_ids, up_model, down_m
 def screen_for_ar_compounds(file):
     ar_up_genes = ['7366', '7367', '10221']
     ar_down_genes = ['367', '354', '3817', '7113', '991', '983', '890', '11065', '207']
-    # path_prefix = "/data/datasets/gwoo/L1000/LDS-1191/saved_models/screen_ar/"
-    path_prefix = "/home/integra/Data/screen_ar_models/"
+    path_prefix = "/data/datasets/gwoo/L1000/LDS-1191/saved_models/screen_ar/"
+    # path_prefix = "/home/integra/Data/screen_ar_models/"
     up_model_file_prefix = "VCAP_NK_LM_AR_Up"
     down_model_file_prefix = "VCAP_NK_LM_AR_Down"
     try:
@@ -904,7 +908,7 @@ def screen_for_ar_compounds(file):
         # get_specific_predictions(ar_up_genes, ar_down_genes, get_target_score, None, [up_model], [down_model])
         get_predictions(file, ar_up_genes, ar_down_genes, up_model, down_model)
     finally:
-        en.notify("Predicting Done" + file)
+        en.notify("Predicting Done " + file)
 
 
 def unpack_get_predictions(args):
@@ -919,12 +923,11 @@ def unpack_get_predictions(args):
 
 
 def split_multi_process():
-    # data_path = 'data/'
-    data_path = '/project/6006305/integra/ZINC_15_morgan_2048_2D/'
     files = os.listdir(data_path)
+    existing_files = os.listdir(save_path)
     smi_files = []
     for file in files:
-        if file.endswith('.smi') and not file == 'merged_id_smiles.smi':
+        if file.endswith('.smi') and file + '.scores.csv' not in existing_files:
             smi_files.append(file)
 
     # for file in smi_files:
