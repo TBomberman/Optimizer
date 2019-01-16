@@ -1,16 +1,23 @@
+print("start script")
 import csv
 import datetime
 import json
 from pathlib import Path
 import numpy as np
-from L1000.data_loader import get_feature_dict, load_csv
 from L1000.gene_predictor import load_model
-import helpers.email_notifier as en
 import os
+import sys
 import time
 from multiprocessing import Pool
 import multiprocessing as mp
 from contextlib import closing
+print("finished common imports")
+
+from keras.models import model_from_json
+print("finished keras import")
+
+import helpers.email_notifier as en
+print("finished my own imports")
 
 # data_path = '/home/integra/projects/def-cherkaso/integra/ZINC_15_morgan_2048_2D/'
 # save_path = '/home/integra/projects/def-cherkaso/integra/ZINC_15_morgan_2048_2D_scores/'
@@ -20,9 +27,48 @@ saved_model_path_prefix = "/data/datasets/gwoo/L1000/LDS-1191/saved_models/scree
 # saved_model_path_prefix = '/home/integra/Data/screen_ar_models/'
 up_model_file_prefix = "VCAP_NK_LM_AR_Up"
 down_model_file_prefix = "VCAP_NK_LM_AR_Down"
+print("got variables")
+
+
+def load_csv(file):
+    # load data
+    expression = []
+    with open(file, "r") as csv_file:
+        reader = csv.reader(csv_file, dialect='excel')
+        for row in reader:
+            expression.append(row)
+    return expression
+
+
+def get_feature_dict(file, delimiter=',', key_index=0, use_int=False):
+    with open(file, "r") as csv_file:
+        reader = csv.reader(csv_file, dialect='excel', delimiter=delimiter)
+        next(reader)
+        if use_int:
+            my_dict = {}
+            for row in reader:
+                list = []
+                for value in row[1:]:
+                    list.append(int(value))
+                my_dict[row[key_index]] = list
+            return my_dict
+        return dict((row[key_index], row[1:]) for row in reader)
 
 
 # load model
+def load_model(file_prefix):
+    # load json and create model
+    json_file = open(file_prefix + '.json', 'r')
+    loaded_model_json = json_file.read()
+    json_file.close()
+    loaded_model = model_from_json(loaded_model_json)
+    # load weights into new model
+    loaded_model.load_weights(file_prefix + '.h5')
+    print("Loaded model", file_prefix)
+    loaded_model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    return loaded_model
+
+
 def load_model_from_file_prefix(model_file_prefix):
     model_file = Path(model_file_prefix + ".json")
     if not model_file.is_file():
@@ -69,6 +115,7 @@ ar_up_genes = ['7366', '7367', '10221']
 ar_down_genes = ['367', '354', '3817', '7113', '991', '983', '890', '11065', '207']
 up_gene_features_list, down_gene_features_list = get_genes_features_list(ar_up_genes, ar_down_genes)
 n_genes = len(up_gene_features_list) + len(down_gene_features_list)
+print("got more variables")
 
 
 def get_drug_features(row):
@@ -123,14 +170,14 @@ def predict_batch(mol_id_batch, up_samples_batch, down_samples_batch, up_model, 
         # get one score per compound
         molecule_id_inner = mol_id_batch[i]
         pert_score = pert_score_batch[i]
-        message = str(molecule_id_inner) + ", " + "{:0.4f}".format(pert_score)
+        message = str(molecule_id_inner) + ", " + pert_score  # "{:0.6f}".format(pert_score)
         score_list.append(message)
-        print(datetime.datetime.now(), message)
+        # print(datetime.datetime.now(), message)
     return score_list
 
 
 def get_predictions(zinc_file_name, up_model, down_model):
-    n_molecules_per_batch = 10000
+    n_molecules_per_batch = 20000
     start_time = time.time()
     to_save = []
 
@@ -142,8 +189,8 @@ def get_predictions(zinc_file_name, up_model, down_model):
         down_samples_batch = []
         for row in reader:
             try:
-                if drug_counter % 100 == 0:
-                    print(drug_counter, time.time() - start_time)
+                # if drug_counter % 100 == 0:
+                #     print(drug_counter, time.time() - start_time)
                 molecule_id = row[0]
                 drug_features = get_drug_features(row)
                 up_samples = get_samples(drug_features, up_gene_features_list)
@@ -171,6 +218,7 @@ def get_predictions(zinc_file_name, up_model, down_model):
 
 
 def screen_for_ar_compounds(file):
+    print("processing", file)
     start_time = time.time()
     try:
         up_model = load_model_from_file_prefix(saved_model_path_prefix + up_model_file_prefix)
@@ -181,19 +229,30 @@ def screen_for_ar_compounds(file):
         en.notify("Predicting Done " + file)
 
 
-def split_multi_process():
+def split_multi_process(n_sections=1, working_section=0):
+    print("split_multi_process")
     files = os.listdir(data_path)
     existing_files = os.listdir(save_path)
-    smi_files = ['CDAD139.smi']
-    # for file in files:
-    #     if file + '.scores.csv' not in existing_files:
-    #         smi_files.append(file)
+    smi_files = []
+
+    n_files = len(files)
+    n_files_per_section = int(n_files/n_sections)
+    start = working_section * n_files_per_section
+    end = start + n_files_per_section
+
+    for i in range(start, end):
+        file = files[i]
+        if file + '.scores.csv' not in existing_files:
+            smi_files.append(file)
+
     try:
-        # with closing(Pool(mp.cpu_count())) as pool:
-        with closing(Pool(1)) as pool:
+        with closing(Pool(mp.cpu_count())) as pool:
+        # with closing(Pool(1)) as pool:
             pool.map(screen_for_ar_compounds, smi_files)
     finally:
         en.notify("Predicting Done All Files")
 
 
-split_multi_process()
+n_sections = int(sys.argv[0])
+working_section = int(sys.argv[1])  # zero based
+split_multi_process(n_sections, working_section)
