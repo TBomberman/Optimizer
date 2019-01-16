@@ -184,13 +184,22 @@ def screen_for_ar_compounds(file):
 def split_multi_process():
     files = os.listdir(data_path)
     existing_files = os.listdir(save_path)
-    smi_files = ['CDAD139.smi']
-    # for file in files:
-    #     if file + '.scores.csv' not in existing_files:
-    #         smi_files.append(file)
+    smi_files = []
+
+    n_files = len(files)
+    n_sections = 1
+    n_files_per_section = int(n_files/n_sections)
+    working_section = 0
+    start = working_section * n_files_per_section
+    end = start + n_files_per_section
+
+    for i in range(start, end):
+        file = files[i]
+        if file + '.scores.csv' not in existing_files:
+            smi_files.append(file)
     try:
-        # with closing(Pool(mp.cpu_count())) as pool:
-        with closing(Pool(1)) as pool:
+        with closing(Pool(mp.cpu_count())) as pool:
+        # with closing(Pool(1)) as pool:
             pool.map(screen_for_ar_compounds, smi_files)
     finally:
         en.notify("Predicting Done All Files")
