@@ -21,8 +21,8 @@ print("finished my own imports")
 
 # data_path = '/home/integra/projects/def-cherkaso/integra/ZINC_15_morgan_2048_2D/'
 # save_path = '/home/integra/projects/def-cherkaso/integra/ZINC_15_morgan_2048_2D_scores/'
-data_path = 'data/'
-save_path = 'data/'
+data_path = '/home/integra/Python/Optimizer/L1000/LDS-1191/data'
+save_path = '/home/integra/Python/Optimizer/L1000/LDS-1191/data'
 saved_model_path_prefix = "/data/datasets/gwoo/L1000/LDS-1191/saved_models/screen_ar/"
 # saved_model_path_prefix = '/home/integra/Data/screen_ar_models/'
 up_model_file_prefix = "VCAP_NK_LM_AR_Up"
@@ -77,7 +77,7 @@ def load_model_from_file_prefix(model_file_prefix):
 
 
 def get_gene_id_dict():
-    lm_genes = json.load(open('data/lm_plus_ar_genes.json'))
+    lm_genes = json.load(open('/home/integra/Python/Optimizer/L1000/LDS-1191/data/lm_plus_ar_genes.json'))
     dict = {}
     for lm_gene in lm_genes:
         dict[lm_gene['entrez_id']] = lm_gene['gene_symbol']
@@ -85,8 +85,8 @@ def get_gene_id_dict():
 
 
 def get_genes_features_list(up_gene_ids, down_gene_ids):
-    gene_features_dict = get_feature_dict('data/lm_ar_gene_go_fingerprint.csv', use_int=True)
-    gene_ids_by_var = load_csv('data/genes_by_var_lm_ar.csv')
+    gene_features_dict = get_feature_dict('/home/integra/Python/Optimizer/L1000/LDS-1191/data/lm_ar_gene_go_fingerprint.csv', use_int=True)
+    gene_ids_by_var = load_csv('/home/integra/Python/Optimizer/L1000/LDS-1191/data/genes_by_var_lm_ar.csv')
 
     gene_ids_list = []
     for sublist in gene_ids_by_var:
