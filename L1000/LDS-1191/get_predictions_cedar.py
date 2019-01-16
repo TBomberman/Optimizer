@@ -253,6 +253,6 @@ def split_multi_process(n_sections=1, working_section=0):
         en.notify("Predicting Done All Files")
 
 
-n_sections = int(sys.argv[0])
-working_section = int(sys.argv[1])  # zero based
+n_sections = int(sys.argv[1])
+working_section = int(sys.argv[2])  # zero based
 split_multi_process(n_sections, working_section)
