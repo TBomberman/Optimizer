@@ -170,7 +170,7 @@ def predict_batch(mol_id_batch, up_samples_batch, down_samples_batch, up_model, 
         # get one score per compound
         molecule_id_inner = mol_id_batch[i]
         pert_score = pert_score_batch[i]
-        message = str(molecule_id_inner) + ", " + pert_score  # "{:0.6f}".format(pert_score)
+        message = str(molecule_id_inner) + ", " + "{:0.10f}".format(pert_score)
         score_list.append(message)
         # print(datetime.datetime.now(), message)
     return score_list
