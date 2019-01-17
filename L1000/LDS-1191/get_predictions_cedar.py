@@ -250,7 +250,7 @@ def split_multi_process(n_sections=1, working_section=0):
         # with closing(Pool(1)) as pool:
             pool.map(screen_for_ar_compounds, smi_files)
     finally:
-        en.notify("Predicting Done All Files, section", working_section, "of", n_sections)
+        en.notify("Predicting Done All Files, section " + working_section + " of " + n_sections)
 
 
 n_sections = int(sys.argv[1])
