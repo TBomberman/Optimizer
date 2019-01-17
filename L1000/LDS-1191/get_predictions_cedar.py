@@ -19,12 +19,12 @@ print("finished keras import")
 import helpers.email_notifier as en
 print("finished my own imports")
 
-# data_path = '/home/integra/projects/def-cherkaso/integra/ZINC_15_morgan_2048_2D/'
-# save_path = '/home/integra/projects/def-cherkaso/integra/ZINC_15_morgan_2048_2D_scores/'
-data_path = '/home/integra/Python/Optimizer/L1000/LDS-1191/data/'
-save_path = '/home/integra/Python/Optimizer/L1000/LDS-1191/data/'
-saved_model_path_prefix = "/data/datasets/gwoo/L1000/LDS-1191/saved_models/screen_ar/"
-# saved_model_path_prefix = '/home/integra/Data/screen_ar_models/'
+data_path = '/home/integra/projects/def-cherkaso/integra/ZINC_15_morgan_2048_2D/'
+save_path = '/home/integra/projects/def-cherkaso/integra/ZINC_15_morgan_2048_2D_scores/'
+# data_path = '/home/integra/Python/Optimizer/L1000/LDS-1191/data/'
+# save_path = '/home/integra/Python/Optimizer/L1000/LDS-1191/data/'
+# saved_model_path_prefix = "/data/datasets/gwoo/L1000/LDS-1191/saved_models/screen_ar/"
+saved_model_path_prefix = '/home/integra/Data/screen_ar_models/'
 up_model_file_prefix = "VCAP_NK_LM_AR_Up"
 down_model_file_prefix = "VCAP_NK_LM_AR_Down"
 print("got variables")
@@ -226,7 +226,7 @@ def screen_for_ar_compounds(file):
         get_predictions(file, up_model, down_model)
     finally:
         print(file, "processed", time.time() - start_time)
-        en.notify("Predicting Done " + file)
+        # en.notify("Predicting Done " + file)
 
 
 def split_multi_process(n_sections=1, working_section=0):
@@ -250,7 +250,7 @@ def split_multi_process(n_sections=1, working_section=0):
         # with closing(Pool(1)) as pool:
             pool.map(screen_for_ar_compounds, smi_files)
     finally:
-        en.notify("Predicting Done All Files")
+        en.notify("Predicting Done All Files, section", working_section, "of", n_sections)
 
 
 n_sections = int(sys.argv[1])
