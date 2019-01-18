@@ -6,6 +6,7 @@ from pathlib import Path
 import numpy as np
 from L1000.gene_predictor import load_model
 import os
+# os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 import sys
 import time
 from multiprocessing import Pool
@@ -14,6 +15,11 @@ from contextlib import closing
 print("finished common imports")
 
 from keras.models import model_from_json
+import tensorflow as tf
+config = tf.ConfigProto()
+# config.gpu_options.allow_growth = True
+config.gpu_options.per_process_gpu_memory_fraction = 0.03
+from keras import backend as K
 print("finished keras import")
 
 import helpers.email_notifier as en
@@ -21,8 +27,8 @@ print("finished my own imports")
 
 data_path = '/home/integra/projects/def-cherkaso/integra/ZINC_15_morgan_2048_2D/'
 save_path = '/home/integra/projects/def-cherkaso/integra/ZINC_15_morgan_2048_2D_scores/'
-# data_path = '/home/integra/Python/Optimizer/L1000/LDS-1191/data/'
-# save_path = '/home/integra/Python/Optimizer/L1000/LDS-1191/data/'
+# data_path = 'data/'
+# save_path = 'data/'
 # saved_model_path_prefix = "/data/datasets/gwoo/L1000/LDS-1191/saved_models/screen_ar/"
 saved_model_path_prefix = '/home/integra/Data/screen_ar_models/'
 up_model_file_prefix = "VCAP_NK_LM_AR_Up"
@@ -77,6 +83,7 @@ def load_model_from_file_prefix(model_file_prefix):
 
 
 def get_gene_id_dict():
+    # lm_genes = json.load(open('data/lm_plus_ar_genes.json'))
     lm_genes = json.load(open('/home/integra/Python/Optimizer/L1000/LDS-1191/data/lm_plus_ar_genes.json'))
     dict = {}
     for lm_gene in lm_genes:
@@ -87,6 +94,8 @@ def get_gene_id_dict():
 def get_genes_features_list(up_gene_ids, down_gene_ids):
     gene_features_dict = get_feature_dict('/home/integra/Python/Optimizer/L1000/LDS-1191/data/lm_ar_gene_go_fingerprint.csv', use_int=True)
     gene_ids_by_var = load_csv('/home/integra/Python/Optimizer/L1000/LDS-1191/data/genes_by_var_lm_ar.csv')
+    # gene_features_dict = get_feature_dict('data/lm_ar_gene_go_fingerprint.csv', use_int=True)
+    # gene_ids_by_var = load_csv('data/genes_by_var_lm_ar.csv')
 
     gene_ids_list = []
     for sublist in gene_ids_by_var:
@@ -217,22 +226,37 @@ def get_predictions(zinc_file_name, up_model, down_model):
             f.write("%s\n" % item)
 
 
+def _get_available_devices():
+    from tensorflow.python.client import device_lib
+    local_device_protos = device_lib.list_local_devices()
+    return [x.name for x in local_device_protos]
+
+# print(_get_available_devices())
+
+
 def screen_for_ar_compounds(file):
     print("processing", file)
     start_time = time.time()
     try:
-        up_model = load_model_from_file_prefix(saved_model_path_prefix + up_model_file_prefix)
-        down_model = load_model_from_file_prefix(saved_model_path_prefix + down_model_file_prefix)
-        get_predictions(file, up_model, down_model)
+        with tf.Graph().as_default():
+            new_graph_session = tf.Session(config=config)
+            K.set_session(new_graph_session)
+
+            up_model = load_model_from_file_prefix(saved_model_path_prefix + up_model_file_prefix)
+            down_model = load_model_from_file_prefix(saved_model_path_prefix + down_model_file_prefix)
+            get_predictions(file, up_model, down_model)
     finally:
         print(file, "processed", time.time() - start_time)
         # en.notify("Predicting Done " + file)
 
 
 def split_multi_process(n_sections=1, working_section=0):
+    start_time = time.time()
     print("split_multi_process")
     files = os.listdir(data_path)
     existing_files = os.listdir(save_path)
+    # files = ['ABAD1.smi']
+    # existing_files = []
     smi_files = []
 
     n_files = len(files)
@@ -242,17 +266,23 @@ def split_multi_process(n_sections=1, working_section=0):
 
     for i in range(start, end):
         file = files[i]
-        if file + '.scores.csv' not in existing_files:
+        if file.endswith('.smi') and file + '.scores.csv' not in existing_files and file != 'merged_id_smiles.smi':
+        # if file + '.scores.csv' not in existing_files:
             smi_files.append(file)
 
     try:
-        with closing(Pool(mp.cpu_count())) as pool:
-        # with closing(Pool(1)) as pool:
+        pool_count = mp.cpu_count()
+        # pool_count = 4
+        print("You have", str(pool_count), "cores")
+        with closing(Pool(pool_count)) as pool:
             pool.map(screen_for_ar_compounds, smi_files)
     finally:
-        en.notify("Predicting Done All Files, section " + working_section + " of " + n_sections)
+        print("All files processed", time.time() - start_time, "section " + str(working_section + 1) + " of " +
+              str(n_sections))
+        en.notify("Predicting Done All Files, section " + str(working_section) + " of " + str(n_sections))
 
 
 n_sections = int(sys.argv[1])
 working_section = int(sys.argv[2])  # zero based
 split_multi_process(n_sections, working_section)
+# split_multi_process()
