@@ -39,6 +39,32 @@ def predict_nathans():
 
     data = []
     descriptions = []
+    nates_missing_genes = [
+        'GATA3',
+        'RPL39L',
+        'IKZF1',
+        'CXCL2',
+        'HMGA2',
+        'TLR4',
+        'SPP1',
+        'MEF2C',
+        'PRKCQ',
+        'MMP1',
+        'PTGS2',
+        'ICAM3',
+        'INPP1',
+        # 'KIT',  # not in 2reps
+        # 'COL4A1',  # not in 2reps
+        # 'GNA15',  # not in 2reps
+        # 'SERPINE1',  # not in 2reps
+        # 'SNAP25',  # not in 2reps
+        # 'SOX2',  # not in 2reps
+        # 'MMP2',  # not in 2reps
+        # 'ICAM1',  # not in 2reps
+    ]
+    for gene in nates_missing_genes:
+        gene_features_dict.pop(gene, None)
+    drug_features_dict.pop('Enzalutamide', None)
     for drug in drug_features_dict:
         for gene in gene_features_dict:
             data.append(drug_features_dict[drug] + gene_features_dict[gene])
@@ -48,20 +74,20 @@ def predict_nathans():
     up_predictions = up_model.predict(data)
     down_predictions = down_model.predict(data)
 
-    for i in range(0, len(data)):
-        up_prediction = up_predictions[i]
-        if up_prediction[1] > 0.561:  # max f cutoff
-            # print(descriptions[i], "Up Probability", up_prediction[1])
-            print(descriptions[i], ", Up,", 1)
-        else:
-            print(descriptions[i], ", Up,", 0)
-    for i in range(0, len(data)):
-        down_prediction = down_predictions[i]
-        if down_prediction[1] > 0.648:  # max f cutoff
-            # print(descriptions[i], "Down Probability", down_prediction[1])
-            print(descriptions[i], ", Down,", 1)
-        else:
-            print(descriptions[i], ", Down,", 0)
+    # for i in range(0, len(data)):
+    #     up_prediction = up_predictions[i]
+    #     if up_prediction[1] > 0.561:  # max f cutoff
+    #         # print(descriptions[i], "Up Probability", up_prediction[1])
+    #         print(descriptions[i], ", Up,", 1)
+    #     else:
+    #         print(descriptions[i], ", Up,", 0)
+    # for i in range(0, len(data)):
+    #     down_prediction = down_predictions[i]
+    #     if down_prediction[1] > 0.648:  # max f cutoff
+    #         # print(descriptions[i], "Down Probability", down_prediction[1])
+    #         print(descriptions[i], ", Down,", 1)
+    #     else:
+    #         print(descriptions[i], ", Down,", 0)
+    return up_predictions, down_predictions, drug_features_dict, gene_features_dict
 
-
-predict_nathans()
+# predict_nathans()
