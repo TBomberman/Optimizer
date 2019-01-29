@@ -12,13 +12,13 @@ def load_model_from_file_prefix(model_file_prefix):
 
 
 def predict_nathans():
-    up_model_filename_prefix = "/data/datasets/gwoo/L1000/LDS-1191/saved_models/screen_ar/LNCAP_NK_LM_Up"
+    up_model_filename_prefix = "/data/datasets/gwoo/L1000/LDS-1191/saved_models/screen_ar/LNCAP_NK_LM_AR_Up"
     up_model = load_model_from_file_prefix(up_model_filename_prefix)
-    down_model_filename_prefix = "/data/datasets/gwoo/L1000/LDS-1191/saved_models/screen_ar/LNCAP_NK_LM_Down"
+    down_model_filename_prefix = "/data/datasets/gwoo/L1000/LDS-1191/saved_models/screen_ar/LNCAP_NK_LM_AR_Down"
     down_model = load_model_from_file_prefix(down_model_filename_prefix)
 
     gene_features_dict = get_feature_dict(
-        '/data/datasets/gwoo/Python/Optimizer/L1000/LDS-1191/data/gene_go_fingerprint_moreThan3.csv')
+        '/data/datasets/gwoo/Python/Optimizer/L1000/LDS-1191/data/lm_ar_gene_go_fingerprint.csv')
     drug_features_dict = get_feature_dict(
         '/data/datasets/gwoo/Python/Optimizer/L1000/LDS-1191/data/nathans_morgan_2048_nk.csv')
 
