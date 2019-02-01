@@ -67,10 +67,9 @@ length = len(level_5_gctoo.col_metadata_df.index)
 cell_X = {}
 cell_Y = {}
 cell_Y_gene_ids = {}
-cell_drugs = {}
+unique_cell_drugs = {}
 repeat_X = {}
 gene_perts = {}
-cell_drugs_counts = {}
 
 use_gene_specific_cutoffs = True
 
@@ -159,9 +158,8 @@ for bin in bins:
             if cell_id not in cell_X:
                 cell_X[cell_id] = {}
                 cell_Y[cell_id] = {}
-                cell_drugs[cell_id] = []
+                unique_cell_drugs[cell_id] = {}
                 cell_Y_gene_ids[cell_id] = []
-                cell_drugs_counts[cell_id] = 0
 
             if gene_count_data_limit > 1:
                 cell_X[cell_id][repeat_key] = drug_features + gene_features_dict[gene_symbol]
@@ -173,8 +171,9 @@ for bin in bins:
             cell_Y[cell_id][repeat_key].append(pert)
             gene_perts[our_gene_id].append(pert)
             if not updated:
+                if drug_id not in unique_cell_drugs[cell_id]:
+                    unique_cell_drugs[cell_id][drug_id] = 1
                 cell_Y_gene_ids[cell_id].append(our_gene_id)
-                cell_drugs_counts[cell_id] += 1
 
 elapsed_time = time.time() - start_time
 print("Time to load data:", elapsed_time)
@@ -298,11 +297,14 @@ try:
 
             print('Positive samples', np.sum(npY_class))
 
-            num_drugs = cell_drugs_counts[cell_id]
-            print("Sample Size:", sample_size, "Drugs tested:", num_drugs / gene_count_data_limit)
+            num_drugs = len(unique_cell_drugs[cell_id])
+            print("Sample Size:", sample_size, "Drugs tested:", num_drugs)
 
             np.savez(model_file_prefix + "_npX", npX)
             np.savez(model_file_prefix + "_npY_class", npY_class)
+
+            # for drug in unique_cell_drugs[cell_id]:
+            #     print(drug)
 
     # for cell_name in cell_name_to_id_dict:
     #     # print("Looking at", cell_name)
