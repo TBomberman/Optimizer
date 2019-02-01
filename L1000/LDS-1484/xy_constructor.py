@@ -34,7 +34,7 @@ def get_gene_id_dict():
 # get the dictionaries
 # get the expressions
 print(datetime.datetime.now(), "Loading drug and gene features")
-drug_features_dict = get_feature_dict('LDS-1484/data/smiles_rdkit_maccs.csv', use_int=True)
+drug_features_dict = get_feature_dict('LDS-1484/data/LDS1484_compounds_morgan_2048_nk.csv')
 gene_features_dict = get_feature_dict('LDS-1484/data/gene_go_fingerprint.csv', use_int=True)
 # info to separate by data by cell lines, drug + gene tests may not be equally spread out across cell lines
 cell_name_to_id_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1484/Metadata/Cell_Line_Metadata.txt', '\t', 2)
