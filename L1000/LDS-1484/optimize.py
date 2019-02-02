@@ -16,6 +16,8 @@ from keras.regularizers import l1, l1_l2, l2
 from keras.layers.normalization import BatchNormalization
 from keras.callbacks import History, EarlyStopping
 from helpers.callbacks import NEpochLogger
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 
 def data():
     """
@@ -48,9 +50,9 @@ def create_model(x_train, y_train, x_test, y_test):
         - model: specify the model just created so that we can later use it again.
     """
 
-    def add_dense_dropout(count, neuron_count, model_to_add, activation, dropout):
+    def add_dense_dropout(count, neuron_count, model_to_add, activation, dropout, act_reg, kern_reg):
         for x in range(0, count):
-            model_to_add.add(Dense(neuron_count))
+            model_to_add.add(Dense(neuron_count, activity_regularizer=act_reg, kernel_regularizer=kern_reg))
             model_to_add.add(BatchNormalization())
             model_to_add.add(Activation(activation))
             model_to_add.add(Dropout(dropout))
@@ -62,18 +64,28 @@ def create_model(x_train, y_train, x_test, y_test):
                                  'relu', 'softsign'])}}
     global_dropout = {{uniform(0, 1)}}
     n_hidden_layers = int(5 * {{uniform(0, 1)}})
+    act_regularizer = {{choice([l1, l1_l2, l2])}}
+    act_lambda_power = 10*{{uniform(0, 1)}}
+    act_reg_lambda = 1/(10**act_lambda_power)
+    kern_regularizer = {{choice([l1, l1_l2, l2])}}
+    kern_lambda_power = 10 * {{uniform(0, 1)}}
+    kern_reg_lambda = 1 / (10 ** kern_lambda_power)
+
     nb_epoch = 10000
     patience = 5
 
     model = Sequential()
-    model.add(Dense(input_size, input_shape=(input_size,)))
+    model.add(Dense(input_size, input_shape=(input_size,), activity_regularizer=act_regularizer(act_reg_lambda),
+                    kernel_regularizer=kern_regularizer(kern_reg_lambda)))
     model.add(BatchNormalization())
     model.add(Activation(input_activation))
     model.add(Dropout(global_dropout))
 
-    add_dense_dropout(n_hidden_layers, input_size, model, inner_activation, global_dropout)
+    add_dense_dropout(n_hidden_layers, input_size, model, inner_activation, global_dropout,
+                      act_regularizer(act_reg_lambda), kern_regularizer(kern_reg_lambda))
 
-    model.add(Dense(2))
+    model.add(Dense(2, input_shape=(input_size,), activity_regularizer=act_regularizer(act_reg_lambda),
+                    kernel_regularizer=kern_regularizer(kern_reg_lambda)))
     model.add(Activation('softmax'))
 
     model.compile(loss='categorical_crossentropy', metrics=['accuracy'],
@@ -99,7 +111,7 @@ def run_bayesian_optimization():
     best_run, best_model = optim.minimize(model=create_model,
                                           data=data,
                                           algo=tpe.suggest,
-                                          max_evals=5,
+                                          max_evals=280,
                                           trials=Trials())
     X_train, Y_train, X_test, Y_test = data()
     print("Evalutation of best performing model:")
