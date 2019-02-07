@@ -1,7 +1,7 @@
 from __future__ import print_function
 import numpy as np
 
-from hyperopt import Trials, STATUS_OK, tpe
+from hyperopt import Trials, STATUS_OK, tpe, STATUS_FAIL
 
 from keras.datasets import mnist
 from keras.layers.core import Dense, Dropout, Activation
@@ -17,7 +17,8 @@ from keras.layers.normalization import BatchNormalization
 from keras.callbacks import History, EarlyStopping
 from helpers.callbacks import NEpochLogger
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+from sklearn.metrics import roc_auc_score
 
 def data():
     """
@@ -30,7 +31,7 @@ def data():
     npX = np.load(load_data_folder_path + "LNCAP_Up_10b_5p_npX.npz")['arr_0']
     npY_class = np.load(load_data_folder_path + "LNCAP_Up_10b_5p_npY_class.npz")['arr_0']
 
-    x_train, x_test, y_train, y_test = train_test_split(npX, npY_class, train_size=0.85, test_size=0.15)
+    x_train, x_test, y_train, y_test = train_test_split(npX, npY_class, train_size=0.7, test_size=0.3)
 
     nb_classes = 2
     y_train = np_utils.to_categorical(y_train, nb_classes)
@@ -57,18 +58,20 @@ def create_model(x_train, y_train, x_test, y_test):
             model_to_add.add(Activation(activation))
             model_to_add.add(Dropout(dropout))
 
+    def no_regularizer(lammy):
+        return None
+
     input_size = 3267
-    input_activation = {{choice(['elu', 'selu', 'sigmoid', 'linear', 'softplus', 'softmax', 'tanh', 'hard_sigmoid',
-                                 'relu', 'softsign'])}}
-    inner_activation = {{choice(['elu', 'selu', 'sigmoid', 'linear', 'softplus', 'softmax', 'tanh', 'hard_sigmoid',
-                                 'relu', 'softsign'])}}
-    global_dropout = {{uniform(0, 1)}}
-    n_hidden_layers = int(5 * {{uniform(0, 1)}})
-    act_regularizer = {{choice([l1, l1_l2, l2])}}
-    act_lambda_power = 10*{{uniform(0, 1)}}
+    input_activation = 'selu'
+    inner_activation = 'relu'
+
+    global_dropout = 0.3376263809413643
+    n_hidden_layers = 1
+    act_regularizer = no_regularizer
+    act_lambda_power = 10 * 0.9466449267323835
     act_reg_lambda = 1/(10**act_lambda_power)
-    kern_regularizer = {{choice([l1, l1_l2, l2])}}
-    kern_lambda_power = 10 * {{uniform(0, 1)}}
+    kern_regularizer = l1
+    kern_lambda_power = 10 * 0.437116259431842
     kern_reg_lambda = 1 / (10 ** kern_lambda_power)
 
     nb_epoch = 10000
@@ -88,30 +91,34 @@ def create_model(x_train, y_train, x_test, y_test):
                     kernel_regularizer=kern_regularizer(kern_reg_lambda)))
     model.add(Activation('softmax'))
 
-    model.compile(loss='categorical_crossentropy', metrics=['accuracy'],
-                  optimizer={{choice(['sgd', 'rmsprop', 'adagrad', 'adadelta', 'adam', 'adamax', 'nadam'])}})
+    model.compile(loss='categorical_crossentropy', metrics=['accuracy'], optimizer='adam')
+
     history = History()
     early_stopping = EarlyStopping(monitor='val_loss', min_delta=0, patience=patience, verbose=1, mode='auto')
     out_epoch = NEpochLogger(display=5)
     result = model.fit(x_train, y_train,
-              batch_size={{choice([64, 128, 256, 1024, 2048])}},
+              batch_size={{choice([2048])}},
               epochs=nb_epoch,
               verbose=0,
-              validation_split=3/17,
+              validation_split=0.3,
               callbacks=[history, early_stopping, out_epoch],
               class_weight='auto')
-
     #get the highest validation accuracy of the training epochs
-    validation_acc = np.amax(result.history['val_acc'])
-    print('Best validation acc of epoch:', validation_acc)
-    return {'loss': -validation_acc, 'status': STATUS_OK, 'model': model}
+    # validation_acc = np.amax(result.history['val_acc'])
+    y_pred = model.predict(x_test)
+    try:
+        auc = roc_auc_score(y_test, y_pred)
+    except:
+        return {'loss': 0, 'status': STATUS_FAIL, 'model': model}
+    print('Best validation auc of epoch:', auc)
+    return {'loss': -auc, 'status': STATUS_OK, 'model': model}
 
 
 def run_bayesian_optimization():
     best_run, best_model = optim.minimize(model=create_model,
                                           data=data,
                                           algo=tpe.suggest,
-                                          max_evals=280,
+                                          max_evals=20,
                                           trials=Trials())
     X_train, Y_train, X_test, Y_test = data()
     print("Evalutation of best performing model:")
