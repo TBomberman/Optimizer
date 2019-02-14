@@ -1,8 +1,10 @@
 import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 import csv
 import numpy as np
 import sklearn.metrics as metrics
 from helpers.plot_roc import plot_roc
+from scipy.stats import pearsonr, spearmanr
 
 def compare_graham_cedar():
     scores_path = 'H:\Zinc Scores\ZINC_15_morgan_2048_2D_scores'
@@ -91,7 +93,7 @@ def compare_predictions_with_nate():
     up_predictions, down_predictions, drugs, genes = predict_nathans()
 
     # get the Nate's data into np array
-    csv_file = load_csv('data/DESeq2results__3reps_get_classes.csv')
+    csv_file = load_csv('data/DESeq2results__3reps.csv')
     old_to_new_symbol = {
         'PAPD7': 'TENT4A',
         'HDGFRP3': 'HDGFL3',
@@ -108,21 +110,15 @@ def compare_predictions_with_nate():
     for line in csv_file[1:]:
         drug = line[0]
         gene = line[1]
-        actives = line[2:12]
+        padj = line[2:4]
         if drug not in nates_data:
             nates_data[drug] = {}
         if gene not in nates_data[drug]:
-            nates_data[drug][gene] = actives
-    up1_true = []
-    up5_true = []
-    up10_true = []
-    up15_true = []
-    up20_true = []
-    down1_true = []
-    down5_true = []
-    down10_true = []
-    down15_true = []
-    down20_true = []
+            nates_data[drug][gene] = padj
+    up_true_float = []
+    down_true_float = []
+    up_true_int = []
+    down_true_int = []
 
     for drug in drugs:
         for gene in genes:
@@ -131,16 +127,24 @@ def compare_predictions_with_nate():
             if gene not in nates_data[drug]:
                 print('nate missing gene', gene)
                 continue
-            up1_true.append(nates_data[drug][gene][0])
-            up5_true.append(nates_data[drug][gene][1])
-            up10_true.append(nates_data[drug][gene][2])
-            up15_true.append(nates_data[drug][gene][3])
-            up20_true.append(nates_data[drug][gene][4])
-            down1_true.append(nates_data[drug][gene][5])
-            down5_true.append(nates_data[drug][gene][6])
-            down10_true.append(nates_data[drug][gene][7])
-            down15_true.append(nates_data[drug][gene][8])
-            down20_true.append(nates_data[drug][gene][9])
+            padj = float(nates_data[drug][gene][1])
+            log2change = float(nates_data[drug][gene][0])
+            up_value = 0
+            down_value = 0
+            if log2change >= 0:
+                if padj <= 0.05:
+                    up_value = 1
+                up_true_float.append(-padj)
+                down_true_float.append(-1)
+                up_true_int.append(up_value)
+                down_true_int.append(0)
+            else:
+                if padj <= 0.05:
+                    down_value = 1
+                up_true_float.append(-1)
+                down_true_float.append(-padj)
+                up_true_int.append(0)
+                down_true_int.append(down_value)
 
     def print_stats(y_true, padj, dir, predictions, cutoff=None):
         val_stats = all_stats(np.asarray(y_true, dtype='float32'), predictions[:, 1], cutoff)
@@ -149,34 +153,50 @@ def compare_predictions_with_nate():
         print_stats_inner(val_stats)
         print_acc(label, np.asarray(y_true, dtype='float32'), predictions)
 
-    print_stats(up1_true, 0.01, "up", up_predictions, 0.561)
-    print_stats(up5_true, 0.05, "up", up_predictions, 0.561)
-    print_stats(up10_true, 0.1, "up", up_predictions, 0.561)
-    print_stats(up15_true, 0.15, "up", up_predictions, 0.561)
-    print_stats(up20_true, 0.2, "up", up_predictions, 0.561)
-    plot_roc(np.asarray(up5_true, dtype='float32'), up_predictions[:, 1])
-    # plot_roc(np.asarray(up15_true, dtype='float32'), up_predictions[:, 1])
-    # plot_roc(np.asarray(up20_true, dtype='float32'), up_predictions[:, 1])
+    print_stats(up_true_int, 0.05, "up", up_predictions, 0.561)
+    int_pred = np.zeros(len(up_predictions[:, 1]))
+    positive = np.where(up_predictions[:, 1] >= 0.561)
+    int_pred[positive] = 1
+    print("MCC value", metrics.matthews_corrcoef(up_true_int, int_pred))
+    print("Pearson class", pearsonr(up_true_int, up_predictions[:, 1]))
+    print("Pearson float", pearsonr(up_true_float, up_predictions[:, 1]))
+    print("Spearman", spearmanr(up_true_float, up_predictions[:, 1]))
+    # plot_roc(np.asarray(up5_true, dtype='float32'), up_predictions[:, 1],
+    #          title='ROC Predicting Active Upregulations')
 
-    # print("down support", sum(np.asarray(down1_true, dtype='float32')))
-    # print("down support", sum(np.asarray(down5_true, dtype='float32')))
-    # print("down support", sum(np.asarray(down10_true, dtype='float32')))
-    # print("down support", sum(np.asarray(down15_true, dtype='float32')))
-    # print("down support", sum(np.asarray(down20_true, dtype='float32')))
-    print_stats(down1_true, 0.01, "down", down_predictions, 0.648)
-    print_stats(down5_true, 0.05, "down", down_predictions, 0.648)
-    print_stats(down10_true, 0.10, "down", down_predictions, 0.648)
-    print_stats(down15_true, 0.15, "down", down_predictions, 0.648)
-    print_stats(down20_true, 0.2, "down", down_predictions, 0.648)
-    plot_roc(np.asarray(down5_true, dtype='float32'), down_predictions[:, 1])
-    # plot_roc(np.asarray(down10_true, dtype='float32'), down_predictions[:, 1])
-    # plot_roc(np.asarray(down15_true, dtype='float32'), down_predictions[:, 1])
+    print_stats(down_true_int, 0.05, "down", down_predictions, 0.648)
+    int_pred = np.zeros(len(down_predictions[:, 1]))
+    positive = np.where(down_predictions[:, 1] >= 0.648)
+    int_pred[positive] = 1
 
-    # compare using Mike's api
+    print("MCC value", metrics.matthews_corrcoef(down_true_int, int_pred))
+    print("Pearson class", pearsonr(down_true_int, down_predictions[:, 1]))
+    print("Pearson float", pearsonr(down_true_float, down_predictions[:, 1]))
+    print("Spearman", spearmanr(down_true_float, down_predictions[:, 1]))
+    # plot_roc(np.asarray(down5_true, dtype='float32'), down_predictions[:, 1],
+    #          title='ROC Predicting Active Downregulations')
 
 
+def compare_lm_files():
+    import json
+    genes1484 = json.load(open('../L1000/LDS-1484/data/landmark_genes.json'))
+    genes1191 = json.load(open('../L1000/LDS-1191/data/landmark_genes.json'))
+    genes1484dict = {}
+    for gene in genes1484:
+        genes1484dict[gene['entrez_id']] = 1
+    genes1191dict = {}
+    for gene in genes1191:
+        genes1191dict[gene['entrez_id']] = 1
+
+    count = 0
+    for key in genes1484dict:
+        if key not in genes1191dict:
+            count += 1
+            print(count, key, "not in 1191")
+    print("done commparison")
 
 
 # smiless2sdf()
 # testBiomart()
 compare_predictions_with_nate()
+# compare_lm_files()

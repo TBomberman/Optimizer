@@ -25,7 +25,7 @@ def find_nth(haystack, needle, n):
     return start
 
 def get_gene_id_dict():
-    lm_genes = json.load(open('LDS-1484/data/landmark_genes.json'))
+    lm_genes = json.load(open('LDS-1191/data/landmark_genes.json'))
     dict = {}
     for lm_gene in lm_genes:
         dict[lm_gene['entrez_id']] = lm_gene['gene_symbol']
@@ -35,7 +35,9 @@ def get_gene_id_dict():
 # get the expressions
 print(datetime.datetime.now(), "Loading drug and gene features")
 drug_features_dict = get_feature_dict('LDS-1484/data/LDS1484_compounds_morgan_2048_nk.csv')
-gene_features_dict = get_feature_dict('LDS-1484/data/gene_go_fingerprint.csv', use_int=True)
+# drug_features_dict = get_feature_dict('LDS-1191/data/non_kekulized_morgan_2048.csv')
+# gene_features_dict = get_feature_dict('LDS-1191/data/lm_ar_gene_go_fingerprint.csv', use_int=True)
+gene_features_dict = get_feature_dict('LDS-1191/data/gene_go_fingerprint_moreThan3.csv', use_int=True)
 # info to separate by data by cell lines, drug + gene tests may not be equally spread out across cell lines
 cell_name_to_id_dict = get_feature_dict('/data/datasets/gwoo/L1000/LDS-1484/Metadata/Cell_Line_Metadata.txt', '\t', 2)
 # info to remove any dosages that are not 'µM'. Want to standardize the dosages.
@@ -94,7 +96,8 @@ for bin in bins:
         start = col_name.rfind("_")
         end = find_nth(col_name, ":", 1)
         exposure_time = col_name[start + 1:end]
-        if exposure_time != "24H": # column counts: 6h 95219, 24h 109287, 48h 58, 144h 1
+        # if exposure_time != "6H": # column counts: 6h 95219, 24h 109287, 48h 58, 144h 1
+        if exposure_time != "24H":
             continue
 
         # get drug features
@@ -113,7 +116,10 @@ for bin in bins:
             # column counts: -666 17071, % 2833, uL 238987, uM 205066, ng 1439, ng / uL 2633, ng / mL 5625
             continue
         dose_amt = float(experiment_data[4][:-2])
-        if dose_amt < bin - 0.1 or dose_amt > bin + 0.1:  # only use the 5 mm bin
+        # if dose_amt < bin - 0.1 or dose_amt > bin + 0.1:  # only use the 5 mm bin
+        #     continue
+        # if dose_amt > 5 or dose_amt < 3:
+        if dose_amt < 10:
             continue
 
         # parse the cell name
@@ -127,6 +133,8 @@ for bin in bins:
         if cell_name not in cell_name_to_id_dict:
             continue
         cell_id = cell_name_to_id_dict[cell_name][0]
+
+        print(dose_amt, exposure_time)
 
         for gene_id in lm_gene_entrez_ids_list:
             our_gene_id = gene_id[0]
@@ -300,8 +308,8 @@ try:
             num_drugs = len(unique_cell_drugs[cell_id])
             print("Sample Size:", sample_size, "Drugs tested:", num_drugs)
 
-            np.savez(model_file_prefix + "_npX", npX)
-            np.savez(model_file_prefix + "_npY_class", npY_class)
+            np.savez(model_file_prefix + "_24h_10um_repeat_npX", npX)
+            np.savez(model_file_prefix + "_24h_10um_repeat_npY_class", npY_class)
 
             # for drug in unique_cell_drugs[cell_id]:
             #     print(drug)

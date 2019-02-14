@@ -36,14 +36,14 @@ def regularizer(lammy):
 # np.random.seed(1337)
 # random.seed(1337)
 
-def save_model(model, file_prefix):
+def save_model(model, file_prefix, run_number):
     # serialize model to JSON
     model_json = model.to_json()
-    with open(file_prefix + ".json", "w") as json_file:
+    with open(file_prefix + str(run_number) + ".json", "w") as json_file:
         json_file.write(model_json)
     # serialize weights to HDF5
-    model.save_weights(file_prefix + ".h5")
-    print("Saved model", file_prefix)
+    model.save_weights(file_prefix + str(run_number) + ".h5")
+    print("Saved model", file_prefix + str(run_number))
 
 # def do_optimize(nb_classes, data, labels, model_file_prefix=None, pos_class_weight=None):
 def do_optimize(nb_classes, data, labels, model_file_prefix=None, pos_class_weight=None, cold_ids=None,
@@ -155,12 +155,12 @@ def do_optimize(nb_classes, data, labels, model_file_prefix=None, pos_class_weig
             history = History()
             early_stopping = EarlyStopping(monitor='val_loss', min_delta=0, patience=patience, verbose=1, mode='auto')
             out_epoch = NEpochLogger(display=5)
-            class_weight = { 1: pos_class_weight, 0: 1-pos_class_weight}
+            # class_weight = { 1: pos_class_weight, 0: 1-pos_class_weight}
 
             model.fit(X_train, Y_train, batch_size=batch_size, epochs=nb_epoch,
                       verbose=0, validation_data=(X_val, Y_val), callbacks=[history, early_stopping, out_epoch],
                       class_weight='auto')
-            # save_model(model, model_file_prefix)
+            save_model(model, model_file_prefix, count)
             # score = model.evaluate(X_test, Y_test, verbose=0)
             #
             # print('Test score:', score[0])
