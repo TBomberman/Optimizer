@@ -115,66 +115,74 @@ def compare_predictions_with_nate():
             nates_data[drug] = {}
         if gene not in nates_data[drug]:
             nates_data[drug][gene] = padj
-    up_true_float = []
-    down_true_float = []
-    up_true_int = []
-    down_true_int = []
 
-    for drug in drugs:
-        for gene in genes:
-            if gene in old_to_new_symbol:
-                gene = old_to_new_symbol[gene]
-            if gene not in nates_data[drug]:
-                print('nate missing gene', gene)
-                continue
-            padj = float(nates_data[drug][gene][1])
-            log2change = float(nates_data[drug][gene][0])
-            up_value = 0
-            down_value = 0
-            if log2change >= 0:
-                if padj <= 0.05:
-                    up_value = 1
-                up_true_float.append(-padj)
-                down_true_float.append(-1)
-                up_true_int.append(up_value)
-                down_true_int.append(0)
-            else:
-                if padj <= 0.05:
-                    down_value = 1
-                up_true_float.append(-1)
-                down_true_float.append(-padj)
-                up_true_int.append(0)
-                down_true_int.append(down_value)
+    significance_levels = [0.1, 0.3, 0.5, 0.7, 0.9, 1.0]
+    up_max_cutoff = 0.364
+    down_max_cutoff = 0.606
 
-    def print_stats(y_true, padj, dir, predictions, cutoff=None):
-        val_stats = all_stats(np.asarray(y_true, dtype='float32'), predictions[:, 1], cutoff)
-        label = dir + "regulation padj " + str(padj)
-        print(label)
-        print_stats_inner(val_stats)
-        print_acc(label, np.asarray(y_true, dtype='float32'), predictions)
+    for significance_level in significance_levels:
+        print("significance level", significance_level)
 
-    print_stats(up_true_int, 0.05, "up", up_predictions, 0.561)
-    int_pred = np.zeros(len(up_predictions[:, 1]))
-    positive = np.where(up_predictions[:, 1] >= 0.561)
-    int_pred[positive] = 1
-    print("MCC value", metrics.matthews_corrcoef(up_true_int, int_pred))
-    print("Pearson class", pearsonr(up_true_int, up_predictions[:, 1]))
-    print("Pearson float", pearsonr(up_true_float, up_predictions[:, 1]))
-    print("Spearman", spearmanr(up_true_float, up_predictions[:, 1]))
-    # plot_roc(np.asarray(up5_true, dtype='float32'), up_predictions[:, 1],
-    #          title='ROC Predicting Active Upregulations')
+        up_true_float = []
+        down_true_float = []
+        up_true_int = []
+        down_true_int = []
 
-    print_stats(down_true_int, 0.05, "down", down_predictions, 0.648)
-    int_pred = np.zeros(len(down_predictions[:, 1]))
-    positive = np.where(down_predictions[:, 1] >= 0.648)
-    int_pred[positive] = 1
+        for drug in drugs:
+            for gene in genes:
+                if gene in old_to_new_symbol:
+                    gene = old_to_new_symbol[gene]
+                if gene not in nates_data[drug]:
+                    print('nate missing gene', gene)
+                    continue
+                padj = float(nates_data[drug][gene][1])
+                log2change = float(nates_data[drug][gene][0])
+                up_value = 0
+                down_value = 0
+                if log2change >= 0:
+                    if padj <= significance_level:
+                        up_value = 1
+                    up_true_float.append(-padj)
+                    down_true_float.append(-1)
+                    up_true_int.append(up_value)
+                    down_true_int.append(0)
+                else:
+                    if padj <= significance_level:
+                        down_value = 1
+                    up_true_float.append(-1)
+                    down_true_float.append(-padj)
+                    up_true_int.append(0)
+                    down_true_int.append(down_value)
 
-    print("MCC value", metrics.matthews_corrcoef(down_true_int, int_pred))
-    print("Pearson class", pearsonr(down_true_int, down_predictions[:, 1]))
-    print("Pearson float", pearsonr(down_true_float, down_predictions[:, 1]))
-    print("Spearman", spearmanr(down_true_float, down_predictions[:, 1]))
-    # plot_roc(np.asarray(down5_true, dtype='float32'), down_predictions[:, 1],
-    #          title='ROC Predicting Active Downregulations')
+        def print_stats(y_true, padj, dir, predictions, cutoff=None):
+            val_stats = all_stats(np.asarray(y_true, dtype='float32'), predictions[:, 1], cutoff)
+            label = dir + "regulation padj " + str(padj)
+            print(label)
+            print_stats_inner(val_stats)
+            print_acc(label, np.asarray(y_true, dtype='float32'), predictions)
+
+        print_stats(up_true_int, significance_level, "up", up_predictions, up_max_cutoff)
+        int_pred = np.zeros(len(up_predictions[:, 1]))
+        positive = np.where(up_predictions[:, 1] >= up_max_cutoff)
+        int_pred[positive] = 1
+        print("MCC value", metrics.matthews_corrcoef(up_true_int, int_pred))
+        print("Pearson class", pearsonr(up_true_int, up_predictions[:, 1]))
+        print("Pearson float", pearsonr(up_true_float, up_predictions[:, 1]))
+        print("Spearman", spearmanr(up_true_float, up_predictions[:, 1]))
+        # plot_roc(np.asarray(up5_true, dtype='float32'), up_predictions[:, 1],
+        #          title='ROC Predicting Active Upregulations')
+
+        print_stats(down_true_int, significance_level, "down", down_predictions, down_max_cutoff)
+        int_pred = np.zeros(len(down_predictions[:, 1]))
+        positive = np.where(down_predictions[:, 1] >= down_max_cutoff)
+        int_pred[positive] = 1
+
+        print("MCC value", metrics.matthews_corrcoef(down_true_int, int_pred))
+        print("Pearson class", pearsonr(down_true_int, down_predictions[:, 1]))
+        print("Pearson float", pearsonr(down_true_float, down_predictions[:, 1]))
+        print("Spearman", spearmanr(down_true_float, down_predictions[:, 1]))
+        # plot_roc(np.asarray(down5_true, dtype='float32'), down_predictions[:, 1],
+        #          title='ROC Predicting Active Downregulations')
 
 
 def compare_lm_files():
