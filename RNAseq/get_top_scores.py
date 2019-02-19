@@ -101,7 +101,7 @@ def get_true_from_padj(drugs, genes, old_to_new_symbol, nates_data, significance
             if gene not in nates_data[drug]:
                 print('nate missing gene', gene)
                 continue
-            padj = float(nates_data[drug][gene][2])
+            padj = float(nates_data[drug][gene][1])
             log2change = float(nates_data[drug][gene][0])
             up_value = 0
             down_value = 0
@@ -222,7 +222,7 @@ def compare_predictions_with_nate():
         if gene not in nates_data[drug]:
             nates_data[drug][gene] = padj
 
-    significance_levels = [0.05, 0.1, 0.15, 0.2, 0.3, 0.4, 0.5]
+    significance_levels = [0.05]
     up_max_cutoff = 0.364
     down_max_cutoff = 0.606
 
@@ -230,7 +230,7 @@ def compare_predictions_with_nate():
         print("significance level", significance_level)
 
         up_true_float, down_true_float, up_true_int, down_true_int = \
-            get_true_from_log2change(drugs, genes, lincs_to_rnaseq_gene, nates_data, significance_level)
+            get_true_from_padj(drugs, genes, lincs_to_rnaseq_gene, nates_data, significance_level)
 
         print_stats(up_true_int, significance_level, "up", up_predictions, up_max_cutoff)
         int_pred = np.zeros(len(up_predictions[:, 1]))
@@ -239,10 +239,11 @@ def compare_predictions_with_nate():
         print("MCC value", metrics.matthews_corrcoef(up_true_int, int_pred))
         print("Pearson class", pearsonr(up_true_int, up_predictions[:, 1]))
         print("Pearson float", pearsonr(up_true_float, up_predictions[:, 1]))
-        print("Spearman", spearmanr(up_true_float, up_predictions[:, 1]))
-        # plot_roc(np.asarray(up5_true, dtype='float32'), up_predictions[:, 1],
-        #          title='ROC Predicting Active Upregulations')
-        # plot_precision_recall(np.asarray(up_true_int, dtype='float32'), up_predictions[:, 1])
+        print("Spearman", spearmanr(up_true_int, up_predictions[:, 1]))
+        plot_roc(np.asarray(up_true_int, dtype='float32'), up_predictions[:, 1],
+                 title='ROC Predicting Active Upregulations')
+        # plot_precision_recall(np.asarray(up_true_int, dtype='float32'), up_predictions[:, 1],
+        #                       title='PR and ROC Upregulation')
 
         print_stats(down_true_int, significance_level, "down", down_predictions, down_max_cutoff)
         int_pred = np.zeros(len(down_predictions[:, 1]))
@@ -253,9 +254,10 @@ def compare_predictions_with_nate():
         print("Pearson class", pearsonr(down_true_int, down_predictions[:, 1]))
         print("Pearson float", pearsonr(down_true_float, down_predictions[:, 1]))
         print("Spearman", spearmanr(down_true_float, down_predictions[:, 1]))
-        # plot_roc(np.asarray(down5_true, dtype='float32'), down_predictions[:, 1],
-        #          title='ROC Predicting Active Downregulations')
-        # plot_precision_recall(np.asarray(down_true_int, dtype='float32'), down_predictions[:, 1])
+        plot_roc(np.asarray(down_true_int, dtype='float32'), down_predictions[:, 1],
+                 title='ROC Predicting Active Downregulations')
+        # plot_precision_recall(np.asarray(down_true_int, dtype='float32'), down_predictions[:, 1],
+        #                       title='PR and ROC Downregulation')
 
 
 def compare_lm_files():
@@ -381,6 +383,6 @@ def compare_predictions_with_nate_only_good_pvalues():
 
 # smiless2sdf()
 # testBiomart()
-# compare_predictions_with_nate()
+compare_predictions_with_nate()
 # compare_lm_files()
-compare_predictions_with_nate_only_good_pvalues()
+# compare_predictions_with_nate_only_good_pvalues()

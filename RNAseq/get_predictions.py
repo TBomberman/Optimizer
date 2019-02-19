@@ -12,8 +12,8 @@ def load_model_from_file_prefix(model_file_prefix):
 
 
 def predict_nathans():
-    up_model_filename_prefix = "/data/datasets/gwoo/L1000/LDS-1484/saved_models/closeToX10/2019-02-12 15:37:04.654537_LNCAP_Up_10b_5p_3h_repeat5"
-    down_model_filename_prefix = "/data/datasets/gwoo/L1000/LDS-1484/saved_models/closeToX10/2019-02-12 15:37:37.780336_LNCAP_Down_10b_5p_3h_repeat1"
+    up_model_filename_prefix = "/data/datasets/gwoo/L1000/LDS-1484/saved_models/closeToX10/2019-02-12 15:37:16.049247_LNCAP_Up_10b_5p_24h_repeat8"
+    down_model_filename_prefix = "/data/datasets/gwoo/L1000/LDS-1484/saved_models/closeToX10/2019-02-12 15:37:29.049509_LNCAP_Down_10b_5p_24h_repeat9"
     up_model = load_model_from_file_prefix(up_model_filename_prefix)
     down_model = load_model_from_file_prefix(down_model_filename_prefix)
 
