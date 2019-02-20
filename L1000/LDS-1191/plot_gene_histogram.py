@@ -24,7 +24,7 @@ gene_count_data_limit = 978
 #     for item in sublist:
 #         lm_gene_entrez_ids.append(item)
 lm_gene_entrez_ids = ['2778']
-level_5_gctoo = load_gene_expression_data("/home/gwoo/Data/L1000/LDS-1191/Data/GSE92742_Broad_LINCS_Level5_COMPZ.MODZ_n473647x12328.gctx", lm_gene_entrez_ids)
+# level_5_gctoo = load_gene_expression_data("/home/gwoo/Data/L1000/LDS-1191/Data/GSE92742_Broad_LINCS_Level5_COMPZ.MODZ_n473647x12328.gctx", lm_gene_entrez_ids)
 
 def find_nth(haystack, needle, n):
     start = haystack.find(needle)
@@ -172,10 +172,10 @@ def plot_normal():
     plt.plot(*[(downx, -3), (0, 0)], color='red', label='Downregulation')
     plt.plot(*[(upx, upx), (0, mlab.normpdf(upx, mu, sigma))], color='green')
     plt.plot(*[(upx, 3), (0, 0)], color='green', label='Upregulation')
-    plt.plot(*[(downx, upx), (0, 0)], color='blue', label='No regulation')
+    plt.plot(*[(downx, upx), (0, 0)], color='blue')  #, label='No regulation')
     plt.legend()
 
-    plt.title("Top and Bottom 10 Percentiles")
+    plt.title("Top and Bottom 5% Significance Levels")
     plt.xlabel("Z-score")
     plt.ylabel("Density")
     plt.show()

@@ -28,9 +28,9 @@ def plot_multi_class_roc(filenames):
     plt.figure()
 
     class_names = {
-        0: "No Regulation",
-        1: "Downregulation",
-        2: "Upregulation"
+        # 0: "No Regulation",
+        0: "Downregulation",
+        1: "Upregulation"
     }
     # plot them
     colors = cycle(['aqua', 'darkorange', 'cornflowerblue'])
@@ -47,7 +47,7 @@ def plot_multi_class_roc(filenames):
     plt.ylim([0.0, 1.05])
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
-    plt.title('MCF7: ROC curve for ' + str(n_classes) + " classes")
+    plt.title('PC3: ROC')
     plt.legend(loc="lower right")
     plt.show()
 
@@ -81,9 +81,9 @@ def show_non_duplicates():
         print(item)
 
 filenames = {}
-filenames[0] = "2018-10-27 06:44:20.758712"
-filenames[1] = "2018-10-25 14:50:49.269442"
-filenames[2] = "2018-10-24 22:27:13.582107"
+# filenames[0] = "2018-10-27 06:44:20.758712"
+filenames[0] = "2018-10-31 19:28:32.272764"
+filenames[1] = "2018-10-31 22:58:27.474172"
 
 plot_multi_class_roc(filenames)
 # show_non_duplicates()
