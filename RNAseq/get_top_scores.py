@@ -3,7 +3,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 import csv
 import numpy as np
 import sklearn.metrics as metrics
-from helpers.plot_roc import plot_roc, plot_precision_recall
+from helpers.plot_roc import plot_roc, plot_precision_recall, plot_roc_multi
 from scipy.stats import pearsonr, spearmanr
 from L1000.data_loader import load_csv
 from L1000.data_loader import get_feature_dict
@@ -240,8 +240,12 @@ def compare_predictions_with_nate():
         print("Pearson class", pearsonr(up_true_int, up_predictions[:, 1]))
         print("Pearson float", pearsonr(up_true_float, up_predictions[:, 1]))
         print("Spearman", spearmanr(up_true_int, up_predictions[:, 1]))
-        plot_roc(np.asarray(up_true_int, dtype='float32'), up_predictions[:, 1],
-                 title='ROC Predicting Active Upregulations')
+        y_true_list = []
+        y_true_list.append(np.asarray(up_true_int, dtype='float32'))
+        y_pred_list = []
+        y_pred_list.append(up_predictions[:, 1])
+        legend = []
+        legend.append("Upregulation")
         # plot_precision_recall(np.asarray(up_true_int, dtype='float32'), up_predictions[:, 1],
         #                       title='PR and ROC Upregulation')
 
@@ -254,11 +258,12 @@ def compare_predictions_with_nate():
         print("Pearson class", pearsonr(down_true_int, down_predictions[:, 1]))
         print("Pearson float", pearsonr(down_true_float, down_predictions[:, 1]))
         print("Spearman", spearmanr(down_true_float, down_predictions[:, 1]))
-        plot_roc(np.asarray(down_true_int, dtype='float32'), down_predictions[:, 1],
-                 title='ROC Predicting Active Downregulations')
         # plot_precision_recall(np.asarray(down_true_int, dtype='float32'), down_predictions[:, 1],
         #                       title='PR and ROC Downregulation')
-
+        y_true_list.append(np.asarray(down_true_int, dtype='float32'))
+        y_pred_list.append(down_predictions[:, 1])
+        legend.append("Downregulation")
+        plot_roc_multi(y_true_list, y_pred_list, legend, 'ROC: RNAseq Predictions (24h)')
 
 def compare_lm_files():
     import json
