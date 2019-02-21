@@ -94,15 +94,26 @@ def remove_corr_features(all_features):
     for col in uneeded_cols:
         uneeded_cols_int.append(int(col[0]))
     # uneeded_cols = get_corr_cols(all_features)
-    # print(len(drug_features_dict))
+    # for col in uneeded_cols:
+    #     print(col)
+    print(len(uneeded_cols))
     n_cols = all_features.shape[1]
     cols = range(0, n_cols)
     cols = [x for x in cols if x not in uneeded_cols_int]
     return all_features[:, cols]
 
 def get_uncorr_drug_features():
+    # first get the compounds that are from the LINCS dataset
     drug_features_dict = get_feature_dict('data/LDS1484_compounds_morgan_2048_nk.csv')  # , use_int=True)
     drug_features_dict = remove_non_lncap(drug_features_dict)
+
+    # add the compounds that were in RNAseq
+    nates_drugs = get_feature_dict('/data/datasets/gwoo/Python/Optimizer/L1000/LDS-1191/data/nathans_morgan_2048_nk.csv')
+    nates_drugs.pop('VPC220010', None)
+    nates_drugs.pop('VPC13789', None)
+    for nate_drug in nates_drugs:
+        drug_features_dict[nate_drug] = nates_drugs[nate_drug]
+
     unique_drug_features_dict = remove_dups(drug_features_dict)
     drug_features = get_array(unique_drug_features_dict)
     # one_feature = drug_features[0]
