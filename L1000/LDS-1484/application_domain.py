@@ -3,6 +3,8 @@ from scipy.spatial.distance import mahalanobis
 import numpy as np
 import matplotlib.pyplot as plt
 import datetime
+from sklearn.metrics import jaccard_similarity_score
+import seaborn as sns
 
 # x = np.array([[0, 0, 0], [1, 1, 0], [0, 0, 0], [1, 1, 1], [0, 1, 1]])
 # cov = np.cov(x.T)
@@ -102,17 +104,18 @@ def remove_corr_features(all_features):
     cols = [x for x in cols if x not in uneeded_cols_int]
     return all_features[:, cols]
 
-def get_uncorr_drug_features():
+def get_uncorr_drug_features(include_nates=True):
     # first get the compounds that are from the LINCS dataset
     drug_features_dict = get_feature_dict('data/LDS1484_compounds_morgan_2048_nk.csv')  # , use_int=True)
     drug_features_dict = remove_non_lncap(drug_features_dict)
 
     # add the compounds that were in RNAseq
-    nates_drugs = get_feature_dict('/data/datasets/gwoo/Python/Optimizer/L1000/LDS-1191/data/nathans_morgan_2048_nk.csv')
-    nates_drugs.pop('VPC220010', None)
-    nates_drugs.pop('VPC13789', None)
-    for nate_drug in nates_drugs:
-        drug_features_dict[nate_drug] = nates_drugs[nate_drug]
+    if include_nates:
+        nates_drugs = get_feature_dict('/data/datasets/gwoo/Python/Optimizer/L1000/LDS-1191/data/nathans_morgan_2048_nk.csv')
+        nates_drugs.pop('VPC220010', None)
+        nates_drugs.pop('VPC13789', None)
+        for nate_drug in nates_drugs:
+            drug_features_dict[nate_drug] = nates_drugs[nate_drug]
 
     unique_drug_features_dict = remove_dups(drug_features_dict)
     drug_features = get_array(unique_drug_features_dict)
@@ -153,7 +156,6 @@ def get_distances():
     plt.show()
 
 def plot_hist():
-    import seaborn as sns
     distances = np.load("/data/datasets/gwoo/L1000/LDS-1191/Output/appDomain/distances.npz")
     # distances = {}
     # distances['arr_0'] = np.random.normal(size=100)
@@ -206,7 +208,55 @@ def get_distance_from_centroid():
         print("distance of", nathan_drug_id, "from centroid", distance)
 
 
-get_distances()
+def get_jaccard_score_of_nates_drug(drug_id, lincs_drugs):
+    nates_drugs = get_feature_dict(
+        '/data/datasets/gwoo/Python/Optimizer/L1000/LDS-1191/data/nathans_morgan_2048_nk.csv')
+
+    nates_drug = nates_drugs[drug_id]
+    nates_drug = np.reshape(np.array(nates_drug, np.float16), (1, -1))
+    nates_drug = remove_corr_features(nates_drug)
+    scores = []
+    for lincs_drug in lincs_drugs:
+        score = jaccard_similarity_score(lincs_drug, nates_drug[0])
+        scores.append(score)
+    return np.mean(scores)
+
+
+def get_jaccard_scores():
+    lincs_drug_features = get_uncorr_drug_features(False)
+    num_drugs = len(lincs_drug_features)
+
+    # get the scores from each other
+    scores = []
+    for i in range(0, num_drugs):
+        for j in range(i+1, num_drugs):
+            source_drug = lincs_drug_features[i]
+            target_drug = lincs_drug_features[j]
+            score = jaccard_similarity_score(source_drug, target_drug)
+            scores.append(score)
+
+    plot = sns.distplot(scores, bins=100, axlabel="Jaccard Similarity Coefficient", norm_hist=False)
+    plot.set_title("Jaccard Similarity Scores Between Trained Compounds")
+    plot.set(ylabel="Count")
+    plot.ticklabel_format(style='plain')  # , axis='both', scilimits=(0, 0))
+
+    score_enza = get_jaccard_score_of_nates_drug("Enzalutamide", lincs_drug_features)
+    score_17005 = get_jaccard_score_of_nates_drug("VPC17005", lincs_drug_features)
+    score_14449 = get_jaccard_score_of_nates_drug("VPC14449", lincs_drug_features)
+    plt.plot([score_enza, score_enza], [0, 25], color="yellow", label="Enzalutamide")
+    plt.plot([score_17005, score_17005], [0, 25], color="red", label="VPC-17005")
+    plt.plot([score_14449, score_14449], [0, 25], color="blue", label="VPC-14449")
+
+    plot.legend(loc="upper right")
+
+    fig = plot.get_figure()
+    fig.show()
+
+    # plt.show()
+
+
+# get_distances()
 # plot_hist()
 # check_nathan_duplicates()
 # get_distance_from_centroid()
+get_jaccard_scores()
