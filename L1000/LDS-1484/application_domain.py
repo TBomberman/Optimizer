@@ -236,7 +236,7 @@ def get_jaccard_scores():
             scores.append(score)
 
     plot = sns.distplot(scores, bins=100, axlabel="Jaccard Similarity Coefficient", norm_hist=False)
-    plot.set_title("Jaccard Similarity Scores Between Trained Compounds")
+    plot.set_title("Histogram of Jaccard Similarity Scores Between Trained Compounds")
     plot.set(ylabel="Count")
     plot.ticklabel_format(style='plain')  # , axis='both', scilimits=(0, 0))
 
