@@ -263,7 +263,7 @@ def compare_predictions_with_nate():
         y_true_list.append(np.asarray(down_true_int, dtype='float32'))
         y_pred_list.append(down_predictions[:, 1])
         legend.append("Downregulation")
-        plot_roc_multi(y_true_list, y_pred_list, legend, 'ROC: RNAseq Predictions (24h)')
+        plot_roc_multi(y_true_list, y_pred_list, legend, 'ROC: RNA-Seq Predictions (3h)')
 
 def compare_lm_files():
     import json

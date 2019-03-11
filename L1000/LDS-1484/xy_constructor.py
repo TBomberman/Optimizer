@@ -153,9 +153,9 @@ for bin in bins:
 
             abspert = abs(pert)
             repeat_key = drug_id + "_" + cell_id + "_" + our_gene_id
-            if repeat_key in repeat_X and abspert <= repeat_X[repeat_key]:
-                # print("found duplicate repeat key", repeat_key)
-                continue
+            # if repeat_key in repeat_X and abspert <= repeat_X[repeat_key]:
+            #     # print("found duplicate repeat key", repeat_key)
+            #     continue
 
             updated = False
             # repeat_X[repeat_key] = pert_conc_ratio
