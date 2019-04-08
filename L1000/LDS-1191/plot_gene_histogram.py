@@ -175,7 +175,7 @@ def plot_normal():
     plt.plot(*[(downx, upx), (0, 0)], color='blue')  #, label='No regulation')
     plt.legend()
 
-    plt.title("Top and Bottom 5% Significance Levels")
+    plt.title("Top and Bottom 10% Significance Levels")
     plt.xlabel("Z-score")
     plt.ylabel("Density")
     plt.show()
