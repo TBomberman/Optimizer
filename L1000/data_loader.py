@@ -14,7 +14,7 @@ def load_csv(file):
         #load data
         expression = []
         with open(file, "r") as csv_file:
-            reader = csv.reader(csv_file, dialect='excel')
+            reader = csv.reader(csv_file, dialect='excel', delimiter='\t')
             for row in reader:
                 expression.append(row)
         return expression

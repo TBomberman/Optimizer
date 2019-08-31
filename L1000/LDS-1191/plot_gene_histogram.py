@@ -1,5 +1,6 @@
 import json
 import matplotlib.pyplot as plt
+plt.rcParams['figure.dpi'] = 300
 import numpy as np
 from L1000.data_loader import load_gene_expression_data, load_csv, printProgressBar, get_feature_dict
 import seaborn as sns
@@ -24,7 +25,7 @@ gene_count_data_limit = 978
 #     for item in sublist:
 #         lm_gene_entrez_ids.append(item)
 lm_gene_entrez_ids = ['2778']
-# level_5_gctoo = load_gene_expression_data("/home/gwoo/Data/L1000/LDS-1191/Data/GSE92742_Broad_LINCS_Level5_COMPZ.MODZ_n473647x12328.gctx", lm_gene_entrez_ids)
+
 
 def find_nth(haystack, needle, n):
     start = haystack.find(needle)
@@ -34,6 +35,7 @@ def find_nth(haystack, needle, n):
     return start
 
 def get_all_perts(target_cell_name=None):
+    level_5_gctoo = load_gene_expression_data("/home/gwoo/Data/L1000/LDS-1191/Data/GSE92742_Broad_LINCS_Level5_COMPZ.MODZ_n473647x12328.gctx", lm_gene_entrez_ids)
     length = len(level_5_gctoo.col_metadata_df.index)
     # length = 10
     one_gene_expression_values = []
@@ -84,13 +86,14 @@ def get_histogram():
     values = get_all_perts()
 
     import seaborn as sns
-    plot = sns.distplot(values, bins=1000, axlabel="Z-score")
+    plot = sns.distplot(values, bins=1000, axlabel="Z-score", kde=False, norm_hist=False)
     plot.set_title("Histogram of gene: GNAS")
-    plot.set(ylabel="Normalized Count")
-    plot.ticklabel_format(style='plain')  # , axis='both', scilimits=(0, 0))
+    plot.set(ylabel="Number of Perturbation Values")
+    # plot.ticklabel_format(style='plain')  # , axis='both', scilimits=(0, 0))
     fig = plot.get_figure()
+    fig.set_size_inches(6, 4)
     fig.show()
-    fig.savefig("/data/datasets/gwoo/L1000/LDS-1191/Output/appDomain/plot.png")
+    # fig.savefig("/data/datasets/gwoo/L1000/LDS-1191/Output/appDomain/plot.png")
 
 def get_drug_counts_per_cell_line():
     def find_nth(haystack, needle, n):
@@ -189,18 +192,20 @@ def get_concentration_data_for_histogram():
             continue
         doses.append(float(row[6]))
 
-    # plt.title('Histogram of Doses')
+    plt.title('Drug Dose Histogram')
     axes = plt.gca()
     axes.set_xlim([0, 15])
-    plt.ylabel('Count')
+    plt.ylabel('Number of Experiments')
     plt.xlabel('Drug Concentrations (µM)')
     plt.hist(doses, bins=2000)
-    fig = plt.figure()
-    fig.add_axes([0.1, 0.1, 0.8, 0.8])
+    fig = plt.gcf()
+    fig.set_size_inches(8, 4)
+    # fig = plt.figure(figsize = (8, 6), dpi=600)
+    # fig.add_axes([0.1, 0.1, 0.8, 0.8])
     plt.show()
 
 # get_drug_counts_per_cell_line()
 # get_stats()
-plot_normal()
+# plot_normal()
 # get_concentration_data_for_histogram()
-# get_histogram()
+get_histogram()
